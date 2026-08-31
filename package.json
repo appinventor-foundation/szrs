@@ -8,7 +8,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:unit": "turbo run test:unit"
   },
   "devDependencies": {
     "prettier": "3.9.6",
