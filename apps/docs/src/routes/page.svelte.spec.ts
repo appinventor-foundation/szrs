@@ -14,7 +14,7 @@ describe('+page.svelte', () => {
 		await expect.element(page.getByText('Docs')).toBeInTheDocument();
 	});
 
-	it('renders CounterView from @repo/ui', async () => {
+	it('renders CounterView from @szrs/ui', async () => {
 		await render(Page);
 
 		await expect.element(page.getByText('Current count: 0')).toBeInTheDocument();

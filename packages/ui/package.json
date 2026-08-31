@@ -25,8 +25,8 @@
     "svelte": "5.56.9"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@szrs/eslint-config": "workspace:*",
+    "@szrs/typescript-config": "workspace:*",
     "@sveltejs/kit": "catalog:sveltejs",
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
     "@types/node": "26.2.0",

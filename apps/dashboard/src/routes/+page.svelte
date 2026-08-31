@@ -4,7 +4,7 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import { CounterView } from '@repo/ui';
+	import { CounterView } from '@szrs/ui';
 </script>
 
 <h1>Dashboard</h1>

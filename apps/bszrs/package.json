@@ -1,0 +1,45 @@
+{
+  "name": "@szrs/blockly-bszrs",
+  "version": "0.0.0",
+  "description": "A Blockly plugin.",
+  "scripts": {
+    "audit:fix": "blockly-scripts auditFix",
+    "build": "blockly-scripts build",
+    "clean": "blockly-scripts clean",
+    "predeploy": "blockly-scripts predeploy",
+    "start": "blockly-scripts start",
+    "test": "blockly-scripts test",
+    "dev": "blockly-scripts start"
+  },
+  "main": "./dist/index.js",
+  "module": "./src/index.js",
+  "unpkg": "./dist/index.js",
+  "author": "",
+  "keywords": [
+    "blockly",
+    "blockly-plugin",
+    "bszrs"
+  ],
+  "homepage": "",
+  "bugs": {},
+  "repository": {},
+  "license": "Apache-2.0",
+  "directories": {
+    "dist": "dist",
+    "src": "src"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "devDependencies": {
+    "blockly": "^13.2.1",
+    "@blockly/dev-scripts": "^13.2.0",
+    "@blockly/dev-tools": "^13.2.0"
+  },
+  "peerDependencies": {
+    "blockly": "^13.2.1"
+  },
+  "publishConfig": {}
+}
+

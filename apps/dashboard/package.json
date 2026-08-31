@@ -16,11 +16,11 @@
     "test:unit": "vitest run"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*"
+    "@szrs/ui": "workspace:*"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@szrs/eslint-config": "workspace:*",
+    "@szrs/typescript-config": "workspace:*",
     "@sveltejs/adapter-auto": "catalog:sveltejs",
     "@sveltejs/kit": "catalog:sveltejs",
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
