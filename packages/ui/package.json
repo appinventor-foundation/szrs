@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "svelte-kit sync --watch",
     "build": "svelte-kit sync && tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
