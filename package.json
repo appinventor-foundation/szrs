@@ -1,6 +1,7 @@
 {
   "name": "with-svelte",
   "private": true,
+  "license": "Apache-2.0",
   "scripts": {
     "build": "turbo run build",
     "check-types": "turbo run check-types",
