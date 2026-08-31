@@ -7,7 +7,7 @@ describe('+page.svelte', () => {
 	it('renders the page title', async () => {
 		await render(Page);
 
-		await expect.element(page.getByText('Web')).toBeInTheDocument();
+		await expect.element(page.getByText('Dashboard')).toBeInTheDocument();
 	});
 
 	it('renders CounterView from @repo/ui', async () => {
