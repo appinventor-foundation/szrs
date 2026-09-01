@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:unit": "vitest run test/unit",
-    "test:integration": "vitest run test/integration",
+    "test:integration": "vitest run test/integration --config vitest.integration.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },

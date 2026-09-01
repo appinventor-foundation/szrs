@@ -5,11 +5,15 @@ import { buildApp } from '../../src/app.js';
 import type { Db } from '../../src/db/client.js';
 import { requestLogs } from '../../src/db/schema.js';
 
-process.env.INTERNAL_API_KEY ??= 'test-secret';
-process.env.OPENAI_API_KEY ??= 'test-openai-key';
-process.env.OPENAI_BASE_URL ??= 'https://example.test/v1';
-process.env.OPENAI_DEFAULT_MODEL ??= 'gpt-4o-mini';
+// ||= (not ??=): .env.local may set these to an empty string rather than
+// leaving them unset (e.g. OPENAI_API_KEY blank until a real key is added),
+// and empty string isn't caught by ??=.
+process.env.INTERNAL_API_KEY ||= 'test-secret';
+process.env.OPENAI_API_KEY ||= 'test-openai-key';
+process.env.OPENAI_BASE_URL ||= 'https://example.test/v1';
+process.env.OPENAI_DEFAULT_MODEL ||= 'gpt-4o-mini';
 
+const internalApiKey = process.env.INTERNAL_API_KEY;
 const { app } = buildApp();
 let db: Db;
 
@@ -56,7 +60,7 @@ describe('POST /v1/chat/completions', () => {
 		const response = await app.inject({
 			method: 'POST',
 			url: '/v1/chat/completions',
-			headers: { 'x-internal-api-key': 'test-secret', 'x-client-id': 'bszrs' },
+			headers: { 'x-internal-api-key': internalApiKey, 'x-client-id': 'bszrs' },
 			payload: { model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'hi' }] }
 		});
 
