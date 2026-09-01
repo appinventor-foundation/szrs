@@ -7,11 +7,11 @@ Consumers: `apps/dashboard` (reads `/v1/usage*` for reporting) and `apps/bszrs` 
 ## Prerequisites
 
 - Node 24.20.0, pnpm 11.22.0 (see repo-root `mise.toml` — run `mise install`)
-- Docker, for local Postgres
+- Docker, for local Postgres and Jaeger
 
 ## Running locally (dev)
 
-The `docker-compose.yml` here defines **only Postgres** — the day-to-day loop is Postgres in Docker, the service itself running natively via `pnpm dev` for fast reload. From this directory (`apps/llm-proxy`):
+The `docker-compose.yml` here defines Postgres and Jaeger (for viewing traces — see below) — the day-to-day loop is those two in Docker, the service itself running natively via `pnpm dev` for fast reload. From this directory (`apps/llm-proxy`):
 
 ```bash
 cp .env.example .env.local   # then fill in INTERNAL_API_KEY, OPENAI_API_KEY, etc.
@@ -70,9 +70,20 @@ DATABASE_URL=postgresql://llm_proxy:llm_proxy@localhost:5432/llm_proxy INTERNAL_
 
 `test:unit` must pass with `DATABASE_URL` unset entirely — that's how you'd notice if a "unit" test accidentally started depending on a real database.
 
+## Inspecting the database
+
+```bash
+docker exec -it llm-proxy-postgres-1 psql -U llm_proxy -d llm_proxy
+```
+`\dt` lists tables, `\d request_logs` shows the schema, `select * from request_logs;` shows rows. Any Postgres GUI client (TablePlus, Postico, DBeaver, ...) also works — `localhost:5432`, user/password/db all `llm_proxy`.
+
+## Viewing traces
+
+`docker-compose.yml` runs a local Jaeger alongside Postgres, with `.env.example`'s default `OTEL_EXPORTER_OTLP_ENDPOINT` already pointed at it. UI: **http://localhost:16686** — pick service `llm-proxy`. Every request gets an HTTP-level span; `POST /v1/chat/completions` additionally has a nested `llm.chat` span (tagged `llm.provider`/`llm.model`) around the actual provider call, so you can see upstream latency separate from the rest of the request.
+
 ## Architecture notes
 
 - **Everything is a Fastify plugin.** `src/app.ts` decorates `config`/`db`/`registry` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.db` / `fastify.registry` / `fastify.config` rather than taking them as function parameters.
 - **Providers** (`src/providers/`): a single `Provider` interface with one `OpenAiCompatibleProvider` implementation, instantiated once per configured backend (hosted OpenAI, and/or one self-hosted OpenAI-compatible endpoint via `SELF_HOSTED_BASE_URL`/`SELF_HOSTED_MODEL`). `providers/registry.ts` maps a model id to a provider instance from env config.
 - **Database**: Postgres via Drizzle, this service's own database — not shared with `apps/dashboard`'s (eventual) database, even if they run on the same Postgres instance locally. Migrations are file-based (`drizzle-kit generate` → commit the SQL → `drizzle-kit migrate` to apply), not `drizzle-kit push`.
-- **OpenTelemetry**: `src/otel.ts` is preloaded via `node --import` (see `start` script) so instrumentation patches modules before app code runs. Traces only; no metrics/log export. `OTEL_EXPORTER_OTLP_ENDPOINT` unset just skips exporting (no collector required for local dev).
+- **OpenTelemetry**: `src/otel.ts` is preloaded via `node --import` (see `start` script) so instrumentation patches modules before app code runs. Traces only; no metrics/log export. `OTEL_EXPORTER_OTLP_ENDPOINT` unset just skips exporting entirely (spans are created but discarded) — locally it's set by default to the Jaeger container from `docker-compose.yml`.
