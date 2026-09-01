@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: llm_proxy
+      POSTGRES_PASSWORD: llm_proxy
+      POSTGRES_DB: llm_proxy
+    ports:
+      - '5432:5432'
+    volumes:
+      # Postgres 18+ images expect the mount at /var/lib/postgresql (not .../data)
+      # so they can manage a version-specific subdirectory themselves.
+      - llm-proxy-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U llm_proxy']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  llm-proxy-pgdata:
