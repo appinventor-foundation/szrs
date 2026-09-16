@@ -1,7 +1,7 @@
 # Local dev infra: LiteLLM (LLM gateway) + Langfuse (LLM-call tracing) + Jaeger
-# (general server tracing). Invoke with an explicit env file so compose's
-# ${VAR:-default} interpolation reads the same values the app itself uses:
-#   docker compose --env-file .env.local up -d
+# (general server tracing). Secrets live in .env (not .env.local) in this
+# directory, which Compose auto-loads — no --env-file flag needed for any
+# command here (up, down, logs, ...). See .env.example.
 services:
   jaeger:
     image: jaegertracing/all-in-one:1.76.0

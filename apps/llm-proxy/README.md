@@ -16,13 +16,15 @@ Local dev infra (LiteLLM, Langfuse, Jaeger, and their backing stores) lives in *
 ```bash
 cp .env.example .env.local   # then fill in INTERNAL_API_KEY
 cd ../../infra/llm-proxy
-cp .env.example .env.local   # then fill in the secrets — see that file's comments
-docker compose --env-file .env.local up -d
+cp .env.example .env   # then fill in the secrets — see that file's comments
+docker compose up -d
 ```
+
+(`infra/llm-proxy` uses a bare `.env`, not `.env.local` — Docker Compose only auto-loads a file literally named `.env`, so every `docker compose` command here — `up`, `down`, `logs`, etc. — picks it up with no extra flag needed. Naming it `.env.local` would mean typing `--env-file .env.local` on every single invocation or getting "variable is not set" warnings, as happens if you forget it.)
 
 Mint a virtual key for this service (one-time, or whenever you recreate `litellm-db`'s volume):
 ```bash
-set -a && source .env.local && set +a
+set -a && source .env && set +a
 curl -s http://localhost:4000/key/generate \
   -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json" \
   -d '{"key_alias": "bszrs"}'
@@ -36,7 +38,7 @@ pnpm dev
 
 `pnpm dev` runs the TypeScript source directly via `tsx watch` — no build step. It auto-loads `apps/llm-proxy/.env.local` (via Node's `--env-file-if-exists` flag, passed to `tsx`), so no manual exporting needed. Server listens on `PORT` (default `3000`).
 
-Two separate `.env.local` files, deliberately: `apps/llm-proxy/.env.local` holds what the Node app itself reads (`INTERNAL_API_KEY`, `LITELLM_BASE_URL`, `LITELLM_VIRTUAL_KEY`, ...); `infra/llm-proxy/.env.local` holds secrets only `docker compose` interpolates into the LiteLLM/Langfuse stack (`LITELLM_MASTER_KEY`, Langfuse's various secrets, ...) — the app never reads the second file, and compose never reads the first.
+Two separate env files, deliberately: `apps/llm-proxy/.env.local` holds what the Node app itself reads (`INTERNAL_API_KEY`, `LITELLM_BASE_URL`, `LITELLM_VIRTUAL_KEY`, ...); `infra/llm-proxy/.env` holds secrets only `docker compose` interpolates into the LiteLLM/Langfuse stack (`LITELLM_MASTER_KEY`, Langfuse's various secrets, ...) — the app never reads the second file, and compose never reads the first.
 
 ## Testing the containerized build
 
