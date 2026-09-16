@@ -1,48 +1,58 @@
 import { ChatCompletionRequestSchema, ChatCompletionResponseSchema } from '@szrs/llm-proxy-contracts';
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 
-import { requestLogs } from '../db/schema.js';
+const UpstreamResponseSchema = z.object({
+	model: z.string(),
+	choices: z
+		.array(
+			z.object({
+				message: z.object({ content: z.string() }),
+				finish_reason: z.string()
+			})
+		)
+		.min(1),
+	usage: z.object({
+		prompt_tokens: z.number().int().nonnegative(),
+		completion_tokens: z.number().int().nonnegative(),
+		total_tokens: z.number().int().nonnegative()
+	})
+});
 
 export default async function chatRoutes(fastify: FastifyInstance): Promise<void> {
-	fastify.post('/v1/chat/completions', async (request) => {
-		const clientId = String(request.headers['x-client-id'] ?? 'unknown');
+	fastify.post('/v1/chat/completions', async (request, reply) => {
 		const body = ChatCompletionRequestSchema.parse(request.body);
-		const provider = fastify.registry.get(body.model);
 
-		const start = performance.now();
-
-		try {
-			const result = await provider.chat(body);
-			const response = ChatCompletionResponseSchema.parse(result);
-
-			await fastify.db.insert(requestLogs).values({
-				clientId,
-				provider: provider.id,
-				model: response.model,
-				promptTokens: response.usage.promptTokens,
-				completionTokens: response.usage.completionTokens,
-				totalTokens: response.usage.totalTokens,
-				latencyMs: Math.round(performance.now() - start),
-				statusCode: 200
-			});
-
-			return response;
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-			await fastify.db.insert(requestLogs).values({
-				clientId,
-				provider: provider.id,
+		const upstream = await fetch(`${fastify.config.LITELLM_BASE_URL}/v1/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				authorization: `Bearer ${fastify.config.LITELLM_VIRTUAL_KEY}`
+			},
+			body: JSON.stringify({
 				model: body.model,
-				promptTokens: 0,
-				completionTokens: 0,
-				totalTokens: 0,
-				latencyMs: Math.round(performance.now() - start),
-				statusCode: 502,
-				errorMessage
-			});
+				messages: body.messages,
+				temperature: body.temperature,
+				max_tokens: body.maxTokens
+			})
+		});
 
-			throw error;
+		if (!upstream.ok) {
+			return reply.code(upstream.status).send(await upstream.json());
 		}
+
+		const upstreamBody = UpstreamResponseSchema.parse(await upstream.json());
+		const choice = upstreamBody.choices[0];
+
+		return ChatCompletionResponseSchema.parse({
+			content: choice.message.content,
+			model: upstreamBody.model,
+			usage: {
+				promptTokens: upstreamBody.usage.prompt_tokens,
+				completionTokens: upstreamBody.usage.completion_tokens,
+				totalTokens: upstreamBody.usage.total_tokens
+			},
+			finishReason: choice.finish_reason
+		});
 	});
 }
