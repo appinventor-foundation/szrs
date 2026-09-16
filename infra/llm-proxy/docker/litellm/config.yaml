@@ -1,0 +1,42 @@
+model_list:
+  - model_name: local-ollama
+    litellm_params:
+      model: ollama/llama3.1
+      api_base: http://host.docker.internal:11434
+
+  - model_name: local-lmstudio
+    litellm_params:
+      model: openai/local-model
+      api_base: http://host.docker.internal:1234/v1
+      api_key: not-needed
+
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # Uncomment once ANTHROPIC_API_KEY is available:
+  # - model_name: claude-3-5-sonnet
+  #   litellm_params:
+  #     model: claude-3-5-sonnet-20241022
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+
+  # Uncomment once AWS Bedrock credentials are available:
+  # - model_name: bedrock-claude
+  #   litellm_params:
+  #     model: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
+  #     aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
+  #     aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
+  #     aws_region_name: os.environ/AWS_REGION_NAME
+
+litellm_settings:
+  success_callback: ['langfuse']
+  failure_callback: ['langfuse']
+
+router_settings:
+  fallbacks:
+    - gpt-4o-mini: ['local-lmstudio', 'local-ollama']
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  salt_key: os.environ/LITELLM_SALT_KEY

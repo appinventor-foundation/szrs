@@ -33,9 +33,6 @@
     },
     "test:unit": {
       "dependsOn": ["build", "^test:unit"]
-    },
-    "test:integration": {
-      "dependsOn": ["build", "^test:integration"]
     }
   }
 }

@@ -11,10 +11,7 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:unit": "vitest run test/unit",
-    "test:integration": "vitest run test/integration --config vitest.integration.config.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "test:unit": "vitest run test/unit"
   },
   "dependencies": {
     "@szrs/llm-proxy-contracts": "workspace:*",
@@ -25,18 +22,15 @@
     "@opentelemetry/resources": "2.11.0",
     "@opentelemetry/sdk-node": "0.222.0",
     "@opentelemetry/semantic-conventions": "1.43.0",
-    "drizzle-orm": "0.45.2",
     "fastify": "5.12.1",
     "fastify-plugin": "6.0.0",
     "pino": "10.3.1",
-    "postgres": "3.4.9",
     "zod": "4.5.4"
   },
   "devDependencies": {
     "@szrs/eslint-config": "workspace:*",
     "@szrs/typescript-config": "workspace:*",
     "@types/node": "26.2.0",
-    "drizzle-kit": "0.31.10",
     "eslint": "10.8.1",
     "tsx": "4.23.13",
     "typescript": "7.0.2",

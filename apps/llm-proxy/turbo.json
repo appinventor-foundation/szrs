@@ -3,21 +3,15 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": ["DATABASE_URL", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT", "DEPLOYMENT_ENVIRONMENT"]
+      "env": ["LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT", "DEPLOYMENT_ENVIRONMENT"]
     },
     "test:unit": {
-      "env": ["DATABASE_URL", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT", "DEPLOYMENT_ENVIRONMENT"]
-    },
-    "test:integration": {
       "env": [
-        "DATABASE_URL",
         "LOG_LEVEL",
         "OTEL_EXPORTER_OTLP_ENDPOINT",
         "DEPLOYMENT_ENVIRONMENT",
         "INTERNAL_API_KEY",
-        "OPENAI_API_KEY",
-        "OPENAI_BASE_URL",
-        "OPENAI_DEFAULT_MODEL"
+        "LITELLM_VIRTUAL_KEY"
       ]
     }
   }

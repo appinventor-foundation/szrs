@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 export default async function healthRoutes(fastify: FastifyInstance): Promise<void> {
@@ -6,7 +5,10 @@ export default async function healthRoutes(fastify: FastifyInstance): Promise<vo
 
 	fastify.get('/readyz', async (_request, reply) => {
 		try {
-			await fastify.db.execute(sql`select 1`);
+			// Any HTTP response (even a 401) proves LiteLLM is reachable — readiness
+			// shouldn't depend on LITELLM_VIRTUAL_KEY being valid, only on the
+			// upstream gateway being up. Only a network-level failure means "not ready".
+			await fetch(`${fastify.config.LITELLM_BASE_URL}/health/liveliness`);
 			return { status: 'ok' };
 		} catch (error) {
 			fastify.log.error(error);

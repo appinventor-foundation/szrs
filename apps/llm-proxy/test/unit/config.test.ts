@@ -5,13 +5,13 @@ import { loadConfig } from '../../src/config.js';
 describe('loadConfig', () => {
 	it('applies defaults for optional values', () => {
 		const config = loadConfig({
-			DATABASE_URL: 'postgresql://localhost:5432/llm_proxy',
-			INTERNAL_API_KEY: 'test-secret'
+			INTERNAL_API_KEY: 'test-secret',
+			LITELLM_VIRTUAL_KEY: 'test-key'
 		});
 
 		expect(config.PORT).toBe(3000);
 		expect(config.DEPLOYMENT_ENVIRONMENT).toBe('development');
-		expect(config.OPENAI_BASE_URL).toBe('https://api.openai.com/v1');
+		expect(config.LITELLM_BASE_URL).toBe('http://localhost:4000');
 	});
 
 	it('throws when a required value is missing', () => {
@@ -20,8 +20,8 @@ describe('loadConfig', () => {
 
 	it('coerces PORT from a string env var', () => {
 		const config = loadConfig({
-			DATABASE_URL: 'postgresql://localhost:5432/llm_proxy',
 			INTERNAL_API_KEY: 'test-secret',
+			LITELLM_VIRTUAL_KEY: 'test-key',
 			PORT: '4000'
 		});
 
