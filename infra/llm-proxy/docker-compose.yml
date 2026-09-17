@@ -30,7 +30,7 @@ services:
   litellm:
     image: ghcr.io/berriai/litellm:v1.101.0
     ports:
-      - '127.0.0.1:4000:4000'
+      - '4000:4000'
     volumes:
       - ./docker/litellm/config.yaml:/app/config.yaml:ro
     command: ['--config', '/app/config.yaml']
@@ -92,8 +92,8 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - '127.0.0.1:9090:9000'
-      - '127.0.0.1:9091:9001'
+      - '9090:9000'
+      - '9091:9001'
     volumes:
       - llm-proxy-minio-data:/data
     healthcheck:
@@ -119,7 +119,7 @@ services:
     # with apps/llm-proxy's own default PORT=3000 for the native `pnpm dev`
     # process. Remapped to 3001 here for exactly that reason.
     ports:
-      - '127.0.0.1:3001:3000'
+      - '3001:3000'
     environment:
       DATABASE_URL: postgresql://langfuse:langfuse@langfuse-postgres:5432/langfuse
       CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
