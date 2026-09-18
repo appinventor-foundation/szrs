@@ -1,6 +1,6 @@
 # @szrs/llm-proxy
 
-A thin Fastify passthrough in front of a self-hosted [LiteLLM](https://docs.litellm.ai/) gateway (which handles provider routing, fallbacks, rate limits, virtual keys, and usage/cost tracking natively — this service doesn't reimplement any of that). It exists purely because `apps/bszrs` (the Blockly plugin) is client-side code with nowhere safe to hold a LiteLLM virtual key — this service holds that one secret server-side and validates/forwards requests.
+A thin Fastify passthrough in front of a self-hosted [LiteLLM](https://docs.litellm.ai/) gateway (which handles provider routing, fallbacks, rate limits, virtual keys, and usage/cost tracking natively — this service doesn't reimplement any of that). It exists purely because `apps/blockly-szrs` (the Blockly plugin) is client-side code with nowhere safe to hold a LiteLLM virtual key — this service holds that one secret server-side and validates/forwards requests.
 
 `apps/dashboard` is **not** a consumer of this service. It has its own backend (or will), so it gets its own LiteLLM virtual key and calls LiteLLM directly for both generation and its own usage/spend reporting — that integration doesn't exist yet in this repo. This asymmetry (one consumer routed through here, the other calling LiteLLM directly) is deliberate — see the plan/PR history for the rationale, not a placeholder to "fix" by adding dashboard routes here.
 
@@ -23,6 +23,7 @@ docker compose up -d
 (`infra/llm-proxy` uses a bare `.env`, not `.env.local` — Docker Compose only auto-loads a file literally named `.env`, so every `docker compose` command here — `up`, `down`, `logs`, etc. — picks it up with no extra flag needed. Naming it `.env.local` would mean typing `--env-file .env.local` on every single invocation or getting "variable is not set" warnings, as happens if you forget it.)
 
 Mint a virtual key for this service (one-time, or whenever you recreate `litellm-db`'s volume):
+
 ```bash
 set -a && source .env && set +a
 curl -s http://localhost:4000/key/generate \
@@ -32,6 +33,7 @@ curl -s http://localhost:4000/key/generate \
 ```
 
 Then, from `apps/llm-proxy`:
+
 ```bash
 pnpm dev
 ```
