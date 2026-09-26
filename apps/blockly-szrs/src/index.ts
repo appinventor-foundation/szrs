@@ -15,22 +15,22 @@ import * as Blockly from 'blockly/core';
  * Plugin description.
  */
 export class Plugin {
-  /** The workspace. */
-  protected workspace: Blockly.WorkspaceSvg;
-  /**
-   * Constructor for ...
-   *
-   * @param workspace The workspace that the plugin will
-   *     be added to.
-   */
-  constructor(workspace: Blockly.WorkspaceSvg) {
-    this.workspace = workspace;
-  }
+	/** The workspace. */
+	protected workspace: Blockly.WorkspaceSvg;
+	/**
+	 * Constructor for ...
+	 *
+	 * @param workspace The workspace that the plugin will
+	 *     be added to.
+	 */
+	constructor(workspace: Blockly.WorkspaceSvg) {
+		this.workspace = workspace;
+	}
 
-  /**
-   * Initialize.
-   */
-  init(): void {
-    // TODO: Add initialization code.
-  }
+	/**
+	 * Initialize.
+	 */
+	init(): void {
+		// TODO: Add initialization code.
+	}
 }

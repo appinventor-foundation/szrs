@@ -28,11 +28,11 @@ npm install blockly-blockly-szrs --save
 
 ```js
 import * as Blockly from 'blockly';
-import {Plugin} from 'blockly-blockly-szrs';
+import { Plugin } from 'blockly-blockly-szrs';
 
 // Inject Blockly.
 const workspace = Blockly.inject('blocklyDiv', {
-  toolbox: toolboxCategories,
+  toolbox: toolboxCategories
 });
 
 // Initialize plugin.

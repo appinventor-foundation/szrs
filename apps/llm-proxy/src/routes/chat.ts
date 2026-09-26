@@ -1,4 +1,7 @@
-import { ChatCompletionRequestSchema, ChatCompletionResponseSchema } from '@szrs/llm-proxy-contracts';
+import {
+	ChatCompletionRequestSchema,
+	ChatCompletionResponseSchema
+} from '@szrs/llm-proxy-contracts';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 

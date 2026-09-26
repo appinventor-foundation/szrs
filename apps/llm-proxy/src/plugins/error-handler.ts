@@ -7,9 +7,7 @@ async function errorHandlerPlugin(fastify: FastifyInstance): Promise<void> {
 		request.log.error(error);
 
 		if (error instanceof ZodError) {
-			reply
-				.code(400)
-				.send({ error: { message: 'Invalid request', code: 'invalid_request' } });
+			reply.code(400).send({ error: { message: 'Invalid request', code: 'invalid_request' } });
 			return;
 		}
 

@@ -65,9 +65,11 @@ describe('POST /v1/chat/completions', () => {
 	it('forwards a non-2xx LiteLLM response with its original status code', async () => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn().mockResolvedValue(
-				new Response(JSON.stringify({ error: { message: 'rate limited' } }), { status: 429 })
-			)
+			vi
+				.fn()
+				.mockResolvedValue(
+					new Response(JSON.stringify({ error: { message: 'rate limited' } }), { status: 429 })
+				)
 		);
 
 		const response = await app.inject({

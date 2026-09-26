@@ -9,8 +9,8 @@
  */
 
 import * as Blockly from 'blockly';
-import {toolboxCategories, createPlayground} from '@blockly/dev-tools';
-import {Plugin} from '../src/index';
+import { toolboxCategories, createPlayground } from '@blockly/dev-tools';
+import { Plugin } from '../src/index';
 
 /**
  * Create a workspace.
@@ -20,25 +20,25 @@ import {Plugin} from '../src/index';
  * @returns The created workspace.
  */
 function createWorkspace(
-  blocklyDiv: HTMLElement,
-  options: Blockly.BlocklyOptions,
+	blocklyDiv: HTMLElement,
+	options: Blockly.BlocklyOptions
 ): Blockly.WorkspaceSvg {
-  const workspace = Blockly.inject(blocklyDiv, options);
+	const workspace = Blockly.inject(blocklyDiv, options);
 
-  // TODO: Initialize your plugin here.
-  const plugin = new Plugin(workspace);
-  plugin.init();
+	// TODO: Initialize your plugin here.
+	const plugin = new Plugin(workspace);
+	plugin.init();
 
-  return workspace;
+	return workspace;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const defaultOptions = {
-    toolbox: toolboxCategories,
-  };
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    throw new Error(`div with id 'root' not found`);
-  }
-  createPlayground(rootElement, createWorkspace, defaultOptions);
+	const defaultOptions = {
+		toolbox: toolboxCategories
+	};
+	const rootElement = document.getElementById('root');
+	if (!rootElement) {
+		throw new Error(`div with id 'root' not found`);
+	}
+	createPlayground(rootElement, createWorkspace, defaultOptions);
 });
