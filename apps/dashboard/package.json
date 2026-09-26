@@ -19,21 +19,21 @@
     "@szrs/ui": "workspace:*"
   },
   "devDependencies": {
-    "@szrs/eslint-config": "workspace:*",
-    "@szrs/typescript-config": "workspace:*",
+    "@playwright/test": "1.62.1",
     "@sveltejs/adapter-auto": "catalog:sveltejs",
     "@sveltejs/kit": "catalog:sveltejs",
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
-    "@playwright/test": "1.62.1",
+    "@szrs/eslint-config": "workspace:*",
+    "@szrs/typescript-config": "workspace:*",
     "@types/node": "26.2.0",
-    "@vitest/browser-playwright": "4.1.10",
+    "@vitest/browser-playwright": "4.1.11",
     "eslint": "10.8.1",
     "prettier-plugin-svelte": "catalog:sveltejs",
     "svelte": "catalog:sveltejs",
     "tslib": "2.8.1",
     "typescript": "7.0.2",
     "vite": "8.2.1",
-    "vitest": "4.1.10",
+    "vitest": "4.1.11",
     "vitest-browser-svelte": "3.0.0"
   }
 }
