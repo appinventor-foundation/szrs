@@ -12,7 +12,8 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".svelte-kit/**", ".turbo/**", ".vercel/**", "dist/**"]
+      "env": ["BASE_PATH"],
+      "outputs": [".svelte-kit/**", ".turbo/**", ".vercel/**", "build/**", "dist/**"]
     },
     "check-types": {
       "dependsOn": ["build", "^check-types"]
