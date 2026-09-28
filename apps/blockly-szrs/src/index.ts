@@ -9,6 +9,7 @@
  * @fileoverview Plugin overview.
  */
 import * as Blockly from 'blockly/core';
+import { ZoomControls } from './components/zoom_controls';
 
 // TODO: Rename plugin and edit plugin description.
 /**
@@ -17,6 +18,7 @@ import * as Blockly from 'blockly/core';
 export class SemanticZoomPlugin {
 	/** The workspace. */
 	protected workspace: Blockly.WorkspaceSvg;
+	protected zoomControls: ZoomControls;
 	/**
 	 * Constructor for ...
 	 *
@@ -25,12 +27,17 @@ export class SemanticZoomPlugin {
 	 */
 	constructor(workspace: Blockly.WorkspaceSvg) {
 		this.workspace = workspace;
+		this.zoomControls = new ZoomControls(this.workspace);
 	}
 
 	/**
 	 * Initialize.
 	 */
 	init(): void {
-		// TODO: Add initialization code.
+		this.zoomControls.init();
+	}
+
+	dispose(): void {
+		this.zoomControls.dispose();
 	}
 }
