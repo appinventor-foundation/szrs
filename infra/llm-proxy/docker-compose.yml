@@ -160,6 +160,8 @@ services:
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL}
       LANGFUSE_INIT_USER_NAME: admin
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD}
+      # Whitelisting local network connections for the playground
+      LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS: 100.64.0.0/10
     depends_on:
       langfuse-postgres:
         condition: service_healthy
@@ -200,6 +202,8 @@ services:
       SALT: ${LANGFUSE_SALT}
       ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY}
       TELEMETRY_ENABLED: 'false'
+      # Whitelisting local network connections for the playground
+      LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS: 100.64.0.0/10
     depends_on:
       langfuse-postgres:
         condition: service_healthy
