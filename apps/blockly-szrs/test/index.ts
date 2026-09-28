@@ -10,7 +10,7 @@
 
 import * as Blockly from 'blockly';
 import { toolboxCategories, createPlayground } from '@blockly/dev-tools';
-import { Plugin } from '../src/index';
+import { SemanticZoomPlugin } from '../src/index';
 
 /**
  * Create a workspace.
@@ -26,7 +26,7 @@ function createWorkspace(
 	const workspace = Blockly.inject(blocklyDiv, options);
 
 	// TODO: Initialize your plugin here.
-	const plugin = new Plugin(workspace);
+	const plugin = new SemanticZoomPlugin(workspace);
 	plugin.init();
 
 	return workspace;

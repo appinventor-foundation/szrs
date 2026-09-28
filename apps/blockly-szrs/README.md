@@ -4,7 +4,7 @@
   - TODO: Edit plugin description.
   -->
 
-A [Blockly](https://www.npmjs.com/package/blockly) plugin that ...
+A [Blockly](https://www.npmjs.com/package/blockly) plugin that provides different representations of a set of blocks
 
 ## Installation
 
@@ -17,7 +17,7 @@ yarn add blockly-blockly-szrs
 ### npm
 
 ```
-npm install blockly-blockly-szrs --save
+npm install blockly-blockly-szrs --save // TODO: this will be a different package
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ npm install blockly-blockly-szrs --save
 
 ```js
 import * as Blockly from 'blockly';
-import { Plugin } from 'blockly-blockly-szrs';
+import { SemanticZoomPlugin } from 'blockly-blockly-szrs';
 
 // Inject Blockly.
 const workspace = Blockly.inject('blocklyDiv', {
@@ -36,7 +36,7 @@ const workspace = Blockly.inject('blocklyDiv', {
 });
 
 // Initialize plugin.
-const plugin = new Plugin(workspace);
+const plugin = new SemanticZoomPlugin(workspace);
 plugin.init();
 ```
 

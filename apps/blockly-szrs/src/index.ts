@@ -14,7 +14,7 @@ import * as Blockly from 'blockly/core';
 /**
  * Plugin description.
  */
-export class Plugin {
+export class SemanticZoomPlugin {
 	/** The workspace. */
 	protected workspace: Blockly.WorkspaceSvg;
 	/**
