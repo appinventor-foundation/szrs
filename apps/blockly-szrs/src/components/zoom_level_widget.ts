@@ -117,7 +117,7 @@ Blockly.Css.register(`
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	background: rgba(255, 255, 255, 0.95);
+	background: var(--zoom-pill-bg, rgba(255, 255, 255, 0.95));
 	border: 1px solid #ccc;
 	border-radius: 22px;
 	padding: 8px 0;
@@ -162,13 +162,13 @@ Blockly.Css.register(`
 .zoom-slider__stop--active .zoom-slider__dot {
 	width: 20px;
 	height: 20px;
-	background: #007acc;
+	background: var(--zoom-accent, #007acc);
 }
 
 .zoom-slider__active-label {
 	font-size: 10px;
 	font-family: system-ui, sans-serif;
-	color: #666;
+	color: var(--zoom-label-color, #666);
 	text-align: center;
 }
 `);

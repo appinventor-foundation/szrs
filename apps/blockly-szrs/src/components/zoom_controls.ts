@@ -76,6 +76,12 @@ export class ZoomControls implements Blockly.IPositionable {
 	/** The presentational zoom-level widget. */
 	protected zoomLevelWidget: ZoomLevelWidget | null = null;
 
+	/** The element the theme's CSS custom properties are applied to. */
+	private themeTarget: HTMLElement | null = null;
+
+	/** Listener that re-applies the theme on Blockly.Events.THEME_CHANGE. */
+	private themeChangeListener: ((e: Blockly.Events.Abstract) => void) | null = null;
+
 	/** Top coordinate of the widget, only meaningful when self-positioned. */
 	private top = 0;
 
@@ -135,6 +141,37 @@ export class ZoomControls implements Blockly.IPositionable {
 	 */
 	private render(host: HTMLElement): void {
 		this.zoomLevelWidget = new ZoomLevelWidget(host, this.handleLevelChange);
+
+		this.themeTarget = host;
+		this.applyTheme();
+		this.themeChangeListener = (e) => {
+			if (e.type === Blockly.Events.THEME_CHANGE) {
+				this.applyTheme();
+			}
+		};
+		this.ws.addChangeListener(this.themeChangeListener);
+	}
+
+	/**
+	 * Reads color values from the workspace's current theme and applies
+	 * them as CSS custom properties, so the widget follows the workspace's
+	 * theme — built-in or a plugin consumer's own custom one — instead of
+	 * hardcoding colors per known theme. Re-run on Blockly.Events.THEME_CHANGE
+	 * to track live theme swaps.
+	 */
+	private applyTheme(): void {
+		if (!this.themeTarget) return;
+		const componentStyles = this.ws.getTheme().componentStyles;
+		const style = this.themeTarget.style;
+		if (componentStyles.markerColour) {
+			style.setProperty('--zoom-accent', componentStyles.markerColour);
+		}
+		if (componentStyles.flyoutBackgroundColour) {
+			style.setProperty('--zoom-pill-bg', componentStyles.flyoutBackgroundColour);
+		}
+		if (componentStyles.flyoutForegroundColour) {
+			style.setProperty('--zoom-label-color', componentStyles.flyoutForegroundColour);
+		}
 	}
 
 	/**
@@ -147,6 +184,10 @@ export class ZoomControls implements Blockly.IPositionable {
 	};
 
 	dispose() {
+		if (this.themeChangeListener) {
+			this.ws.removeChangeListener(this.themeChangeListener);
+			this.themeChangeListener = null;
+		}
 		if (this.isSelfPositioned) {
 			this.ws.getComponentManager().removeComponent(this.id);
 			Blockly.utils.dom.removeNode(this.zoomControlsContainer);
@@ -154,6 +195,7 @@ export class ZoomControls implements Blockly.IPositionable {
 			this.hostContainer.innerHTML = '';
 		}
 		this.zoomLevelWidget = null;
+		this.themeTarget = null;
 	}
 
 	/**
