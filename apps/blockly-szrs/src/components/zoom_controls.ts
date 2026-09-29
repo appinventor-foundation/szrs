@@ -3,12 +3,17 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import * as Blockly from 'blockly/core';
+import { ZoomLevel, ZoomLevelWidget } from './zoom_level_widget';
 
-/** Width of the zoom controls widget, in pixels. */
-const WIDTH = 200;
+/**
+ * Width of the zoom controls widget, in pixels. Approximates the
+ * rendered size of the zoom-slider pill in zoom_level_widget.ts; revisit
+ * if that widget's CSS changes.
+ */
+const WIDTH = 44;
 
-/** Height of the zoom controls widget, in pixels. */
-const HEIGHT = 40;
+/** Height of the zoom controls widget, in pixels. See WIDTH. */
+const HEIGHT = 150;
 
 /** Distance between the zoom controls and the top or bottom edge of the workspace. */
 const MARGIN_VERTICAL = 20;
@@ -68,6 +73,9 @@ export class ZoomControls implements Blockly.IPositionable {
 	/** The wrapper element created when self-positioned. */
 	protected zoomControlsContainer: HTMLDivElement | null = null;
 
+	/** The presentational zoom-level widget. */
+	protected zoomLevelWidget: ZoomLevelWidget | null = null;
+
 	/** Top coordinate of the widget, only meaningful when self-positioned. */
 	private top = 0;
 
@@ -126,14 +134,26 @@ export class ZoomControls implements Blockly.IPositionable {
 	 * @param host The element to render the widget into.
 	 */
 	private render(host: HTMLElement): void {
-		host.innerHTML = `<b>I am here!</b>`;
+		this.zoomLevelWidget = new ZoomLevelWidget(host, this.handleLevelChange);
 	}
+
+	/**
+	 * Handles a level change from the zoom-level widget.
+	 *
+	 * @param level The newly selected level.
+	 */
+	private handleLevelChange = (level: ZoomLevel): void => {
+		console.log('Zoom level changed:', level);
+	};
 
 	dispose() {
 		if (this.isSelfPositioned) {
 			this.ws.getComponentManager().removeComponent(this.id);
+			Blockly.utils.dom.removeNode(this.zoomControlsContainer);
+		} else if (this.hostContainer) {
+			this.hostContainer.innerHTML = '';
 		}
-		Blockly.utils.dom.removeNode(this.zoomControlsContainer);
+		this.zoomLevelWidget = null;
 	}
 
 	/**
