@@ -1,27 +1,27 @@
-import { ZoomRequestSchema } from '@szrs/llm-proxy-contracts';
-import type { FastifyInstance } from 'fastify';
+import { Readable } from 'node:stream';
 
-import { chatCompletion } from '../lib/litellm.js';
-import { buildZoomPrompt, parseZoomResponse, ZOOM_SYSTEM_PROMPT } from '../zoom/zoom.js';
+import {
+	ZoomRequestSchema,
+	type ZoomRequest,
+	type ZoomStreamEvent
+} from '@szrs/llm-proxy-contracts';
+import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
-const MAX_ATTEMPTS = 3;
+import type { Config } from '../config.js';
+import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
+import { buildZoomMessages, MAX_ATTEMPTS, MAX_TOKENS, parseZoomResponse } from '../zoom/zoom.js';
 
 export default async function zoomRoutes(fastify: FastifyInstance): Promise<void> {
 	fastify.post('/v1/zoom', async (request, reply) => {
 		const body = ZoomRequestSchema.parse(request.body);
-		const basePrompt = buildZoomPrompt(body.slug, body.workspaceJson);
 
-		let lastError = '';
-		let promptSuffix = '';
+		let lastError: string | undefined;
 
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			const result = await chatCompletion(fastify.config, {
 				model: body.model,
-				messages: [
-					{ role: 'system', content: ZOOM_SYSTEM_PROMPT },
-					{ role: 'user', content: basePrompt + promptSuffix }
-				],
-				maxTokens: 8192
+				messages: buildZoomMessages(body, lastError),
+				maxTokens: MAX_TOKENS
 			});
 			if (!result.ok) {
 				return reply.code(result.status).send(result.body);
@@ -30,12 +30,93 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			try {
 				return parseZoomResponse(result.response.content);
 			} catch (error) {
-				lastError = error instanceof Error ? error.message : String(error);
+				lastError = errorMessage(error);
 				request.log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
-				promptSuffix = `\n\nYour previous attempt was invalid:\n${lastError}\n\nReturn a complete, valid JSON object with "semantic" and "concept" keys only — no prose, no fences.`;
 			}
 		}
 
-		return reply.code(502).send({ error: { message: lastError, code: 'invalid_model_output' } });
+		return reply
+			.code(502)
+			.send({ error: { message: lastError ?? '', code: 'invalid_model_output' } });
 	});
+
+	// Validation errors still get a plain 400; once streaming starts the status
+	// is committed to 200, so every later failure is sent as an `error` event.
+	fastify.post('/v1/zoom/stream', async (request, reply) => {
+		const body = ZoomRequestSchema.parse(request.body);
+
+		reply.type('text/event-stream').header('cache-control', 'no-cache');
+		return Readable.from(toSse(zoomEvents(fastify.config, body, request.log), request.log));
+	});
+}
+
+async function* zoomEvents(
+	config: Config,
+	body: ZoomRequest,
+	log: FastifyBaseLogger
+): AsyncGenerator<ZoomStreamEvent> {
+	let lastError: string | undefined;
+
+	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+		yield { type: 'attempt', attempt, maxAttempts: MAX_ATTEMPTS, previousError: lastError };
+
+		const result = await chatCompletionStream(config, {
+			model: body.model,
+			messages: buildZoomMessages(body, lastError),
+			maxTokens: MAX_TOKENS
+		});
+		if (!result.ok) {
+			yield {
+				type: 'error',
+				code: 'upstream_error',
+				status: result.status,
+				message: upstreamErrorMessage(result.body, result.status)
+			};
+			return;
+		}
+
+		let text = '';
+		for await (const token of result.tokens) {
+			text += token;
+			yield { type: 'token', text: token };
+		}
+
+		try {
+			yield { type: 'done', result: parseZoomResponse(text) };
+			return;
+		} catch (error) {
+			lastError = errorMessage(error);
+			log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
+		}
+	}
+
+	yield { type: 'error', code: 'invalid_model_output', message: lastError ?? '' };
+}
+
+async function* toSse(
+	events: AsyncGenerator<ZoomStreamEvent>,
+	log: FastifyBaseLogger
+): AsyncGenerator<string> {
+	try {
+		for await (const event of events) {
+			yield `data: ${JSON.stringify(event)}\n\n`;
+		}
+	} catch (error) {
+		log.error(error);
+		const event: ZoomStreamEvent = {
+			type: 'error',
+			code: 'internal_error',
+			message: errorMessage(error)
+		};
+		yield `data: ${JSON.stringify(event)}\n\n`;
+	}
+}
+
+function upstreamErrorMessage(body: unknown, status: number): string {
+	const message = (body as { error?: { message?: unknown } } | null)?.error?.message;
+	return typeof message === 'string' ? message : `LiteLLM returned ${status}`;
+}
+
+function errorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }

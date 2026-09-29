@@ -16,8 +16,10 @@ export {
 	ZoomBlockSchema,
 	ZoomLevelSchema,
 	ZoomResponseSchema,
+	ZoomStreamEventSchema,
 	type ZoomRequest,
 	type ZoomBlock,
 	type ZoomLevel,
-	type ZoomResponse
+	type ZoomResponse,
+	type ZoomStreamEvent
 } from './zoom.js';

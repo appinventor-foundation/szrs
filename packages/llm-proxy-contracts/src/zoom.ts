@@ -25,3 +25,21 @@ export const ZoomResponseSchema = z.object({
 	concept: ZoomLevelSchema
 });
 export type ZoomResponse = z.infer<typeof ZoomResponseSchema>;
+
+export const ZoomStreamEventSchema = z.discriminatedUnion('type', [
+	z.object({
+		type: z.literal('attempt'),
+		attempt: z.number().int().positive(),
+		maxAttempts: z.number().int().positive(),
+		previousError: z.string().optional()
+	}),
+	z.object({ type: z.literal('token'), text: z.string() }),
+	z.object({ type: z.literal('done'), result: ZoomResponseSchema }),
+	z.object({
+		type: z.literal('error'),
+		code: z.enum(['upstream_error', 'invalid_model_output', 'internal_error']),
+		message: z.string(),
+		status: z.number().int().optional()
+	})
+]);
+export type ZoomStreamEvent = z.infer<typeof ZoomStreamEventSchema>;

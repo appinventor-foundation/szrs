@@ -1,5 +1,13 @@
-import { ZoomResponseSchema, type ZoomResponse } from '@szrs/llm-proxy-contracts';
+import {
+	ZoomResponseSchema,
+	type ChatMessage,
+	type ZoomRequest,
+	type ZoomResponse
+} from '@szrs/llm-proxy-contracts';
 import { z } from 'zod';
+
+export const MAX_ATTEMPTS = 3;
+export const MAX_TOKENS = 8192;
 
 export const ZOOM_SYSTEM_PROMPT = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (Detail level) and a slug, then produce two higher-level abstract representations as a single JSON object.
 
@@ -87,6 +95,18 @@ Snake slug (use this as prefix in block names): ${toSnakeSlug(slug)}
 
 Detail workspace JSON:
 ${JSON.stringify(workspaceJson, null, 2)}`;
+}
+
+export function buildZoomMessages(request: ZoomRequest, previousError?: string): ChatMessage[] {
+	const retrySuffix =
+		previousError === undefined
+			? ''
+			: `\n\nYour previous attempt was invalid:\n${previousError}\n\nReturn a complete, valid JSON object with "semantic" and "concept" keys only — no prose, no fences.`;
+
+	return [
+		{ role: 'system', content: ZOOM_SYSTEM_PROMPT },
+		{ role: 'user', content: buildZoomPrompt(request.slug, request.workspaceJson) + retrySuffix }
+	];
 }
 
 // Models often wrap JSON in fences or lead with prose despite being told not

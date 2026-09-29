@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildZoomPrompt, parseZoomResponse, toSnakeSlug } from '../../../src/zoom/zoom.js';
+import {
+	buildZoomMessages,
+	buildZoomPrompt,
+	parseZoomResponse,
+	toSnakeSlug,
+	ZOOM_SYSTEM_PROMPT
+} from '../../../src/zoom/zoom.js';
 
 const level = (type: string) => ({
 	blocks: [
@@ -27,6 +33,21 @@ describe('buildZoomPrompt', () => {
 		expect(prompt).toContain('Slug: fizz-buzz-n');
 		expect(prompt).toContain('fizz_buzz_n');
 		expect(prompt).toContain('"blocks": {}');
+	});
+});
+
+describe('buildZoomMessages', () => {
+	const request = { model: 'local-ollama', slug: 'x', workspaceJson: {} };
+
+	it('sends the system prompt and the zoom prompt', () => {
+		const [system, user] = buildZoomMessages(request);
+		expect(system).toEqual({ role: 'system', content: ZOOM_SYSTEM_PROMPT });
+		expect(user.content).toBe(buildZoomPrompt('x', {}));
+	});
+
+	it('appends the previous error on retry', () => {
+		const [, user] = buildZoomMessages(request, 'concept: missing');
+		expect(user.content).toContain('Your previous attempt was invalid:\nconcept: missing');
 	});
 });
 

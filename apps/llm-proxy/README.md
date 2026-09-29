@@ -84,13 +84,35 @@ curl -X POST http://localhost:3000/v1/zoom \
 
 The request and response shapes are `ZoomRequestSchema` and `ZoomResponseSchema` in `@szrs/llm-proxy-contracts`. If the model returns output that doesn't parse or validate, the proxy retries up to 3 times, sending the error back to the model each time. If all attempts fail it returns `502` with `code: "invalid_model_output"`.
 
+### Streaming
+
+`POST /v1/zoom/stream` takes the same request body and does the same retries, but streams progress as Server-Sent Events. It's a POST because the workspace is too large for a query string, so clients read it with `fetch` and `response.body.getReader()` rather than `EventSource`.
+
+```bash
+curl -N -X POST http://localhost:3000/v1/zoom/stream \
+     -H "x-internal-api-key: $INTERNAL_API_KEY" \
+     -H "content-type: application/json" \
+     -d '{"model":"local-ollama","slug":"fizz-buzz-n","workspaceJson":{ ...a Blockly workspace export... }}'
+```
+
+Each event is a `data: {json}` line; parse them with `ZoomStreamEventSchema` from `@szrs/llm-proxy-contracts`:
+
+| Event                                                       | When                                                                                    |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `{ type: 'attempt', attempt, maxAttempts, previousError? }` | Before each attempt; `previousError` explains why the last one failed                   |
+| `{ type: 'token', text }`                                   | Each chunk of model output as it arrives                                                |
+| `{ type: 'done', result: { semantic, concept } }`           | Final, validated output                                                                 |
+| `{ type: 'error', code, message, status? }`                 | `upstream_error` (with LiteLLM's `status`), `invalid_model_output`, or `internal_error` |
+
+An invalid request body still gets a plain `400`. Once streaming has started the HTTP status is already `200`, so every later failure — including a LiteLLM `429` — arrives as an `error` event instead.
+
 ## Tests
 
 ```bash
 pnpm test:unit
 ```
 
-One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts` and `test/unit/routes/zoom.test.ts`.
+One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`, `test/unit/routes/zoom.test.ts` and `test/unit/lib/litellm.test.ts`.
 
 ## Viewing traces
 
@@ -105,6 +127,6 @@ Two independent destinations, covering different things — this is intentional,
 
 - **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter.
 - **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request (via `src/lib/litellm.ts`, shared by all routes), and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
-- **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`.
+- **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`. `/v1/zoom/stream` runs the same loop over LiteLLM's streaming API (`chatCompletionStream` in `src/lib/litellm.ts`) and sends each step as an SSE event; if the client disconnects, the stream stops and the upstream LiteLLM request is cancelled.
 - **`src/routes/health.ts`**'s `/readyz` checks LiteLLM's `/health/liveliness` endpoint — any HTTP response counts as "reachable" (even a 401), only a network-level failure means not-ready, since readiness shouldn't depend on `LITELLM_VIRTUAL_KEY` being valid.
 - **No database and no provider abstraction.** LiteLLM model aliases (`model_name` in `infra/llm-proxy/docker/litellm/config.yaml`) are the providers. Callers pass an alias as `model`, and LiteLLM handles the vendor API, fallbacks and which models the virtual key may use. There are no usage-reporting endpoints either: LiteLLM's own spend tracking (`/spend/logs`, per virtual key) covers that, and `apps/dashboard` would query LiteLLM directly for it rather than going through here.
