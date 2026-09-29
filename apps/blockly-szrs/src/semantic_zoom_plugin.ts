@@ -22,10 +22,13 @@ export class SemanticZoomPlugin {
 	 *
 	 * @param workspace The workspace that the plugin will
 	 *     be added to.
+	 * @param zoomControlsContainer Optional host element for the zoom
+	 *     controls widget. When omitted, the zoom controls float over
+	 *     the workspace and position themselves.
 	 */
-	constructor(workspace: Blockly.WorkspaceSvg) {
+	constructor(workspace: Blockly.WorkspaceSvg, zoomControlsContainer?: HTMLElement) {
 		this.workspace = workspace;
-		this.zoomControls = new ZoomControls(this.workspace);
+		this.zoomControls = new ZoomControls(this.workspace, zoomControlsContainer);
 	}
 
 	/**
