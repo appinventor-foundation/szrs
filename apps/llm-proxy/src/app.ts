@@ -7,6 +7,7 @@ import authPlugin from './plugins/auth.js';
 import errorHandlerPlugin from './plugins/error-handler.js';
 import chatRoutes from './routes/chat.js';
 import healthRoutes from './routes/health.js';
+import zoomRoutes from './routes/zoom.js';
 
 export function buildApp() {
 	const config = loadConfig();
@@ -24,6 +25,7 @@ export function buildApp() {
 
 	void app.register(healthRoutes);
 	void app.register(chatRoutes);
+	void app.register(zoomRoutes);
 
 	return { app, config };
 }

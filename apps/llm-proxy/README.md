@@ -71,13 +71,26 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 
 (`local-ollama`/`local-lmstudio`/`gpt-4o-mini` are the model names configured in `infra/llm-proxy/docker/litellm/config.yaml` — swap for whichever backend you actually have running/keyed.) A successful call shows up as a trace in both Langfuse (`http://localhost:3001`, the LLM call itself — prompt, tokens, cost) and Jaeger (`http://localhost:16686`, the HTTP request as a whole) — see "Viewing traces" below for why it's split across both.
 
+## Semantic zoom
+
+`POST /v1/zoom` takes a Blockly workspace (the Detail level) and returns two higher-level representations of it: `semantic` (one block per logical operation) and `concept` (usually a single block for the whole program). Each level contains block definitions, generator code, toolbox entries and a workspace. Generated block types use the `zoom_` prefix.
+
+```bash
+curl -X POST http://localhost:3000/v1/zoom \
+     -H "x-internal-api-key: $INTERNAL_API_KEY" \
+     -H "content-type: application/json" \
+     -d '{"model":"local-ollama","slug":"fizz-buzz-n","workspaceJson":{ ...a Blockly workspace export... }}'
+```
+
+The request and response shapes are `ZoomRequestSchema` and `ZoomResponseSchema` in `@szrs/llm-proxy-contracts`. If the model returns output that doesn't parse or validate, the proxy retries up to 3 times, sending the error back to the model each time. If all attempts fail it returns `502` with `code: "invalid_model_output"`.
+
 ## Tests
 
 ```bash
 pnpm test:unit
 ```
 
-One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`.
+One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts` and `test/unit/routes/zoom.test.ts`.
 
 ## Viewing traces
 
@@ -91,6 +104,7 @@ Two independent destinations, covering different things — this is intentional,
 ## Architecture notes
 
 - **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter.
-- **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request, and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
+- **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request (via `src/lib/litellm.ts`, shared by all routes), and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
+- **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`.
 - **`src/routes/health.ts`**'s `/readyz` checks LiteLLM's `/health/liveliness` endpoint — any HTTP response counts as "reachable" (even a 401), only a network-level failure means not-ready, since readiness shouldn't depend on `LITELLM_VIRTUAL_KEY` being valid.
-- **No database, no provider abstraction, no usage-reporting endpoints** live in this service — LiteLLM's own spend/usage tracking (`/spend/logs`, per-virtual-key) covers what a `request_logs` table used to, and `apps/dashboard` would query LiteLLM directly for that in the future rather than through here.
+- **No database and no provider abstraction.** LiteLLM model aliases (`model_name` in `infra/llm-proxy/docker/litellm/config.yaml`) are the providers. Callers pass an alias as `model`, and LiteLLM handles the vendor API, fallbacks and which models the virtual key may use. There are no usage-reporting endpoints either: LiteLLM's own spend tracking (`/spend/logs`, per virtual key) covers that, and `apps/dashboard` would query LiteLLM directly for it rather than going through here.
