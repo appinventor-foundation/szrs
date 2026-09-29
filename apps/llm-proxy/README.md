@@ -14,7 +14,7 @@ Local dev infra (LiteLLM, Langfuse, Jaeger, and their backing stores) lives in *
 ## Running locally (dev)
 
 ```bash
-cp .env.example .env.local   # then fill in INTERNAL_API_KEY
+cp .env.example .env.local   # INTERNAL_API_KEY is optional; see the file's comments
 cd ../../infra/llm-proxy
 cp .env.example .env   # then fill in the secrets — see that file's comments
 docker compose up -d
@@ -57,6 +57,27 @@ docker run --rm -p 3000:3000 --env-file apps/llm-proxy/.env.local \
 
 (`host.docker.internal` so the container can reach the LiteLLM you already have running via `infra/llm-proxy`'s compose stack.) Tear it down with `docker stop`/`docker rm`, or `Ctrl-C` since it's `--rm`.
 
+## Deploying alongside the plugin
+
+The Blockly plugin and this proxy ship as a pair. Every site that uses the plugin runs its own proxy, with its own LiteLLM gateway and keys. There's no shared hosted proxy. The site's operator configures the proxy for their site with these settings (see `.env.example`):
+
+| Setting                                | Default           | Purpose                                                                                                                                       |
+| -------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CORS_ORIGINS`                         | empty             | Comma-separated origins of the site(s) that load the plugin. Empty blocks all cross-origin browser calls.                                     |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW` | `60` / `1 minute` | Requests per client IP. A whole classroom can share one IP, so don't set this too low. `/healthz` and `/readyz` are never limited.            |
+| `TRUST_PROXY`                          | `false`           | Set to `true` behind a reverse proxy or load balancer. Otherwise every user appears to have the proxy's IP and they all share one rate limit. |
+| `INTERNAL_API_KEY`                     | unset             | When set, every request except health checks must send it as `x-internal-api-key`.                                                            |
+
+**A key sent from the browser is not a secret.** If the plugin sends `INTERNAL_API_KEY`, anyone using the site can read it in devtools. It only identifies the caller; it doesn't authenticate anyone. That's why it's optional. It's useful for server-to-server callers, and a site with user logins can put its own auth in front of the proxy instead.
+
+**The real spending cap is the LiteLLM virtual key.** CORS stops other websites from calling the proxy through their visitors' browsers, but not scripts or curl, and per-IP limits can be spread across many IPs. Mint the proxy's virtual key with a budget, a rate limit and a model list, so a leaked or abused proxy can only spend so much:
+
+```bash
+curl -s http://localhost:4000/key/generate \
+  -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json" \
+  -d '{"key_alias": "bszrs", "max_budget": 20, "budget_duration": "30d", "rpm_limit": 60, "models": ["local-ollama", "gpt-4o-mini"]}'
+```
+
 ## Verifying it's working
 
 ```bash
@@ -69,7 +90,7 @@ curl -X POST http://localhost:3000/v1/chat/completions \
      -d '{"model":"local-ollama","messages":[{"role":"user","content":"hi"}]}'
 ```
 
-(`local-ollama`/`local-lmstudio`/`gpt-4o-mini` are the model names configured in `infra/llm-proxy/docker/litellm/config.yaml` — swap for whichever backend you actually have running/keyed.) A successful call shows up as a trace in both Langfuse (`http://localhost:3001`, the LLM call itself — prompt, tokens, cost) and Jaeger (`http://localhost:16686`, the HTTP request as a whole) — see "Viewing traces" below for why it's split across both.
+(The `x-internal-api-key` header is only needed if `INTERNAL_API_KEY` is set.) (`local-ollama`/`local-lmstudio`/`gpt-4o-mini` are the model names configured in `infra/llm-proxy/docker/litellm/config.yaml` — swap for whichever backend you actually have running/keyed.) A successful call shows up as a trace in both Langfuse (`http://localhost:3001`, the LLM call itself — prompt, tokens, cost) and Jaeger (`http://localhost:16686`, the HTTP request as a whole) — see "Viewing traces" below for why it's split across both.
 
 ## Semantic zoom
 
@@ -112,7 +133,7 @@ An invalid request body still gets a plain `400`. Once streaming has started the
 pnpm test:unit
 ```
 
-One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`, `test/unit/routes/zoom.test.ts` and `test/unit/lib/litellm.test.ts`.
+One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`, `test/unit/routes/zoom.test.ts` and `test/unit/lib/litellm.test.ts`. `test/unit/app.test.ts` covers the deployment settings (auth, CORS, rate limiting), building the app with its own env for each case.
 
 ## Viewing traces
 
@@ -125,7 +146,7 @@ Two independent destinations, covering different things — this is intentional,
 
 ## Architecture notes
 
-- **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter.
+- **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter. Registration order matters for `@fastify/cors` → `@fastify/rate-limit` → `plugins/auth.ts`: CORS has to answer browser preflights (which never carry the API key) before auth can reject them, and rate limiting counts rejected requests too. `test/unit/app.test.ts` fails if the order is wrong.
 - **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request (via `src/lib/litellm.ts`, shared by all routes), and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
 - **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`. `/v1/zoom/stream` runs the same loop over LiteLLM's streaming API (`chatCompletionStream` in `src/lib/litellm.ts`) and sends each step as an SSE event; if the client disconnects, the stream stops and the upstream LiteLLM request is cancelled.
 - **`src/routes/health.ts`**'s `/readyz` checks LiteLLM's `/health/liveliness` endpoint — any HTTP response counts as "reachable" (even a 401), only a network-level failure means not-ready, since readiness shouldn't depend on `LITELLM_VIRTUAL_KEY` being valid.

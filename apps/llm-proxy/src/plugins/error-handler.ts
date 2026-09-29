@@ -13,7 +13,10 @@ async function errorHandlerPlugin(fastify: FastifyInstance): Promise<void> {
 
 		const statusCode = error.statusCode ?? 500;
 		reply.code(statusCode).send({
-			error: { message: error.message, code: 'internal_error' }
+			error: {
+				message: error.message,
+				code: statusCode === 429 ? 'rate_limited' : 'internal_error'
+			}
 		});
 	});
 }
