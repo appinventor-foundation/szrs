@@ -37,6 +37,42 @@ function litellmReply(content: string): Response {
 	);
 }
 
+// A Detail program whose block ids are Blockly-style random ones, and a model
+// reply (in canonical ids) that binds a zoomed field to its number.
+const randomIdWorkspace = {
+	blocks: {
+		languageVersion: 0,
+		blocks: [
+			{
+				type: 'controls_repeat_ext',
+				id: 'r@ndom-id',
+				x: 40,
+				y: 60,
+				inputs: { TIMES: { shadow: { type: 'math_number', id: 'n#um-id', fields: { NUM: 5 } } } }
+			}
+		]
+	}
+};
+
+const boundZoom = {
+	semantic: {
+		blockDefs: [
+			{ type: 'zoom_x_op', message0: 'repeat %1', args0: [{ type: 'field_number', name: 'LIMIT' }] }
+		],
+		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'zoom_x_op', id: 's1' }] } },
+		// Canonical ids: b1 is the repeat block, b2 its number.
+		bindings: [{ block: 's1', field: 'LIMIT', detail: [{ block: 'b2', field: 'NUM' }] }]
+	},
+	concept: level('zoom_x_concept')
+};
+
+const randomIdPayload = { ...payload, workspaceJson: randomIdWorkspace };
+
+/** The user message of the request `fetchMock` received on call `n`. */
+function promptOf(fetchMock: ReturnType<typeof vi.fn>, n = 0): string {
+	return JSON.parse(fetchMock.mock.calls[n][1].body as string).messages[1].content;
+}
+
 function postZoom(body: unknown = payload) {
 	return app.inject({
 		method: 'POST',
@@ -64,6 +100,24 @@ describe('POST /v1/zoom', () => {
 
 		expect(response.statusCode).toBe(200);
 		expect(response.json()).toEqual(validZoom);
+	});
+
+	it('prompts with canonical ids and returns bindings in the caller’s ids', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(litellmReply(JSON.stringify(boundZoom)));
+		vi.stubGlobal('fetch', fetchMock);
+
+		const response = await postZoom(randomIdPayload);
+
+		expect(response.statusCode).toBe(200);
+		const prompt = promptOf(fetchMock);
+		expect(prompt).toContain('"b1"');
+		expect(prompt).toContain('"b2"');
+		expect(prompt).not.toContain('r@ndom-id');
+		expect(prompt).not.toContain('n#um-id');
+		expect(prompt).not.toContain('"x"');
+		expect(response.json().semantic.bindings[0].detail).toEqual([
+			{ block: 'n#um-id', field: 'NUM' }
+		]);
 	});
 
 	it('retries with the error fed back when the model output is invalid', async () => {
@@ -135,6 +189,19 @@ describe('POST /v1/zoom/stream', () => {
 			.filter((chunk) => chunk.startsWith('data: '))
 			.map((chunk) => ZoomStreamEventSchema.parse(JSON.parse(chunk.slice('data: '.length))));
 	}
+
+	it('prompts with canonical ids and sends the done result in the caller’s ids', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(litellmStream(JSON.stringify(boundZoom)));
+		vi.stubGlobal('fetch', fetchMock);
+
+		const response = await postZoomStream(randomIdPayload);
+
+		expect(promptOf(fetchMock)).not.toContain('r@ndom-id');
+		const done = parseEvents(response.body).find((event) => event.type === 'done');
+		expect(done?.type === 'done' && done.result.semantic.bindings[0].detail).toEqual([
+			{ block: 'n#um-id', field: 'NUM' }
+		]);
+	});
 
 	it('rejects requests without the internal API key', async () => {
 		const response = await app.inject({ method: 'POST', url: '/v1/zoom/stream', payload });

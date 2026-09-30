@@ -9,18 +9,22 @@ import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 import type { Config } from '../config.js';
 import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
+import { normalizeWorkspace, restoreIds } from '../zoom/normalize.js';
 import { buildZoomMessages, MAX_ATTEMPTS, parseZoomResponse } from '../zoom/zoom.js';
 
 export default async function zoomRoutes(fastify: FastifyInstance): Promise<void> {
 	fastify.post('/v1/zoom', async (request, reply) => {
 		const body = ZoomRequestSchema.parse(request.body);
+		// The model works on, and answers in, a canonical copy of the workspace.
+		const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
+		const canonical = { ...body, workspaceJson };
 
 		let lastError: string | undefined;
 
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			const result = await chatCompletion(fastify.config, {
 				model: body.model,
-				messages: buildZoomMessages(body, lastError)
+				messages: buildZoomMessages(canonical, lastError)
 			});
 			if (!result.ok) {
 				request.log.warn(
@@ -33,10 +37,10 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			try {
 				const { result: zoom, repairs } = parseZoomResponse(
 					result.response.content,
-					body.workspaceJson
+					canonical.workspaceJson
 				);
 				if (repairs.length > 0) request.log.info({ attempt, repairs }, 'repaired zoom output');
-				return zoom;
+				return restoreIds(zoom, originalIds);
 			} catch (error) {
 				lastError = errorMessage(error);
 				request.log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
@@ -63,6 +67,8 @@ async function* zoomEvents(
 	body: ZoomRequest,
 	log: FastifyBaseLogger
 ): AsyncGenerator<ZoomStreamEvent> {
+	const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
+	const canonical = { ...body, workspaceJson };
 	let lastError: string | undefined;
 
 	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -70,7 +76,7 @@ async function* zoomEvents(
 
 		const result = await chatCompletionStream(config, {
 			model: body.model,
-			messages: buildZoomMessages(body, lastError)
+			messages: buildZoomMessages(canonical, lastError)
 		});
 		if (!result.ok) {
 			log.warn({ attempt, status: result.status, body: result.body }, 'LiteLLM request failed');
@@ -90,9 +96,9 @@ async function* zoomEvents(
 		}
 
 		try {
-			const { result: zoom, repairs } = parseZoomResponse(text, body.workspaceJson);
+			const { result: zoom, repairs } = parseZoomResponse(text, canonical.workspaceJson);
 			if (repairs.length > 0) log.info({ attempt, repairs }, 'repaired zoom output');
-			yield { type: 'done', result: zoom };
+			yield { type: 'done', result: restoreIds(zoom, originalIds) };
 			return;
 		} catch (error) {
 			lastError = errorMessage(error);
