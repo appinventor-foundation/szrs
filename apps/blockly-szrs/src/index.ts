@@ -6,4 +6,5 @@
 /**
  * @fileoverview Plugin overview.
  */
-export { SemanticZoomPlugin } from './semantic_zoom_plugin';
+export { SemanticZoomPlugin, type SemanticZoomOptions } from './semantic_zoom_plugin';
+export { ZoomError, type ZoomClientOptions } from './zoom_client';

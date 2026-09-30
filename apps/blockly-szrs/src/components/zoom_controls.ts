@@ -3,7 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import * as Blockly from 'blockly/core';
-import { ZoomLevel, ZoomLevelWidget } from './zoom_level_widget';
+import { ZoomLevel, ZoomLevelWidget, type ZoomStatusOptions } from './zoom_level_widget';
 
 /**
  * Width of the zoom controls widget, in pixels. Approximates the
@@ -24,8 +24,8 @@ const MARGIN_HORIZONTAL = 20;
 /**
  * The corner the zoom controls are anchored to. Fixed to top-right rather
  * than derived from the toolbox side (as core's zoom controls and the
- * minimap plugin do), to match the fixed top-right placement used in
- * qualia, the app this plugin's semantic zoom behavior is modeled on.
+ * minimap plugin do), so the controls stay in the same place regardless of
+ * workspace configuration.
  */
 const ANCHOR_CORNER: Blockly.uiPosition.Position = {
 	horizontal: Blockly.uiPosition.horizontalPosition.RIGHT,
@@ -46,8 +46,7 @@ const COMPONENT_WEIGHT = 4;
  * The zoom controls widget.
  *
  * When constructed with a `container`, the widget renders into that
- * element and the host application owns its placement, the same way
- * qualia's `ZoomLevelControl` is handed a container by the app.
+ * element and the host application owns its placement.
  *
  * When no `container` is given, the widget creates its own wrapper
  * element and floats it over the workspace, positioning itself the
@@ -82,6 +81,9 @@ export class ZoomControls implements Blockly.IPositionable {
 	/** Listener that re-applies the theme on Blockly.Events.THEME_CHANGE. */
 	private themeChangeListener: ((e: Blockly.Events.Abstract) => void) | null = null;
 
+	/** Called when the user selects a different zoom level. */
+	private readonly onLevelChange: (level: ZoomLevel) => void;
+
 	/** Top coordinate of the widget, only meaningful when self-positioned. */
 	private top = 0;
 
@@ -92,11 +94,17 @@ export class ZoomControls implements Blockly.IPositionable {
 	 * Constructor for the zoom controls.
 	 *
 	 * @param workspaceSvg The workspace the controls act on.
+	 * @param onLevelChange Called when the user selects a different level.
 	 * @param container Optional host element to render into. When omitted,
 	 *     the widget creates its own floating, self-positioned wrapper.
 	 */
-	constructor(workspaceSvg: Blockly.WorkspaceSvg, container?: HTMLElement) {
+	constructor(
+		workspaceSvg: Blockly.WorkspaceSvg,
+		onLevelChange: (level: ZoomLevel) => void,
+		container?: HTMLElement
+	) {
 		this.ws = workspaceSvg;
+		this.onLevelChange = onLevelChange;
 		this.hostContainer = container ?? null;
 		this.isSelfPositioned = !container;
 	}
@@ -140,7 +148,7 @@ export class ZoomControls implements Blockly.IPositionable {
 	 * @param host The element to render the widget into.
 	 */
 	private render(host: HTMLElement): void {
-		this.zoomLevelWidget = new ZoomLevelWidget(host, this.handleLevelChange);
+		this.zoomLevelWidget = new ZoomLevelWidget(host, this.onLevelChange);
 
 		this.themeTarget = host;
 		this.applyTheme();
@@ -175,13 +183,25 @@ export class ZoomControls implements Blockly.IPositionable {
 	}
 
 	/**
-	 * Handles a level change from the zoom-level widget.
+	 * Shows `level` as active without calling `onLevelChange`. Does nothing
+	 * before init().
 	 *
-	 * @param level The newly selected level.
+	 * @param level The level to show.
 	 */
-	private handleLevelChange = (level: ZoomLevel): void => {
-		console.log('Zoom level changed:', level);
-	};
+	showLevel(level: ZoomLevel): void {
+		this.zoomLevelWidget?.showLevel(level);
+	}
+
+	/**
+	 * Shows a status message in place of the level label, or restores the
+	 * label when `text` is null. Does nothing before init().
+	 *
+	 * @param text The message to show, or null.
+	 * @param options Whether it's an error, and an optional tooltip.
+	 */
+	setStatus(text: string | null, options?: ZoomStatusOptions): void {
+		this.zoomLevelWidget?.setStatus(text, options);
+	}
 
 	dispose() {
 		if (this.themeChangeListener) {

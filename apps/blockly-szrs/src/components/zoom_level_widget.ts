@@ -6,6 +6,13 @@ import * as Blockly from 'blockly/core';
 
 export type ZoomLevel = 'detail' | 'semantic' | 'concept';
 
+export interface ZoomStatusOptions {
+	/** Shows the message in the error style. */
+	error?: boolean;
+	/** Tooltip with more detail, e.g. the full error message. */
+	title?: string;
+}
+
 // Top = most abstract (concept), bottom = most zoomed in (detail).
 const LEVELS: ZoomLevel[] = ['concept', 'semantic', 'detail'];
 const LABELS: Record<ZoomLevel, string> = {
@@ -18,15 +25,15 @@ const LABELS: Record<ZoomLevel, string> = {
  * The zoom level pill: a vertical slider of stops (Concept / Semantic /
  * Detail) with a label underneath showing the active level.
  *
- * This is purely presentational, modeled on qualia's `ZoomLevelControl`.
- * It tracks and visually reflects which level is selected, but does not
- * itself swap workspace content or call out to a backend — wiring real
- * level-switching behavior is a separate pass.
+ * This is purely presentational: it tracks and shows which level is
+ * selected, and can show a status message (progress or an error) in place
+ * of the level label. Fetching and applying zoom levels happens elsewhere.
  */
 export class ZoomLevelWidget {
 	private readonly stopEls: Partial<Record<ZoomLevel, HTMLButtonElement>> = {};
 	private readonly activeLabelEl: HTMLElement;
 	private activeLevel: ZoomLevel = 'detail';
+	private status: { text: string; error: boolean; title: string } | null = null;
 	private readonly onLevelChange?: (level: ZoomLevel) => void;
 
 	/**
@@ -80,9 +87,31 @@ export class ZoomLevelWidget {
 	 */
 	setActiveLevel(level: ZoomLevel): void {
 		if (level === this.activeLevel) return;
+		this.showLevel(level);
+		this.onLevelChange?.(level);
+	}
+
+	/**
+	 * Shows `level` as active without notifying `onLevelChange`, e.g. to move
+	 * back to Detail after a zoom fails.
+	 *
+	 * @param level The level to show as active.
+	 */
+	showLevel(level: ZoomLevel): void {
 		this.activeLevel = level;
 		this.update();
-		this.onLevelChange?.(level);
+	}
+
+	/**
+	 * Replaces the level label with a status message, or restores the label
+	 * when `text` is null.
+	 *
+	 * @param text The message to show, or null.
+	 * @param options Whether it's an error, and an optional tooltip.
+	 */
+	setStatus(text: string | null, { error = false, title = '' }: ZoomStatusOptions = {}): void {
+		this.status = text === null ? null : { text, error, title };
+		this.update();
 	}
 
 	/**
@@ -101,7 +130,12 @@ export class ZoomLevelWidget {
 				level === this.activeLevel
 			);
 		}
-		this.activeLabelEl.textContent = LABELS[this.activeLevel];
+		this.activeLabelEl.textContent = this.status?.text ?? LABELS[this.activeLevel];
+		this.activeLabelEl.title = this.status?.title ?? '';
+		this.activeLabelEl.classList.toggle(
+			'zoom-slider__active-label--error',
+			this.status?.error ?? false
+		);
 	}
 }
 
@@ -170,5 +204,9 @@ Blockly.Css.register(`
 	font-family: system-ui, sans-serif;
 	color: var(--zoom-label-color, #666);
 	text-align: center;
+}
+
+.zoom-slider__active-label--error {
+	color: #c62828;
 }
 `);

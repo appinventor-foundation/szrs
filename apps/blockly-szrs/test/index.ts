@@ -24,7 +24,10 @@ function createWorkspace(
 	const workspace = Blockly.inject(blocklyDiv, options);
 
 	// TODO: Initialize your plugin here.
-	const plugin = new SemanticZoomPlugin(workspace);
+	const plugin = new SemanticZoomPlugin(workspace, {
+		proxy: { proxyUrl: 'http://localhost:3000', model: 'local-ollama' },
+		getSlug: () => 'playground'
+	});
 	plugin.init();
 
 	return workspace;
