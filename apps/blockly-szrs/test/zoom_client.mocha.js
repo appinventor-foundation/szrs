@@ -13,14 +13,9 @@ const options = { proxyUrl: 'https://proxy.example/', model: 'local-ollama' };
 const target = { slug: 'fizz-buzz-n', workspaceJson: { blocks: {} } };
 
 const level = (type) => ({
-	blocks: [
-		{
-			blockDef: { type },
-			generatorCode: `forBlock["${type}"] = function(block, generator) { return ''; };`,
-			toolboxEntry: { kind: 'block', type }
-		}
-	],
-	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } }
+	blockDefs: [{ type, message0: 'do it' }],
+	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } },
+	bindings: []
 });
 
 const result = { semantic: level('zoom_x_op'), concept: level('zoom_x_concept') };

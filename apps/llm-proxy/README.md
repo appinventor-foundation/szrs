@@ -94,7 +94,7 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 
 ## Semantic zoom
 
-`POST /v1/zoom` takes a Blockly workspace (the Detail level) and returns two higher-level representations of it: `semantic` (one block per logical operation) and `concept` (usually a single block for the whole program). Each level contains block definitions, generator code, toolbox entries and a workspace. Generated block types use the `zoom_` prefix.
+`POST /v1/zoom` takes a Blockly workspace (the Detail level) and returns two higher-level representations of it: `semantic` (one block per logical operation) and `concept` (usually a single block for the whole program). Each level contains block definitions (`blockDefs`), a workspace that uses them, and `bindings` that link editable fields on the zoomed blocks to fields in the Detail workspace. The model never writes code: programs always run from the Detail blocks. Generated block types use the `zoom_` prefix, and block definitions are limited to plain fields and inputs (no extensions, mutators, help URLs or images). Bindings are checked against the Detail workspace in the request, and any problems are sent back to the model as part of the retry. See `apps/blockly-szrs/DECISIONS.md` (#7–#10) for why.
 
 ```bash
 curl -X POST http://localhost:3000/v1/zoom \

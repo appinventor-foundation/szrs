@@ -7,16 +7,76 @@ export const ZoomRequestSchema = z.object({
 });
 export type ZoomRequest = z.infer<typeof ZoomRequestSchema>;
 
-export const ZoomBlockSchema = z.object({
-	blockDef: z.looseObject({ type: z.string() }),
-	generatorCode: z.string(),
-	toolboxEntry: z.looseObject({ kind: z.string(), type: z.string() })
+/** Field kinds a zoom block may use. Everything else is rejected, see DECISIONS.md #10. */
+export const ZOOM_FIELD_TYPES = [
+	'field_number',
+	'field_input',
+	'field_dropdown',
+	'field_label'
+] as const;
+/** The field kinds a binding can make editable. */
+export const ZOOM_EDITABLE_FIELD_TYPES = ['field_number', 'field_input', 'field_dropdown'] as const;
+const ZOOM_INPUT_TYPES = [
+	'input_value',
+	'input_statement',
+	'input_dummy',
+	'input_end_row'
+] as const;
+const ARG_TYPES = [...ZOOM_INPUT_TYPES, ...ZOOM_FIELD_TYPES];
+
+// Block definition keys that run registered JavaScript or load URLs.
+const FORBIDDEN_BLOCK_KEYS = ['extensions', 'mutator', 'helpUrl'] as const;
+
+export const ZoomArgSchema = z
+	.looseObject({
+		type: z.enum(ARG_TYPES, { error: `arg type must be one of: ${ARG_TYPES.join(', ')}` }),
+		name: z.string().optional(),
+		options: z
+			.array(z.tuple([z.string(), z.string()]))
+			.min(1)
+			.optional()
+	})
+	.refine((arg) => arg.type !== 'field_dropdown' || arg.options !== undefined, {
+		message: 'field_dropdown needs "options": [["label", "VALUE"], ...]'
+	});
+export type ZoomArg = z.infer<typeof ZoomArgSchema>;
+
+export const ZoomBlockDefSchema = z
+	.looseObject({
+		type: z
+			.string()
+			.regex(/^zoom_[a-z0-9_]+$/, 'block types must start with zoom_ and use only a-z, 0-9 and _')
+	})
+	.superRefine((def, ctx) => {
+		for (const key of FORBIDDEN_BLOCK_KEYS) {
+			if (key in def)
+				ctx.addIssue({ code: 'custom', path: [key], message: `${key} is not allowed` });
+		}
+		for (const [key, value] of Object.entries(def)) {
+			if (!/^args\d+$/.test(key)) continue;
+			const args = z.array(ZoomArgSchema).safeParse(value);
+			for (const issue of args.error?.issues ?? []) {
+				ctx.addIssue({ code: 'custom', path: [key, ...issue.path], message: issue.message });
+			}
+		}
+	});
+export type ZoomBlockDef = z.infer<typeof ZoomBlockDefSchema>;
+
+export const ZoomFieldRefSchema = z.object({ block: z.string(), field: z.string() });
+export type ZoomFieldRef = z.infer<typeof ZoomFieldRefSchema>;
+
+/** Links a field on a zoomed block to the Detail field(s) it edits (DECISIONS.md #8). */
+export const ZoomBindingSchema = z.object({
+	block: z.string(),
+	field: z.string(),
+	detail: z.array(ZoomFieldRefSchema).min(1)
 });
-export type ZoomBlock = z.infer<typeof ZoomBlockSchema>;
+export type ZoomBinding = z.infer<typeof ZoomBindingSchema>;
 
 export const ZoomLevelSchema = z.object({
-	blocks: z.array(ZoomBlockSchema).min(1),
-	workspaceJson: z.looseObject({})
+	blockDefs: z.array(ZoomBlockDefSchema).min(1),
+	workspaceJson: z.looseObject({}),
+	bindings: z.array(ZoomBindingSchema).default([])
 });
 export type ZoomLevel = z.infer<typeof ZoomLevelSchema>;
 

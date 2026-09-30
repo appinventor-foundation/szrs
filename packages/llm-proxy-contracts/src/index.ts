@@ -12,13 +12,21 @@ export {
 export { ErrorEnvelopeSchema, type ErrorEnvelope } from './errors.js';
 
 export {
+	ZOOM_FIELD_TYPES,
+	ZOOM_EDITABLE_FIELD_TYPES,
 	ZoomRequestSchema,
-	ZoomBlockSchema,
+	ZoomArgSchema,
+	ZoomBlockDefSchema,
+	ZoomFieldRefSchema,
+	ZoomBindingSchema,
 	ZoomLevelSchema,
 	ZoomResponseSchema,
 	ZoomStreamEventSchema,
 	type ZoomRequest,
-	type ZoomBlock,
+	type ZoomArg,
+	type ZoomBlockDef,
+	type ZoomFieldRef,
+	type ZoomBinding,
 	type ZoomLevel,
 	type ZoomResponse,
 	type ZoomStreamEvent

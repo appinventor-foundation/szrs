@@ -6,10 +6,12 @@ import {
 } from '@szrs/llm-proxy-contracts';
 import { z } from 'zod';
 
+import { checkZoomResult } from './validate.js';
+
 export const MAX_ATTEMPTS = 3;
 export const MAX_TOKENS = 8192;
 
-export const ZOOM_SYSTEM_PROMPT = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (Detail level) and a slug, then produce two higher-level abstract representations as a single JSON object.
+export const ZOOM_SYSTEM_PROMPT = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (the Detail level) and a slug, and describe the same program at two higher levels of abstraction. Your output is only ever displayed: the program always runs from the Detail blocks, so you never write code.
 
 ## Output format
 
@@ -17,24 +19,18 @@ Respond with ONLY a valid JSON object — no prose, no markdown fences, no text 
 
 {
   "semantic": {
-    "blocks": [
-      {
-        "blockDef": { "type": "zoom_slug_op", "message0": "...", "args0": [...], "colour": 30, "tooltip": "..." },
-        "generatorCode": "forBlock[\\"zoom_slug_op\\"] = function(block, generator) { ... };",
-        "toolboxEntry": { "kind": "block", "type": "zoom_slug_op", "inputs": { ... } }
-      }
+    "blockDefs": [
+      { "type": "zoom_slug_op", "message0": "do something up to %1", "args0": [{ "type": "field_number", "name": "LIMIT", "value": 0 }], "colour": 30, "tooltip": "...", "previousStatement": null, "nextStatement": null }
     ],
-    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [...] }, "variables": [...] }
+    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [{ "type": "zoom_slug_op", "id": "s1", "x": 20, "y": 20 }] } },
+    "bindings": [
+      { "block": "s1", "field": "LIMIT", "detail": [{ "block": "<id of a Detail block>", "field": "NUM" }] }
+    ]
   },
   "concept": {
-    "blocks": [
-      {
-        "blockDef": { "type": "zoom_slug_concept", "message0": "...", "args0": [...], "colour": 30, "tooltip": "...", "previousStatement": null, "nextStatement": null },
-        "generatorCode": "forBlock[\\"zoom_slug_concept\\"] = function(block, generator) { ... };",
-        "toolboxEntry": { "kind": "block", "type": "zoom_slug_concept" }
-      }
-    ],
-    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [...] }, "variables": [] }
+    "blockDefs": [...],
+    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [...] } },
+    "bindings": [...]
   }
 }
 
@@ -49,31 +45,36 @@ Study the workspace JSON carefully:
 ## Level 2 (Semantic) rules
 
 - One zoom block per logical operation (hiding implementation detail)
-- Block names: zoom_<snake_slug>_<operation_in_snake_case>
+- Block types: zoom_<snake_slug>_<operation_in_snake_case>
   (convert slug hyphens to underscores: fizz-buzz-n → fizz_buzz_n)
 - Colour: 30 for all zoom blocks
-- Value blocks (output field): generator returns [expressionString, 1]  (1 = Order.FUNCTION_CALL)
-- Statement blocks (previousStatement/nextStatement): generator returns a code string ending with \\n
-- The workspace may keep structural Blockly primitives (controls_for, controls_if, add_text) where semantically meaningful
+- The workspace may keep structural Blockly primitives (controls_for, controls_if, text_print) where semantically meaningful
 
 ## Level 3 (Concept) rules
 
 - Usually ONE block for the entire program
-- Block name: zoom_<snake_slug>_concept
-- Expose only the most essential input(s)
-- Statement block; workspace uses ONLY this zoom block
-- Use an IIFE pattern in the generator: return '(function(N){ /* full program */ })(' + n + ');\\n';
+- Block type: zoom_<snake_slug>_concept
+- Expose only the most essential value(s) as fields
+- Statement block; the workspace uses ONLY zoom blocks
 
-## generatorCode rules
+## Block definition rules
 
-- Plain JavaScript — NO TypeScript type annotations
-- The string must contain: forBlock["zoom_name"] = function(block, generator) { ... };
-- Read inputs with: generator.valueToCode(block, 'NAME', 99)  (99 = Order.NONE)
-- Value block: return [expressionString, 1];
-- Statement block: return 'code;\\n';
-- Use document.getElementById("output") and document.createElement("pre") for DOM output
-- NEVER use provideFunction_ or addStatement
-- blockDef.type must match the forBlock["..."] key exactly
+- "type" must start with zoom_ and use only lowercase letters, digits and underscores
+- args may only use: field_number, field_input, field_dropdown (with "options": [["label", "VALUE"], ...]), field_label, input_value, input_statement, input_dummy, input_end_row
+- NEVER use extensions, mutator, helpUrl or field_image
+- Labels (message0, tooltip) describe what the block does, never current values: "repeat up to %1", not "repeat up to 10"
+- Every zoom_ block type used in a level's workspaceJson must be defined in that level's blockDefs
+- Give every block in workspaceJson a short unique "id" ("s1", "s2", … for semantic; "c1", … for concept)
+
+## Binding rules
+
+A binding makes a field on a zoom block edit a value in the Detail program. For each value a user would want to change (a limit, a message, a choice):
+- "block" and "field": the id of a zoom block in this level's workspaceJson, and the name of one of its field_number, field_input or field_dropdown args
+- "detail": the Detail block(s) holding that value. Copy each "id" exactly from the Detail workspace JSON, and use a field name from that block's "fields"
+- A number needs field_number, text needs field_input, and a dropdown value needs field_dropdown with that value among its options
+- Values live on the block that lists them in its own "fields". That is often a math_number or text block nested in another block's "inputs" (including "shadow" blocks), not the outer block: in a controls_repeat_ext, the count is the NUM field of the math_number inside its TIMES input
+- If one value appears in several Detail blocks, list them all in "detail"
+- Only bind values that exist in the Detail workspace; leave other fields unbound
 
 ## JSON encoding rules
 
@@ -110,9 +111,13 @@ export function buildZoomMessages(request: ZoomRequest, previousError?: string):
 }
 
 // Models often wrap JSON in fences or lead with prose despite being told not
-// to, so both are stripped before parsing. Throws with a message suitable for
-// feeding back to the model on retry.
-export function parseZoomResponse(text: string): ZoomResponse {
+// to, so both are stripped before parsing. The result is then checked against
+// the schema and against the Detail workspace it was made from. Throws with a
+// message suitable for feeding back to the model on retry.
+export function parseZoomResponse(
+	text: string,
+	detailWorkspace: Record<string, unknown>
+): ZoomResponse {
 	let cleaned = text.trim();
 	const fenceMatch = /```(?:json)?\s*\n([\s\S]*)\n\s*```/.exec(cleaned);
 	if (fenceMatch) cleaned = fenceMatch[1].trim();
@@ -122,6 +127,10 @@ export function parseZoomResponse(text: string): ZoomResponse {
 	const result = ZoomResponseSchema.safeParse(JSON.parse(cleaned));
 	if (!result.success) {
 		throw new Error(z.prettifyError(result.error));
+	}
+	const problems = checkZoomResult(result.data, detailWorkspace);
+	if (problems.length > 0) {
+		throw new Error(problems.join('\n'));
 	}
 	return result.data;
 }

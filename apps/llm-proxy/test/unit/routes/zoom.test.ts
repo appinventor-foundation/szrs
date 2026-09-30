@@ -17,14 +17,9 @@ afterEach(() => {
 });
 
 const level = (type: string) => ({
-	blocks: [
-		{
-			blockDef: { type },
-			generatorCode: `forBlock["${type}"] = function(block, generator) { return ''; };`,
-			toolboxEntry: { kind: 'block', type }
-		}
-	],
-	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } }
+	blockDefs: [{ type, message0: 'do it' }],
+	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } },
+	bindings: []
 });
 
 const validZoom = { semantic: level('zoom_x_op'), concept: level('zoom_x_concept') };
