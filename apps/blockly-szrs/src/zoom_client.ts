@@ -26,8 +26,13 @@ export interface ZoomTarget {
 	workspaceJson: Record<string, unknown>;
 }
 
-/** The non-final events: an attempt starting, or a chunk of model output. */
-export type ZoomProgressEvent = Extract<ZoomStreamEvent, { type: 'attempt' | 'token' }>;
+/**
+ * The non-final events: an attempt starting, a chunk of model output, or
+ * (just before the result) notice that the proxy had the result stored and
+ * didn't call a model.
+ */
+export type ZoomProgressEvent =
+	Extract<ZoomStreamEvent, { type: 'attempt' | 'token' }> | { type: 'cached' };
 
 export type ZoomErrorCode =
 	Extract<ZoomStreamEvent, { type: 'error' }>['code'] | 'request_failed' | 'incomplete_stream';
@@ -89,6 +94,7 @@ export async function requestZoom(
 			const event = JSON.parse(chunk.slice('data: '.length)) as ZoomStreamEvent;
 
 			if (event.type === 'done') {
+				if (event.cached) onProgress?.({ type: 'cached' });
 				await reader.cancel();
 				return event.result;
 			}

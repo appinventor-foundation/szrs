@@ -118,7 +118,12 @@ export const ZoomStreamEventSchema = z.discriminatedUnion('type', [
 		previousError: z.string().optional()
 	}),
 	z.object({ type: z.literal('token'), text: z.string() }),
-	z.object({ type: z.literal('done'), result: ZoomResponseSchema }),
+	z.object({
+		type: z.literal('done'),
+		result: ZoomResponseSchema,
+		/** Set when the proxy had this zoom stored, so no model was called. */
+		cached: z.boolean().optional()
+	}),
 	z.object({
 		type: z.literal('error'),
 		code: z.enum(['upstream_error', 'invalid_model_output', 'internal_error']),

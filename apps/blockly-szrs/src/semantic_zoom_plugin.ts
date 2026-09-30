@@ -187,7 +187,8 @@ export class SemanticZoomPlugin {
 	}
 }
 
-function describeZoom({ model, attempts, milliseconds }: ZoomInfo): string {
+function describeZoom({ model, attempts, milliseconds, cached }: ZoomInfo): string {
 	const seconds = Math.round(milliseconds / 1000);
+	if (cached) return `Loaded from the proxy's cache (${model}, ${seconds}s)`;
 	return `Zoomed with ${model} in ${seconds}s (${attempts} ${attempts === 1 ? 'attempt' : 'attempts'})`;
 }

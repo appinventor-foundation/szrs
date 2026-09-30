@@ -86,6 +86,27 @@ suite('requestZoom', function () {
 		});
 	});
 
+	test('reports a result the proxy had stored as cached, before resolving', async function () {
+		stubFetch(streamResponse(sse({ type: 'done', result, cached: true })));
+		const events = [];
+
+		const zoomed = await requestZoom(options, target, {
+			onProgress: (event) => events.push(event)
+		});
+
+		assert.deepStrictEqual(zoomed, result);
+		assert.deepStrictEqual(events, [{ type: 'cached' }]);
+	});
+
+	test('reports no cached event for a fresh result', async function () {
+		stubFetch(streamResponse(sse({ type: 'done', result })));
+		const events = [];
+
+		await requestZoom(options, target, { onProgress: (event) => events.push(event) });
+
+		assert.deepStrictEqual(events, []);
+	});
+
 	test('sends the API key only when one is configured', async function () {
 		stubFetch(streamResponse(sse({ type: 'done', result })));
 		await requestZoom(options, target);

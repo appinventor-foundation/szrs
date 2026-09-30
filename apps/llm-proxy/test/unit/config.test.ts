@@ -18,6 +18,20 @@ describe('loadConfig', () => {
 		expect(config.TRUST_PROXY).toBe(false);
 	});
 
+	it('has no cache unless CACHE_URL is set, and defaults its TTL to 14 days', () => {
+		const config = loadConfig({ LITELLM_VIRTUAL_KEY: 'test-key' });
+
+		expect(config.CACHE_URL).toBeUndefined();
+		expect(config.CACHE_TTL_SECONDS).toBe(14 * 24 * 60 * 60);
+		expect(config.CACHE_TIMEOUT_MS).toBe(500);
+		expect(
+			loadConfig({ LITELLM_VIRTUAL_KEY: 'test-key', CACHE_URL: '' }).CACHE_URL
+		).toBeUndefined();
+		expect(
+			loadConfig({ LITELLM_VIRTUAL_KEY: 'test-key', CACHE_URL: 'redis://localhost:6380' }).CACHE_URL
+		).toBe('redis://localhost:6380');
+	});
+
 	it('treats INTERNAL_API_KEY as optional, and empty as unset', () => {
 		expect(loadConfig({ LITELLM_VIRTUAL_KEY: 'test-key' }).INTERNAL_API_KEY).toBeUndefined();
 		expect(

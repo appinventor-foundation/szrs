@@ -7,12 +7,18 @@ import { loadConfig } from './config.js';
 import { loggerOptions } from './lib/logger.js';
 import authPlugin from './plugins/auth.js';
 import errorHandlerPlugin from './plugins/error-handler.js';
+import zoomCachePlugin from './plugins/zoom-cache.js';
 import chatRoutes from './routes/chat.js';
 import healthRoutes from './routes/health.js';
 import modelsRoutes from './routes/models.js';
 import zoomRoutes from './routes/zoom.js';
+import type { ZoomCache } from './zoom/cache.js';
 
-export function buildApp(env: NodeJS.ProcessEnv = process.env) {
+export function buildApp(
+	env: NodeJS.ProcessEnv = process.env,
+	// Replaces the cache CACHE_URL describes; null means none. For tests.
+	overrides: { zoomCache?: ZoomCache | null } = {}
+) {
 	const config = loadConfig(env);
 
 	const app = fastify({ logger: loggerOptions, trustProxy: config.TRUST_PROXY });
@@ -32,6 +38,7 @@ export function buildApp(env: NodeJS.ProcessEnv = process.env) {
 		timeWindow: config.RATE_LIMIT_WINDOW
 	});
 	void app.register(authPlugin);
+	void app.register(zoomCachePlugin, { cache: overrides.zoomCache });
 
 	void app.register(healthRoutes);
 	void app.register(chatRoutes);

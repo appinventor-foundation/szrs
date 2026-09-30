@@ -18,6 +18,8 @@ export interface ZoomInfo {
 	model: string;
 	attempts: number;
 	milliseconds: number;
+	/** The proxy already had this result, so no model was called. */
+	cached: boolean;
 }
 
 /**
@@ -55,16 +57,18 @@ export class ZoomSession {
 		const controller = new AbortController();
 		const started = Date.now();
 		let attempts = 1;
+		let cached = false;
 		const promise = this.request(target, {
 			onProgress: (event) => {
 				if (event.type === 'attempt') attempts = event.attempt;
+				if (event.type === 'cached') cached = true;
 				this.onProgress(event);
 			},
 			signal: controller.signal
 		}).then(
 			(result) => {
 				this.clearPending(promise);
-				const info = { model, attempts, milliseconds: Date.now() - started };
+				const info = { model, attempts, milliseconds: Date.now() - started, cached };
 				this.cached.set(model, { key: targetKey, result, info });
 				return result;
 			},

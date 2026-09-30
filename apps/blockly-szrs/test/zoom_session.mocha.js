@@ -183,6 +183,22 @@ suite('ZoomSession', function () {
 		assert.deepStrictEqual(session.info(), info);
 	});
 
+	test('records that the proxy served the zoom from its cache', async function () {
+		const fake = fakeRequester();
+		const session = new ZoomSession(fake.request, undefined, () => 'local-ollama');
+
+		const fresh = session.zoom(target('fresh'));
+		fake.calls[0].resolve(resultFor('fresh'));
+		await fresh;
+		assert.strictEqual(session.info().cached, false);
+
+		const stored = session.zoom(target('stored'));
+		fake.calls[1].init.onProgress({ type: 'cached' });
+		fake.calls[1].resolve(resultFor('stored'));
+		await stored;
+		assert.strictEqual(session.info().cached, true);
+	});
+
 	test('forwards progress events', async function () {
 		const fake = fakeRequester();
 		const progress = [];

@@ -9,6 +9,8 @@ import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 import type { Config } from '../config.js';
 import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
+import { lookupZoom, type ZoomCache } from '../zoom/cache.js';
+import { zoomCacheKey } from '../zoom/cache-key.js';
 import { normalizeWorkspace, restoreIds } from '../zoom/normalize.js';
 import { buildZoomMessages, MAX_ATTEMPTS, parseZoomResponse } from '../zoom/zoom.js';
 
@@ -18,6 +20,10 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 		// The model works on, and answers in, a canonical copy of the workspace.
 		const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
 		const canonical = { ...body, workspaceJson };
+
+		const key = zoomCacheKey(canonical);
+		const cached = await lookupZoom(fastify.zoomCache, key, workspaceJson, request.log);
+		if (cached) return restoreIds(cached, originalIds);
 
 		let lastError: string | undefined;
 
@@ -40,6 +46,8 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 					canonical.workspaceJson
 				);
 				if (repairs.length > 0) request.log.info({ attempt, repairs }, 'repaired zoom output');
+				// Stored in canonical ids, so anyone with the same program can use it.
+				void fastify.zoomCache?.set(key, zoom);
 				return restoreIds(zoom, originalIds);
 			} catch (error) {
 				lastError = errorMessage(error);
@@ -58,17 +66,28 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 		const body = ZoomRequestSchema.parse(request.body);
 
 		reply.type('text/event-stream').header('cache-control', 'no-cache');
-		return Readable.from(toSse(zoomEvents(fastify.config, body, request.log), request.log));
+		return Readable.from(
+			toSse(zoomEvents(fastify.config, fastify.zoomCache, body, request.log), request.log)
+		);
 	});
 }
 
 async function* zoomEvents(
 	config: Config,
+	cache: ZoomCache | null,
 	body: ZoomRequest,
 	log: FastifyBaseLogger
 ): AsyncGenerator<ZoomStreamEvent> {
 	const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
 	const canonical = { ...body, workspaceJson };
+
+	const key = zoomCacheKey(canonical);
+	const cached = await lookupZoom(cache, key, workspaceJson, log);
+	if (cached) {
+		yield { type: 'done', result: restoreIds(cached, originalIds), cached: true };
+		return;
+	}
+
 	let lastError: string | undefined;
 
 	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -98,6 +117,7 @@ async function* zoomEvents(
 		try {
 			const { result: zoom, repairs } = parseZoomResponse(text, canonical.workspaceJson);
 			if (repairs.length > 0) log.info({ attempt, repairs }, 'repaired zoom output');
+			void cache?.set(key, zoom);
 			yield { type: 'done', result: restoreIds(zoom, originalIds) };
 			return;
 		} catch (error) {
