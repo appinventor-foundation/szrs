@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest';
 
 import { normalizeWorkspace, restoreIds } from '../../../src/zoom/normalize.js';
 
+/** A saved block, as loosely as these tests need: each program only has the parts it uses. */
+interface TestBlock {
+	id: string;
+	type: string;
+	fields: Record<string, unknown>;
+	inputs: Record<string, { block: TestBlock; shadow: TestBlock }>;
+	next: { block: TestBlock };
+}
+
 const workspace = (blocks: unknown[], extra: Record<string, unknown> = {}) => ({
 	blocks: { languageVersion: 0, blocks },
 	...extra
@@ -36,7 +45,7 @@ describe('normalizeWorkspace', () => {
 			program(['r', 'times', 'print', 'msg', 'after'])
 		);
 
-		const repeat = (workspaceJson.blocks as { blocks: Record<string, any>[] }).blocks[0];
+		const repeat = (workspaceJson.blocks as { blocks: TestBlock[] }).blocks[0];
 		expect(repeat.id).toBe('b1');
 		// DO sorts before TIMES.
 		expect(repeat.inputs.DO.block.id).toBe('b2');
@@ -56,7 +65,7 @@ describe('normalizeWorkspace', () => {
 		const a = normalizeWorkspace(program(['r', 'times', 'print', 'msg', 'after'], 10, 20));
 		const b = normalizeWorkspace(program(['Xq1', 'k9', 'Zz', 'p0', 'T5'], 400, -75));
 		const reordered = program(['r', 'times', 'print', 'msg', 'after']);
-		const repeat = (reordered.blocks.blocks as Record<string, any>[])[0];
+		const repeat = (reordered.blocks.blocks as TestBlock[])[0];
 		repeat.inputs = { DO: repeat.inputs.DO, TIMES: repeat.inputs.TIMES };
 
 		expect(JSON.stringify(b.workspaceJson)).toBe(JSON.stringify(a.workspaceJson));
@@ -68,7 +77,7 @@ describe('normalizeWorkspace', () => {
 	it('gives different programs different results', () => {
 		const a = normalizeWorkspace(program(['r', 't', 'p', 'm', 'a']));
 		const changed = program(['r', 't', 'p', 'm', 'a']);
-		(changed.blocks.blocks as Record<string, any>[])[0].inputs.TIMES.shadow.fields.NUM = 6;
+		(changed.blocks.blocks as TestBlock[])[0].inputs.TIMES.shadow.fields.NUM = 6;
 
 		expect(JSON.stringify(normalizeWorkspace(changed).workspaceJson)).not.toBe(
 			JSON.stringify(a.workspaceJson)
@@ -83,7 +92,7 @@ describe('normalizeWorkspace', () => {
 		);
 
 		expect(workspaceJson.variables).toEqual([{ name: 'count', id: 'v1' }]);
-		const block = (workspaceJson.blocks as { blocks: Record<string, any>[] }).blocks[0];
+		const block = (workspaceJson.blocks as { blocks: TestBlock[] }).blocks[0];
 		expect(block.fields.VAR).toEqual({ id: 'v1' });
 	});
 
@@ -92,7 +101,7 @@ describe('normalizeWorkspace', () => {
 			workspace([{ type: 'text_print' }, { type: 'text_print', id: 'kept' }])
 		);
 
-		const blocks = (workspaceJson.blocks as { blocks: Record<string, any>[] }).blocks;
+		const blocks = (workspaceJson.blocks as { blocks: TestBlock[] }).blocks;
 		expect(blocks[0]).toEqual({ type: 'text_print' });
 		expect(blocks[1].id).toBe('b1');
 		expect(Object.fromEntries(originalIds)).toEqual({ b1: 'kept' });
