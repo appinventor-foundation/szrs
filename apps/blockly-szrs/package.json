@@ -40,13 +40,16 @@
     "src"
   ],
   "devDependencies": {
-    "blockly": "^13.3.0",
     "@blockly/dev-scripts": "^13.3.0",
     "@blockly/dev-tools": "^13.3.0",
+    "blockly": "^13.3.0",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "blockly": "^13.3.0"
   },
-  "publishConfig": {}
+  "publishConfig": {},
+  "dependencies": {
+    "@szrs/llm-proxy-contracts": "workspace:*"
+  }
 }

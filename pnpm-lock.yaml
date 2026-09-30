@@ -204,6 +204,10 @@ importers:
         version: 2.11.4
 
   apps/blockly-szrs:
+    dependencies:
+      '@szrs/llm-proxy-contracts':
+        specifier: workspace:*
+        version: link:../../packages/llm-proxy-contracts
     devDependencies:
       '@blockly/dev-scripts':
         specifier: ^13.3.0
