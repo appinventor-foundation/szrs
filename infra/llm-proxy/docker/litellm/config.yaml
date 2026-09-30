@@ -1,14 +1,14 @@
 model_list:
   - model_name: local-ollama
     litellm_params:
-      model: ollama/llama3.1
-      api_base: http://host.docker.internal:11434
+      model: os.environ/OLLAMA_MODEL
+      api_base: os.environ/OLLAMA_API_BASE
 
   - model_name: local-lmstudio
     litellm_params:
       model: openai/local-model
-      api_base: http://host.docker.internal:1234/v1
-      api_key: not-needed
+      api_base: os.environ/LMSTUDIO_API_BASE
+      api_key: os.environ/LMSTUDIO_API_KEY
 
   - model_name: gpt-4o-mini
     litellm_params:
