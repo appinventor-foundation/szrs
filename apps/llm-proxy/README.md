@@ -67,6 +67,9 @@ The Blockly plugin and this proxy ship as a pair. Every site that uses the plugi
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW` | `60` / `1 minute` | Requests per client IP. A whole classroom can share one IP, so don't set this too low. `/healthz` and `/readyz` are never limited.            |
 | `TRUST_PROXY`                          | `false`           | Set to `true` behind a reverse proxy or load balancer. Otherwise every user appears to have the proxy's IP and they all share one rate limit. |
 | `INTERNAL_API_KEY`                     | unset             | When set, every request except health checks must send it as `x-internal-api-key`.                                                            |
+| `CACHE_URL`                            | unset             | Redis or Valkey address, to reuse finished zooms across users (see "Sharing zooms between users"). Unset means no cache.                      |
+| `CACHE_TTL_SECONDS`                    | `1209600` (14 d)  | How long a stored zoom is reused.                                                                                                             |
+| `CACHE_TIMEOUT_MS`                     | `500`             | A cache that answers slower than this counts as a miss, so it can't delay a zoom.                                                             |
 
 **A key sent from the browser is not a secret.** If the plugin sends `INTERNAL_API_KEY`, anyone using the site can read it in devtools. It only identifies the caller; it doesn't authenticate anyone. That's why it's optional. It's useful for server-to-server callers, and a site with user logins can put its own auth in front of the proxy instead.
 
@@ -121,14 +124,47 @@ curl -N -X POST http://localhost:3000/v1/zoom/stream \
 
 Each event is a `data: {json}` line; parse them with `ZoomStreamEventSchema` from `@szrs/llm-proxy-contracts`:
 
-| Event                                                       | When                                                                                    |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `{ type: 'attempt', attempt, maxAttempts, previousError? }` | Before each attempt; `previousError` explains why the last one failed                   |
-| `{ type: 'token', text }`                                   | Each chunk of model output as it arrives                                                |
-| `{ type: 'done', result: { semantic, concept } }`           | Final, validated output                                                                 |
-| `{ type: 'error', code, message, status? }`                 | `upstream_error` (with LiteLLM's `status`), `invalid_model_output`, or `internal_error` |
+| Event                                                       | When                                                                                     |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `{ type: 'attempt', attempt, maxAttempts, previousError? }` | Before each attempt; `previousError` explains why the last one failed                    |
+| `{ type: 'token', text }`                                   | Each chunk of model output as it arrives                                                 |
+| `{ type: 'done', result: { semantic, concept }, cached? }`  | Final, validated output. `cached: true` when the proxy had it stored and called no model |
+| `{ type: 'error', code, message, status? }`                 | `upstream_error` (with LiteLLM's `status`), `invalid_model_output`, or `internal_error`  |
 
 An invalid request body still gets a plain `400`. Once streaming has started the HTTP status is already `200`, so every later failure — including a LiteLLM `429` — arrives as an `error` event instead.
+
+### Sharing zooms between users
+
+A zoom costs a model call, which is slow and, with provider models, costs money. The proxy avoids repeating one in two ways.
+
+**A stored result is reused.** Set `CACHE_URL` to a Redis or Valkey instance, and the proxy keeps each validated zoom for `CACHE_TTL_SECONDS`. A request for the same program from anyone is then answered from the store: the stream sends a single `done` event with `cached: true`, and no model is called. "The same program" means the same model alias, slug and blocks. Blockly gives every block a random id and saves its position, so the proxy first rewrites the workspace into a canonical form (blocks numbered `b1`, `b2`, …, positions dropped) and asks the model about that. The ids in the bindings are translated back to each caller's own before the reply. Field values are part of the key, so a program that differs in one number is a separate entry.
+
+**Simultaneous requests share one call.** On `/v1/zoom/stream`, requests for the same program that arrive while a zoom is running join it and get the same events. A class zooming one template at the same moment costs one model call. This needs no cache. If everyone listening disconnects, the zoom stops and the upstream request is cancelled. (`/v1/zoom` uses the cache, but doesn't join running zooms.)
+
+To run the cache locally, use the `zoom-cache` service in `infra/llm-proxy`. It is in a Compose profile, so the default stack is unchanged:
+
+```bash
+cd ../../infra/llm-proxy
+# set ZOOM_CACHE_AUTH in .env (see .env.example), then either
+docker compose --profile cache up -d zoom-cache
+# or put COMPOSE_PROFILES=cache in .env so a plain `docker compose up -d` includes it.
+
+# then, in apps/llm-proxy/.env.local:
+# CACHE_URL=redis://:<ZOOM_CACHE_AUTH>@localhost:6380
+```
+
+The cache is only an optimisation. If Redis is down, slow or holds a bad entry, the proxy zooms as if it had no entry and logs a warning. Things to know:
+
+- **It holds user data.** Entries contain the model's output, which includes text taken from users' programs (for example a message in a print block). Give the cache a password and don't expose it publicly. The compose service publishes port `6380` on all interfaces, so keep it behind a firewall, or bind it to loopback, anywhere other than a dev machine.
+- **Old results outlive a change of model.** The key has the model alias, not the model behind it. If you point an alias at a different model, old results are reused until they expire. To clear them, flush the cache (the instance is dedicated to it, so this is safe):
+
+  ```bash
+  set -a && source .env && set +a
+  docker compose exec zoom-cache redis-cli -a "$ZOOM_CACHE_AUTH" --no-auth-warning flushdb
+  ```
+
+- **A new prompt starts a fresh set** automatically, since the key includes a hash of the system prompt. A change to the repair or validation rules doesn't: bump `KEY_VERSION` in `src/zoom/cache-key.ts`.
+- **Joining running zooms works within one proxy process.** Several proxy instances behind a load balancer each make their own call for the first request.
 
 ## Tests
 
@@ -136,7 +172,7 @@ An invalid request body still gets a plain `400`. Once streaming has started the
 pnpm test:unit
 ```
 
-One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`, `test/unit/routes/zoom.test.ts` and `test/unit/lib/litellm.test.ts`. `test/unit/app.test.ts` covers the deployment settings (auth, CORS, rate limiting), building the app with its own env for each case.
+One tier — no DB, no network, nothing external to spin up. This service owns no database and no provider logic of its own, so there's nothing left that would need real infrastructure to test; the upstream LiteLLM call is mocked (`vi.stubGlobal('fetch', ...)`) in `test/unit/routes/chat.test.ts`, `test/unit/routes/zoom.test.ts` and `test/unit/lib/litellm.test.ts`. Caching and joining running zooms are tested with an in-memory cache and hand-driven generators (`test/unit/routes/zoom-cache.test.ts`, `test/unit/routes/zoom-flights.test.ts`, `test/unit/zoom/flights.test.ts`); the Redis client itself is tested against a fake, so no Redis is needed. `test/unit/app.test.ts` covers the deployment settings (auth, CORS, rate limiting), building the app with its own env for each case.
 
 ## Viewing traces
 
@@ -152,5 +188,8 @@ Two independent destinations, covering different things — this is intentional,
 - **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter. Registration order matters for `@fastify/cors` → `@fastify/rate-limit` → `plugins/auth.ts`: CORS has to answer browser preflights (which never carry the API key) before auth can reject them, and rate limiting counts rejected requests too. `test/unit/app.test.ts` fails if the order is wrong.
 - **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request (via `src/lib/litellm.ts`, shared by all routes), and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
 - **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`. `/v1/zoom/stream` runs the same loop over LiteLLM's streaming API (`chatCompletionStream` in `src/lib/litellm.ts`) and sends each step as an SSE event; if the client disconnects, the stream stops and the upstream LiteLLM request is cancelled.
+- **`src/zoom/normalize.ts`** rewrites the Detail workspace into a canonical form (blocks `b1`, `b2`, …, variables `v1`, `v2`, …, no positions) before prompting, and `restoreIds` maps the binding ids in a result back to the caller's own. The model, the repair step and the validation all work in canonical ids, so a result can be shared between users. Only ids of blocks that had one are numbered, so a block can be bound exactly when it could be before.
+- **`src/zoom/cache.ts`, `cache-key.ts` and `plugins/zoom-cache.ts`** are the optional cache. The `redis` client is loaded only when `CACHE_URL` is set. Reads and writes never reject: an error, a timeout or an entry that fails the usual checks is a miss. `zoomCacheKey` hashes the model, slug, prompt and canonical workspace with sorted keys, so key order doesn't matter.
+- **`src/zoom/flights.ts`** lets streaming requests for the same key share one run. Subscribers are counted when they join, the run stops when the last one leaves, and it stays registered until its result has been stored, so a request arriving just after `done` joins it instead of starting another call.
 - **`src/routes/health.ts`**'s `/readyz` checks LiteLLM's `/health/liveliness` endpoint — any HTTP response counts as "reachable" (even a 401), only a network-level failure means not-ready, since readiness shouldn't depend on `LITELLM_VIRTUAL_KEY` being valid.
 - **No database and no provider abstraction.** LiteLLM model aliases (`model_name` in `infra/llm-proxy/docker/litellm/config.yaml`) are the providers. Callers pass an alias as `model`, and LiteLLM handles the vendor API, fallbacks and which models the virtual key may use. There are no usage-reporting endpoints either: LiteLLM's own spend tracking (`/spend/logs`, per virtual key) covers that, and `apps/dashboard` would query LiteLLM directly for it rather than going through here.

@@ -53,6 +53,8 @@ The plugin needs a running [llm-proxy](../llm-proxy/README.md). Each site that u
 
 On `init()` the plugin asks the proxy for its model aliases (`GET /v1/models`, which LiteLLM limits to the models the proxy's virtual key may use). When there is more than one, a dropdown appears below the zoom controls. `proxy.model` is the default: it is used until the list arrives, and whenever the user's remembered choice is no longer offered. The user's choice is kept in `localStorage` (key `szrs.zoomModel`), and zoom results are cached per model, so switching back to a model doesn't ask the proxy again. If the list can't be fetched, there is no dropdown and zooms use `proxy.model`.
 
+The tooltip on the level label shows how the last zoom went (the model, how long it took and how many attempts), or that the proxy answered from its cache because someone had already zoomed the same program with that model.
+
 ## API
 
 <!--

@@ -119,6 +119,23 @@ services:
       timeout: 5s
       retries: 5
 
+  zoom-cache:
+    image: redis:7-alpine
+    profiles: ['cache'] # opt in: docker compose --profile cache up -d (or COMPOSE_PROFILES=cache in .env)
+    # A cache, not a store: when it is full, the least recently used zooms go.
+    # Separate from the redis above, which is Langfuse's. The :- defaults keep
+    # Compose quiet for anyone who doesn't use the cache and hasn't set the password.
+    command: --requirepass ${ZOOM_CACHE_AUTH:-} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6380:6379' # so a proxy run with `pnpm dev` on the host can reach it
+    volumes:
+      - llm-proxy-zoom-cache-data:/data # cached zooms survive a restart: each one saves tokens
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${ZOOM_CACHE_AUTH:-}', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   langfuse-web:
     image: langfuse/langfuse:4.37.0
     # eval_infra binds this to an unscoped host port 3000, which collides
@@ -227,3 +244,4 @@ volumes:
   llm-proxy-clickhouse-logs:
   llm-proxy-minio-data:
   llm-proxy-redis-data:
+  llm-proxy-zoom-cache-data:
