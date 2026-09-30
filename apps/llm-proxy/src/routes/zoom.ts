@@ -24,6 +24,10 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 				maxTokens: MAX_TOKENS
 			});
 			if (!result.ok) {
+				request.log.warn(
+					{ attempt, status: result.status, body: result.body },
+					'LiteLLM request failed'
+				);
 				return reply.code(result.status).send(result.body);
 			}
 
@@ -66,6 +70,7 @@ async function* zoomEvents(
 			maxTokens: MAX_TOKENS
 		});
 		if (!result.ok) {
+			log.warn({ attempt, status: result.status, body: result.body }, 'LiteLLM request failed');
 			yield {
 				type: 'error',
 				code: 'upstream_error',
