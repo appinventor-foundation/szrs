@@ -6,6 +6,8 @@
     "audit-fix": "blockly-scripts auditFix",
     "build": "blockly-scripts build",
     "clean": "blockly-scripts clean",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "predeploy": "blockly-scripts predeploy",
     "start": "blockly-scripts start",
     "test": "blockly-scripts test",
@@ -42,7 +44,9 @@
   "devDependencies": {
     "@blockly/dev-scripts": "^13.3.0",
     "@blockly/dev-tools": "^13.3.0",
+    "@szrs/eslint-config": "workspace:*",
     "blockly": "^13.3.0",
+    "eslint": "10.8.1",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {

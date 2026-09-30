@@ -215,9 +215,15 @@ importers:
       '@blockly/dev-tools':
         specifier: ^13.3.0
         version: 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      '@szrs/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
       blockly:
         specifier: ^13.3.0
         version: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      eslint:
+        specifier: 10.8.1
+        version: 10.8.1(supports-color@8.1.1)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
