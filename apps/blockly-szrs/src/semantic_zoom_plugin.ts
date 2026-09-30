@@ -17,7 +17,7 @@ import {
 	type ZoomClientOptions,
 	type ZoomProgressEvent
 } from './zoom_client';
-import { ZoomSession } from './zoom_session';
+import { ZoomSession, type ZoomInfo } from './zoom_session';
 import { ZoomView } from './zoom_view';
 
 export interface SemanticZoomOptions {
@@ -121,6 +121,7 @@ export class SemanticZoomPlugin {
 			this.zoomView.hide();
 			this.detailSnapshot = null;
 			this.zoomControls.setStatus(null);
+			this.zoomControls.setInfo(null);
 			return;
 		}
 		if (!this.detailSnapshot) {
@@ -160,6 +161,8 @@ export class SemanticZoomPlugin {
 			return;
 		}
 		this.zoomControls.setStatus(null);
+		const info = this.zoomSession.info();
+		this.zoomControls.setInfo(info && describeZoom(info));
 	}
 
 	private handleDetailEdited = (): void => {
@@ -182,4 +185,9 @@ export class SemanticZoomPlugin {
 		this.zoomControls.showLevel('detail');
 		this.zoomControls.setStatus(status, { error: true, title: details });
 	}
+}
+
+function describeZoom({ model, attempts, milliseconds }: ZoomInfo): string {
+	const seconds = Math.round(milliseconds / 1000);
+	return `Zoomed with ${model} in ${seconds}s (${attempts} ${attempts === 1 ? 'attempt' : 'attempts'})`;
 }

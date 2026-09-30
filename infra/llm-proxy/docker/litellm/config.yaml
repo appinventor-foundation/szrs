@@ -1,29 +1,38 @@
+# The proxy doesn't send max_tokens with zoom requests, so each model's output
+# limit comes from its max_tokens here (a request-level value would override
+# it). Set it on every alias, so the limit is explicit and not left to whatever
+# default the provider applies.
 model_list:
   - model_name: local-ollama
     litellm_params:
       model: os.environ/OLLAMA_MODEL
       api_base: os.environ/OLLAMA_API_BASE
+      max_tokens: 8192
 
   - model_name: local-lmstudio
     litellm_params:
       model: openai/local-model
       api_base: os.environ/LMSTUDIO_API_BASE
       api_key: os.environ/LMSTUDIO_API_KEY
+      max_tokens: 8192
 
   - model_name: openrouter
     litellm_params:
       model: os.environ/OPENROUTER_MODEL
       api_key: os.environ/OPENROUTER_API_KEY
+      max_tokens: 8192
 
   - model_name: gpt-4o-mini
     litellm_params:
       model: gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
+      max_tokens: 8192
 
   - model_name: claude-3-5-sonnet
     litellm_params:
       model: claude-3-5-sonnet-20241022
       api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 8192
 
   # Uncomment once AWS Bedrock credentials are available:
   # - model_name: bedrock-claude
@@ -32,6 +41,7 @@ model_list:
   #     aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
   #     aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
   #     aws_region_name: os.environ/AWS_REGION_NAME
+  #     max_tokens: 8192
 
 litellm_settings:
   success_callback: ['langfuse']

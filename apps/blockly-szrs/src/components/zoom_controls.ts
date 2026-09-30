@@ -186,6 +186,16 @@ export class ZoomControls implements Blockly.IPositionable {
 		this.zoomLevelWidget?.setStatus(text, options);
 	}
 
+	/**
+	 * Sets a tooltip on the level label, or clears it when `text` is null.
+	 * Does nothing before init().
+	 *
+	 * @param text The tooltip text, or null.
+	 */
+	setInfo(text: string | null): void {
+		this.zoomLevelWidget?.setInfo(text);
+	}
+
 	dispose() {
 		if (this.themeChangeListener) {
 			this.ws.removeChangeListener(this.themeChangeListener);

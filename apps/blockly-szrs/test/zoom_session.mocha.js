@@ -160,6 +160,29 @@ suite('ZoomSession', function () {
 		assert.strictEqual(fake.calls.length, 2);
 	});
 
+	test('records the model and attempts of each zoom', async function () {
+		const fake = fakeRequester();
+		let model = 'local-ollama';
+		const session = new ZoomSession(fake.request, undefined, () => model);
+		assert.strictEqual(session.info(), null);
+
+		const first = session.zoom(target());
+		fake.calls[0].init.onProgress({ type: 'attempt', attempt: 1, maxAttempts: 3 });
+		fake.calls[0].init.onProgress({ type: 'attempt', attempt: 2, maxAttempts: 3 });
+		fake.calls[0].resolve(resultFor('ollama'));
+		await first;
+
+		const info = session.info();
+		assert.strictEqual(info.model, 'local-ollama');
+		assert.strictEqual(info.attempts, 2);
+		assert.strictEqual(typeof info.milliseconds, 'number');
+
+		model = 'gpt-4o-mini';
+		assert.strictEqual(session.info(), null);
+		model = 'local-ollama';
+		assert.deepStrictEqual(session.info(), info);
+	});
+
 	test('forwards progress events', async function () {
 		const fake = fakeRequester();
 		const progress = [];

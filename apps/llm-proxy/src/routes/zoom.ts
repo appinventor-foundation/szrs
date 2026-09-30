@@ -9,7 +9,7 @@ import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 import type { Config } from '../config.js';
 import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
-import { buildZoomMessages, MAX_ATTEMPTS, MAX_TOKENS, parseZoomResponse } from '../zoom/zoom.js';
+import { buildZoomMessages, MAX_ATTEMPTS, parseZoomResponse } from '../zoom/zoom.js';
 
 export default async function zoomRoutes(fastify: FastifyInstance): Promise<void> {
 	fastify.post('/v1/zoom', async (request, reply) => {
@@ -20,8 +20,7 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			const result = await chatCompletion(fastify.config, {
 				model: body.model,
-				messages: buildZoomMessages(body, lastError),
-				maxTokens: MAX_TOKENS
+				messages: buildZoomMessages(body, lastError)
 			});
 			if (!result.ok) {
 				request.log.warn(
@@ -71,8 +70,7 @@ async function* zoomEvents(
 
 		const result = await chatCompletionStream(config, {
 			model: body.model,
-			messages: buildZoomMessages(body, lastError),
-			maxTokens: MAX_TOKENS
+			messages: buildZoomMessages(body, lastError)
 		});
 		if (!result.ok) {
 			log.warn({ attempt, status: result.status, body: result.body }, 'LiteLLM request failed');

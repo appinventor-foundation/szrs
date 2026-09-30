@@ -10,7 +10,6 @@ import { repairZoomResult } from './repair.js';
 import { checkZoomResult } from './validate.js';
 
 export const MAX_ATTEMPTS = 3;
-export const MAX_TOKENS = 8192;
 
 export const ZOOM_SYSTEM_PROMPT = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (the Detail level) and a slug, and describe the same program at two higher levels of abstraction. Your output is only ever displayed: the program always runs from the Detail blocks, so you never write code.
 

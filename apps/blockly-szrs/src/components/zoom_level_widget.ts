@@ -34,6 +34,7 @@ export class ZoomLevelWidget {
 	private readonly activeLabelEl: HTMLElement;
 	private activeLevel: ZoomLevel = 'detail';
 	private status: { text: string; error: boolean; title: string } | null = null;
+	private info: string | null = null;
 	private readonly onLevelChange?: (level: ZoomLevel) => void;
 
 	/**
@@ -115,6 +116,18 @@ export class ZoomLevelWidget {
 	}
 
 	/**
+	 * Sets a tooltip on the level label, e.g. how the last zoom went, or
+	 * clears it when `text` is null. A status message's own tooltip takes
+	 * precedence while one is shown.
+	 *
+	 * @param text The tooltip text, or null.
+	 */
+	setInfo(text: string | null): void {
+		this.info = text;
+		this.update();
+	}
+
+	/**
 	 * Returns the currently active level.
 	 *
 	 * @returns The active level.
@@ -131,7 +144,7 @@ export class ZoomLevelWidget {
 			);
 		}
 		this.activeLabelEl.textContent = this.status?.text ?? LABELS[this.activeLevel];
-		this.activeLabelEl.title = this.status?.title ?? '';
+		this.activeLabelEl.title = this.status ? this.status.title : (this.info ?? '');
 		this.activeLabelEl.classList.toggle(
 			'zoom-slider__active-label--error',
 			this.status?.error ?? false

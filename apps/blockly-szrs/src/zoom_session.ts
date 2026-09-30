@@ -13,6 +13,13 @@ export type ZoomRequester = (
 	init: { onProgress: (event: ZoomProgressEvent) => void; signal: AbortSignal }
 ) => Promise<ZoomResponse>;
 
+/** How a zoom went: which model made it, how long it took and how many attempts. */
+export interface ZoomInfo {
+	model: string;
+	attempts: number;
+	milliseconds: number;
+}
+
 /**
  * Keeps each model's result for the last workspace it zoomed, so switching
  * levels (or models) back and forth doesn't call the proxy again, and makes
@@ -20,7 +27,10 @@ export type ZoomRequester = (
  * joins it, asking for a different one aborts it.
  */
 export class ZoomSession {
-	private readonly cached = new Map<string, { key: string; result: ZoomResponse }>();
+	private readonly cached = new Map<
+		string,
+		{ key: string; result: ZoomResponse; info: ZoomInfo }
+	>();
 	private pending: {
 		key: string;
 		controller: AbortController;
@@ -43,13 +53,19 @@ export class ZoomSession {
 
 		this.cancel();
 		const controller = new AbortController();
+		const started = Date.now();
+		let attempts = 1;
 		const promise = this.request(target, {
-			onProgress: this.onProgress,
+			onProgress: (event) => {
+				if (event.type === 'attempt') attempts = event.attempt;
+				this.onProgress(event);
+			},
 			signal: controller.signal
 		}).then(
 			(result) => {
 				this.clearPending(promise);
-				this.cached.set(model, { key: targetKey, result });
+				const info = { model, attempts, milliseconds: Date.now() - started };
+				this.cached.set(model, { key: targetKey, result, info });
 				return result;
 			},
 			(error: unknown) => {
@@ -59,6 +75,11 @@ export class ZoomSession {
 		);
 		this.pending = { key, controller, promise };
 		return promise;
+	}
+
+	/** How the selected model's cached zoom went, or null if it has none. */
+	info(): ZoomInfo | null {
+		return this.cached.get(this.getModel())?.info ?? null;
 	}
 
 	/** Makes the cached result also apply to `target`, e.g. after an edit that only changed bound values. */
