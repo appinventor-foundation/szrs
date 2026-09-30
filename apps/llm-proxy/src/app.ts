@@ -9,6 +9,7 @@ import authPlugin from './plugins/auth.js';
 import errorHandlerPlugin from './plugins/error-handler.js';
 import chatRoutes from './routes/chat.js';
 import healthRoutes from './routes/health.js';
+import modelsRoutes from './routes/models.js';
 import zoomRoutes from './routes/zoom.js';
 
 export function buildApp(env: NodeJS.ProcessEnv = process.env) {
@@ -35,6 +36,7 @@ export function buildApp(env: NodeJS.ProcessEnv = process.env) {
 	void app.register(healthRoutes);
 	void app.register(chatRoutes);
 	void app.register(zoomRoutes);
+	void app.register(modelsRoutes);
 
 	return { app, config };
 }

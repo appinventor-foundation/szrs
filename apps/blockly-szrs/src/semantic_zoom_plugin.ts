@@ -7,9 +7,16 @@
  * @fileoverview Plugin overview.
  */
 import * as Blockly from 'blockly/core';
+import { ModelSelect } from './components/model_select';
 import { ZoomControls } from './components/zoom_controls';
 import type { ZoomLevel } from './components/zoom_level_widget';
-import { requestZoom, type ZoomClientOptions, type ZoomProgressEvent } from './zoom_client';
+import { ModelStore } from './model_store';
+import {
+	fetchModels,
+	requestZoom,
+	type ZoomClientOptions,
+	type ZoomProgressEvent
+} from './zoom_client';
 import { ZoomSession } from './zoom_session';
 import { ZoomView } from './zoom_view';
 
@@ -26,6 +33,11 @@ export interface SemanticZoomOptions {
 	 * float over the workspace and position themselves.
 	 */
 	zoomControlsContainer?: HTMLElement;
+	/**
+	 * Optional host element for the model dropdown. When omitted, the
+	 * dropdown floats over the workspace below the zoom controls.
+	 */
+	modelSelectContainer?: HTMLElement;
 }
 
 // TODO: Rename plugin and edit plugin description.
@@ -36,9 +48,14 @@ export class SemanticZoomPlugin {
 	/** The workspace. */
 	protected workspace: Blockly.WorkspaceSvg;
 	protected zoomControls: ZoomControls;
+	protected modelSelect: ModelSelect;
+	protected modelStore: ModelStore;
 	protected zoomSession: ZoomSession;
 	protected zoomView: ZoomView;
 	private readonly getSlug: () => string;
+	private readonly proxy: ZoomClientOptions;
+	/** Cancels the model list request when the plugin is disposed. */
+	private readonly modelsController = new AbortController();
 	private level: ZoomLevel = 'detail';
 	/** The slug the current zoom was requested with. */
 	private zoomedSlug = '';
@@ -56,14 +73,19 @@ export class SemanticZoomPlugin {
 	constructor(workspace: Blockly.WorkspaceSvg, options: SemanticZoomOptions) {
 		this.workspace = workspace;
 		this.getSlug = options.getSlug;
+		this.proxy = options.proxy;
+		this.modelStore = new ModelStore(options.proxy.model);
 		this.zoomControls = new ZoomControls(
 			workspace,
 			this.handleLevelChange,
 			options.zoomControlsContainer
 		);
+		this.modelSelect = new ModelSelect(workspace, this.modelStore, options.modelSelectContainer);
 		this.zoomSession = new ZoomSession(
-			(target, init) => requestZoom(options.proxy, target, init),
-			this.handleProgress
+			(target, init) =>
+				requestZoom({ ...options.proxy, model: this.modelStore.current }, target, init),
+			this.handleProgress,
+			() => this.modelStore.current
 		);
 		this.zoomView = new ZoomView(workspace, this.handleDetailEdited);
 	}
@@ -73,11 +95,22 @@ export class SemanticZoomPlugin {
 	 */
 	init(): void {
 		this.zoomControls.init();
+		this.modelSelect.init();
+		void fetchModels(this.proxy, this.modelsController.signal).then(
+			(models) => this.modelStore.setModels(models),
+			(error: unknown) => {
+				if ((error as { name?: unknown } | null)?.name === 'AbortError') return;
+				// Zooming still works with the configured model; there is just nothing to choose from.
+				console.warn('Could not load the model list:', error);
+			}
+		);
 	}
 
 	dispose(): void {
+		this.modelsController.abort();
 		this.zoomSession.cancel();
 		this.zoomView.dispose();
+		this.modelSelect.dispose();
 		this.zoomControls.dispose();
 	}
 

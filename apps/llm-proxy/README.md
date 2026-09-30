@@ -88,6 +88,9 @@ curl -X POST http://localhost:3000/v1/chat/completions \
      -H "x-internal-api-key: $INTERNAL_API_KEY" \
      -H "content-type: application/json" \
      -d '{"model":"local-ollama","messages":[{"role":"user","content":"hi"}]}'
+
+# the model aliases the virtual key may use, as {"models": [...]}
+curl http://localhost:3000/v1/models -H "x-internal-api-key: $INTERNAL_API_KEY"
 ```
 
 (The `x-internal-api-key` header is only needed if `INTERNAL_API_KEY` is set.) (`local-ollama`/`local-lmstudio`/`openrouter`/`gpt-4o-mini` are the model names configured in `infra/llm-proxy/docker/litellm/config.yaml` — swap for whichever backend you actually have running/keyed.) A successful call shows up as a trace in both Langfuse (`http://localhost:3001`, the LLM call itself — prompt, tokens, cost) and Jaeger (`http://localhost:16686`, the HTTP request as a whole) — see "Viewing traces" below for why it's split across both.

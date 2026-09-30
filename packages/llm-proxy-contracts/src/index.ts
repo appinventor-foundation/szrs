@@ -11,6 +11,8 @@ export {
 
 export { ErrorEnvelopeSchema, type ErrorEnvelope } from './errors.js';
 
+export { ModelsResponseSchema, type ModelsResponse } from './models.js';
+
 export {
 	ZOOM_FIELD_TYPES,
 	ZOOM_EDITABLE_FIELD_TYPES,

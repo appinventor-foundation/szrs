@@ -14,13 +14,13 @@ export type ZoomRequester = (
 ) => Promise<ZoomResponse>;
 
 /**
- * Keeps the result for the last zoomed workspace, so switching levels back
- * and forth doesn't call the proxy again, and makes sure at most one request
- * is in flight: asking for the same target again joins it, asking for a
- * different one aborts it.
+ * Keeps each model's result for the last workspace it zoomed, so switching
+ * levels (or models) back and forth doesn't call the proxy again, and makes
+ * sure at most one request is in flight: asking for the same target again
+ * joins it, asking for a different one aborts it.
  */
 export class ZoomSession {
-	private cached: { key: string; result: ZoomResponse } | null = null;
+	private readonly cached = new Map<string, { key: string; result: ZoomResponse }>();
 	private pending: {
 		key: string;
 		controller: AbortController;
@@ -29,12 +29,16 @@ export class ZoomSession {
 
 	constructor(
 		private readonly request: ZoomRequester,
-		private readonly onProgress: (event: ZoomProgressEvent) => void = () => {}
+		private readonly onProgress: (event: ZoomProgressEvent) => void = () => {},
+		private readonly getModel: () => string = () => ''
 	) {}
 
 	zoom(target: ZoomTarget): Promise<ZoomResponse> {
-		const key = JSON.stringify(target);
-		if (this.cached?.key === key) return Promise.resolve(this.cached.result);
+		const model = this.getModel();
+		const targetKey = JSON.stringify(target);
+		const hit = this.cached.get(model);
+		if (hit?.key === targetKey) return Promise.resolve(hit.result);
+		const key = this.keyFor(target);
 		if (this.pending?.key === key) return this.pending.promise;
 
 		this.cancel();
@@ -45,7 +49,7 @@ export class ZoomSession {
 		}).then(
 			(result) => {
 				this.clearPending(promise);
-				this.cached = { key, result };
+				this.cached.set(model, { key: targetKey, result });
 				return result;
 			},
 			(error: unknown) => {
@@ -59,18 +63,24 @@ export class ZoomSession {
 
 	/** Makes the cached result also apply to `target`, e.g. after an edit that only changed bound values. */
 	retarget(target: ZoomTarget): void {
-		if (this.cached) this.cached.key = JSON.stringify(target);
+		const entry = this.cached.get(this.getModel());
+		if (entry) entry.key = JSON.stringify(target);
 	}
 
-	/** Drops the cached result, so the next zoom asks the proxy again. */
+	/** Drops the cached results, so the next zoom asks the proxy again. */
 	forget(): void {
-		this.cached = null;
+		this.cached.clear();
 	}
 
 	/** Aborts the in-flight request, if any. Its promise rejects with an AbortError. */
 	cancel(): void {
 		this.pending?.controller.abort();
 		this.pending = null;
+	}
+
+	/** Identifies a request, which is per model so a model switch doesn't join another model's. */
+	private keyFor(target: ZoomTarget): string {
+		return JSON.stringify({ model: this.getModel(), ...target });
 	}
 
 	private clearPending(promise: Promise<ZoomResponse>): void {

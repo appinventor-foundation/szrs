@@ -5,7 +5,7 @@
 /**
  * @fileoverview Client for the llm-proxy's streaming semantic zoom endpoint.
  */
-import type { ZoomResponse, ZoomStreamEvent } from '@szrs/llm-proxy-contracts';
+import type { ModelsResponse, ZoomResponse, ZoomStreamEvent } from '@szrs/llm-proxy-contracts';
 
 export interface ZoomClientOptions {
 	/** Base URL of this site's llm-proxy, e.g. "https://proxy.example.org". */
@@ -101,6 +101,28 @@ export async function requestZoom(
 	}
 
 	throw new ZoomError('The zoom stream ended without a result', 'incomplete_stream');
+}
+
+/**
+ * Asks the proxy which model aliases it will accept.
+ *
+ * Resolves with the aliases. Rejects with a ZoomError if the proxy refuses
+ * the request, or with an AbortError if `signal` is aborted.
+ */
+export async function fetchModels(
+	options: Pick<ZoomClientOptions, 'proxyUrl' | 'apiKey'>,
+	signal?: AbortSignal
+): Promise<string[]> {
+	const headers: Record<string, string> = {};
+	if (options.apiKey) headers['x-internal-api-key'] = options.apiKey;
+
+	const response = await fetch(`${options.proxyUrl.replace(/\/+$/, '')}/v1/models`, {
+		headers,
+		signal
+	});
+	if (!response.ok) throw await requestFailed(response);
+
+	return ((await response.json()) as ModelsResponse).models;
 }
 
 async function requestFailed(response: Response): Promise<ZoomError> {

@@ -1,7 +1,8 @@
 import {
 	ChatCompletionResponseSchema,
 	type ChatCompletionRequest,
-	type ChatCompletionResponse
+	type ChatCompletionResponse,
+	type ModelsResponse
 } from '@szrs/llm-proxy-contracts';
 import { z } from 'zod';
 
@@ -30,6 +31,8 @@ const UpstreamStreamChunkSchema = z.object({
 	choices: z.array(z.object({ delta: z.object({ content: z.string().nullish() }) }))
 });
 
+const UpstreamModelsSchema = z.object({ data: z.array(z.object({ id: z.string() })) });
+
 // A non-2xx from LiteLLM is returned rather than thrown, so callers can
 // forward its original status code instead of collapsing it to a 500.
 export type ChatCompletionResult =
@@ -37,6 +40,23 @@ export type ChatCompletionResult =
 
 export type ChatCompletionStreamResult =
 	{ ok: true; tokens: AsyncGenerator<string> } | { ok: false; status: number; body: unknown };
+
+export type ListModelsResult =
+	{ ok: true; response: ModelsResponse } | { ok: false; status: number; body: unknown };
+
+// LiteLLM filters this list by the virtual key's allowed models.
+export async function listModels(config: LiteLLMConfig): Promise<ListModelsResult> {
+	const upstream = await fetch(`${config.LITELLM_BASE_URL}/v1/models`, {
+		headers: { authorization: `Bearer ${config.LITELLM_VIRTUAL_KEY}` }
+	});
+
+	if (!upstream.ok) {
+		return { ok: false, status: upstream.status, body: await upstream.json() };
+	}
+
+	const { data } = UpstreamModelsSchema.parse(await upstream.json());
+	return { ok: true, response: { models: data.map((model) => model.id) } };
+}
 
 function postChatCompletions(
 	config: LiteLLMConfig,

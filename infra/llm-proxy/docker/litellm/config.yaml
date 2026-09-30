@@ -20,11 +20,10 @@ model_list:
       model: gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
 
-  # Uncomment once ANTHROPIC_API_KEY is available:
-  # - model_name: claude-3-5-sonnet
-  #   litellm_params:
-  #     model: claude-3-5-sonnet-20241022
-  #     api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: claude-3-5-sonnet
+    litellm_params:
+      model: claude-3-5-sonnet-20241022
+      api_key: os.environ/ANTHROPIC_API_KEY
 
   # Uncomment once AWS Bedrock credentials are available:
   # - model_name: bedrock-claude

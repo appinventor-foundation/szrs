@@ -140,6 +140,26 @@ suite('ZoomSession', function () {
 		assert.strictEqual(fake.calls.length, 1);
 	});
 
+	test('keeps a cached result for each model', async function () {
+		const fake = fakeRequester();
+		let model = 'local-ollama';
+		const session = new ZoomSession(fake.request, undefined, () => model);
+
+		const first = session.zoom(target());
+		fake.calls[0].resolve(resultFor('ollama'));
+		await first;
+
+		model = 'gpt-4o-mini';
+		const second = session.zoom(target());
+		assert.strictEqual(fake.calls.length, 2);
+		fake.calls[1].resolve(resultFor('gpt'));
+		assert.deepStrictEqual(await second, resultFor('gpt'));
+
+		model = 'local-ollama';
+		assert.deepStrictEqual(await session.zoom(target()), resultFor('ollama'));
+		assert.strictEqual(fake.calls.length, 2);
+	});
+
 	test('forwards progress events', async function () {
 		const fake = fakeRequester();
 		const progress = [];

@@ -7,7 +7,7 @@
  */
 
 const assert = require('assert');
-const { requestZoom, ZoomError } = require('../src/zoom_client');
+const { fetchModels, requestZoom, ZoomError } = require('../src/zoom_client');
 
 const options = { proxyUrl: 'https://proxy.example/', model: 'local-ollama' };
 const target = { slug: 'fizz-buzz-n', workspaceJson: { blocks: {} } };
@@ -152,6 +152,57 @@ suite('requestZoom', function () {
 			code: 'incomplete_stream',
 			status: undefined,
 			message: 'The zoom stream ended without a result'
+		});
+	});
+});
+
+suite('fetchModels', function () {
+	let originalFetch;
+	let calls;
+
+	setup(function () {
+		originalFetch = globalThis.fetch;
+		calls = [];
+	});
+
+	teardown(function () {
+		globalThis.fetch = originalFetch;
+	});
+
+	function stubFetch(response) {
+		globalThis.fetch = async (url, init) => {
+			calls.push({ url, init });
+			return response;
+		};
+	}
+
+	test('gets the model aliases from the proxy', async function () {
+		stubFetch(new Response(JSON.stringify({ models: ['local-ollama', 'gpt-4o-mini'] })));
+
+		const models = await fetchModels(options);
+
+		assert.deepStrictEqual(models, ['local-ollama', 'gpt-4o-mini']);
+		assert.strictEqual(calls[0].url, 'https://proxy.example/v1/models');
+		assert.deepStrictEqual(calls[0].init.headers, {});
+	});
+
+	test('sends the API key when one is configured', async function () {
+		stubFetch(new Response(JSON.stringify({ models: [] })));
+
+		await fetchModels({ ...options, apiKey: 'site-key' });
+
+		assert.strictEqual(calls[0].init.headers['x-internal-api-key'], 'site-key');
+	});
+
+	test('rejects with request_failed when the proxy refuses the request', async function () {
+		stubFetch(new Response(JSON.stringify({ error: { message: 'bad key' } }), { status: 401 }));
+
+		await assert.rejects(fetchModels(options), (error) => {
+			assert.ok(error instanceof ZoomError);
+			assert.strictEqual(error.code, 'request_failed');
+			assert.strictEqual(error.status, 401);
+			assert.strictEqual(error.message, 'bad key');
+			return true;
 		});
 	});
 });

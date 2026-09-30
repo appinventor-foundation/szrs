@@ -4,6 +4,7 @@
 
 import * as Blockly from 'blockly/core';
 import { ZoomLevel, ZoomLevelWidget, type ZoomStatusOptions } from './zoom_level_widget';
+import { applyZoomTheme } from './zoom_theme';
 
 /**
  * Width of the zoom controls widget, in pixels. Approximates the
@@ -160,26 +161,8 @@ export class ZoomControls implements Blockly.IPositionable {
 		this.ws.addChangeListener(this.themeChangeListener);
 	}
 
-	/**
-	 * Reads color values from the workspace's current theme and applies
-	 * them as CSS custom properties, so the widget follows the workspace's
-	 * theme — built-in or a plugin consumer's own custom one — instead of
-	 * hardcoding colors per known theme. Re-run on Blockly.Events.THEME_CHANGE
-	 * to track live theme swaps.
-	 */
 	private applyTheme(): void {
-		if (!this.themeTarget) return;
-		const componentStyles = this.ws.getTheme().componentStyles;
-		const style = this.themeTarget.style;
-		if (componentStyles.markerColour) {
-			style.setProperty('--zoom-accent', componentStyles.markerColour);
-		}
-		if (componentStyles.flyoutBackgroundColour) {
-			style.setProperty('--zoom-pill-bg', componentStyles.flyoutBackgroundColour);
-		}
-		if (componentStyles.flyoutForegroundColour) {
-			style.setProperty('--zoom-label-color', componentStyles.flyoutForegroundColour);
-		}
+		if (this.themeTarget) applyZoomTheme(this.ws, this.themeTarget);
 	}
 
 	/**
