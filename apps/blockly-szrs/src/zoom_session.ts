@@ -57,6 +57,11 @@ export class ZoomSession {
 		return promise;
 	}
 
+	/** Drops the cached result, so the next zoom asks the proxy again. */
+	forget(): void {
+		this.cached = null;
+	}
+
 	/** Aborts the in-flight request, if any. Its promise rejects with an AbortError. */
 	cancel(): void {
 		this.pending?.controller.abort();

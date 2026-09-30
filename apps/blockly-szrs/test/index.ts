@@ -25,7 +25,7 @@ function createWorkspace(
 
 	// TODO: Initialize your plugin here.
 	const plugin = new SemanticZoomPlugin(workspace, {
-		proxy: { proxyUrl: 'http://localhost:3000', model: 'local-ollama' },
+		proxy: { proxyUrl: 'http://localhost:3000', model: 'openrouter' },
 		getSlug: () => 'playground'
 	});
 	plugin.init();

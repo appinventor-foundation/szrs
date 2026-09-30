@@ -11,6 +11,7 @@ import { ZoomControls } from './components/zoom_controls';
 import type { ZoomLevel } from './components/zoom_level_widget';
 import { requestZoom, type ZoomClientOptions, type ZoomProgressEvent } from './zoom_client';
 import { ZoomSession } from './zoom_session';
+import { ZoomView } from './zoom_view';
 
 export interface SemanticZoomOptions {
 	/** Where this site's llm-proxy is and which model to use. */
@@ -36,6 +37,7 @@ export class SemanticZoomPlugin {
 	protected workspace: Blockly.WorkspaceSvg;
 	protected zoomControls: ZoomControls;
 	protected zoomSession: ZoomSession;
+	protected zoomView: ZoomView;
 	private readonly getSlug: () => string;
 	private level: ZoomLevel = 'detail';
 	/** The Detail workspace, saved when the user first leaves the Detail level. */
@@ -61,6 +63,7 @@ export class SemanticZoomPlugin {
 			(target, init) => requestZoom(options.proxy, target, init),
 			this.handleProgress
 		);
+		this.zoomView = new ZoomView(workspace);
 	}
 
 	/**
@@ -72,6 +75,7 @@ export class SemanticZoomPlugin {
 
 	dispose(): void {
 		this.zoomSession.cancel();
+		this.zoomView.dispose();
 		this.zoomControls.dispose();
 	}
 
@@ -79,6 +83,7 @@ export class SemanticZoomPlugin {
 		this.level = level;
 		if (level === 'detail') {
 			this.zoomSession.cancel();
+			this.zoomView.hide();
 			this.detailSnapshot = null;
 			this.zoomControls.setStatus(null);
 			return;
@@ -109,9 +114,16 @@ export class SemanticZoomPlugin {
 		}
 		// The user may have moved to another level while this was loading.
 		if (this.level !== level) return;
+		try {
+			this.zoomView.show(result[level]);
+		} catch (error) {
+			// The generated blocks didn't load, so don't keep them (DECISIONS.md #10).
+			this.zoomSession.forget();
+			console.warn('Semantic zoom could not be shown:', error);
+			this.revertToDetail('Zoom failed', error instanceof Error ? error.message : String(error));
+			return;
+		}
 		this.zoomControls.setStatus(null);
-		// TODO: apply the zoomed level to the workspace (next chunk).
-		console.log(`Zoom ready (${level}):`, result[level]);
 	}
 
 	private handleProgress = (event: ZoomProgressEvent): void => {
@@ -123,6 +135,7 @@ export class SemanticZoomPlugin {
 	private revertToDetail(status: string, details?: string): void {
 		this.level = 'detail';
 		this.detailSnapshot = null;
+		this.zoomView.hide();
 		this.zoomControls.showLevel('detail');
 		this.zoomControls.setStatus(status, { error: true, title: details });
 	}

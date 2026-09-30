@@ -6,6 +6,7 @@ import {
 } from '@szrs/llm-proxy-contracts';
 import { z } from 'zod';
 
+import { repairZoomResult } from './repair.js';
 import { checkZoomResult } from './validate.js';
 
 export const MAX_ATTEMPTS = 3;
@@ -111,20 +112,23 @@ export function buildZoomMessages(request: ZoomRequest, previousError?: string):
 }
 
 // Models often wrap JSON in fences or lead with prose despite being told not
-// to, so both are stripped before parsing. The result is then checked against
-// the schema and against the Detail workspace it was made from. Throws with a
-// message suitable for feeding back to the model on retry.
+// to, so both are stripped before parsing. Mistakes with exactly one correct
+// fix are then repaired, and the result is checked against the schema and
+// against the Detail workspace it was made from. Throws with a message
+// suitable for feeding back to the model on retry.
 export function parseZoomResponse(
 	text: string,
 	detailWorkspace: Record<string, unknown>
-): ZoomResponse {
+): { result: ZoomResponse; repairs: string[] } {
 	let cleaned = text.trim();
 	const fenceMatch = /```(?:json)?\s*\n([\s\S]*)\n\s*```/.exec(cleaned);
 	if (fenceMatch) cleaned = fenceMatch[1].trim();
 	const start = cleaned.indexOf('{');
 	if (start > 0) cleaned = cleaned.slice(start);
 
-	const result = ZoomResponseSchema.safeParse(JSON.parse(cleaned));
+	const raw: unknown = JSON.parse(cleaned);
+	const repairs = repairZoomResult(raw, detailWorkspace);
+	const result = ZoomResponseSchema.safeParse(raw);
 	if (!result.success) {
 		throw new Error(z.prettifyError(result.error));
 	}
@@ -132,5 +136,5 @@ export function parseZoomResponse(
 	if (problems.length > 0) {
 		throw new Error(problems.join('\n'));
 	}
-	return result.data;
+	return { result: result.data, repairs };
 }

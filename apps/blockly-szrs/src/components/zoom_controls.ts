@@ -266,8 +266,10 @@ export class ZoomControls implements Blockly.IPositionable {
 }
 
 Blockly.Css.register(`
+/* Above the zoom view overlay (z-index 75, see zoom_view.ts), so the user can
+   always get back to Detail. */
 .blockly-zoomControlsContainer {
 	position: absolute;
-	z-index: 2;
+	z-index: 80;
 }
 `);

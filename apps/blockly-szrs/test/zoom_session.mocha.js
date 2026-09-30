@@ -112,6 +112,21 @@ suite('ZoomSession', function () {
 		assert.deepStrictEqual(await second, resultFor('fizz-buzz-n'));
 	});
 
+	test('forget() drops the cached result', async function () {
+		const fake = fakeRequester();
+		const session = new ZoomSession(fake.request);
+
+		const first = session.zoom(target());
+		fake.calls[0].resolve(resultFor('fizz-buzz-n'));
+		await first;
+		session.forget();
+		const second = session.zoom(target());
+		fake.calls[1].resolve(resultFor('fizz-buzz-n'));
+		await second;
+
+		assert.strictEqual(fake.calls.length, 2);
+	});
+
 	test('forwards progress events', async function () {
 		const fake = fakeRequester();
 		const progress = [];

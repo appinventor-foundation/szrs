@@ -10,6 +10,11 @@ model_list:
       api_base: os.environ/LMSTUDIO_API_BASE
       api_key: os.environ/LMSTUDIO_API_KEY
 
+  - model_name: openrouter
+    litellm_params:
+      model: os.environ/OPENROUTER_MODEL
+      api_key: os.environ/OPENROUTER_API_KEY
+
   - model_name: gpt-4o-mini
     litellm_params:
       model: gpt-4o-mini

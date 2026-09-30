@@ -59,6 +59,30 @@ export const ZoomBlockDefSchema = z
 				ctx.addIssue({ code: 'custom', path: [key, ...issue.path], message: issue.message });
 			}
 		}
+
+		// Blockly rejects a definition whose message doesn't use each of its
+		// args exactly once, as %1 … %N.
+		const indices = new Set(
+			Object.keys(def).flatMap((key) => /^(?:message|args)(\d+)$/.exec(key)?.[1] ?? [])
+		);
+		for (const n of indices) {
+			const args = def[`args${n}`];
+			const count = Array.isArray(args) ? args.length : 0;
+			const message = def[`message${n}`];
+			const refs =
+				typeof message === 'string'
+					? [...message.matchAll(/%(\d+)/g)].map((m) => Number(m[1]))
+					: [];
+			const expected = Array.from({ length: count }, (_, i) => i + 1);
+			const sorted = [...refs].sort((a, b) => a - b);
+			if (refs.length !== count || sorted.some((ref, i) => ref !== expected[i])) {
+				ctx.addIssue({
+					code: 'custom',
+					path: [`message${n}`],
+					message: `message${n} must use each of its ${count} args exactly once, as ${expected.map((i) => `%${i}`).join(' ') || 'no %N placeholders'}; it uses ${refs.map((r) => `%${r}`).join(' ') || 'none'}`
+				});
+			}
+		}
 	});
 export type ZoomBlockDef = z.infer<typeof ZoomBlockDefSchema>;
 

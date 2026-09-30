@@ -1,7 +1,8 @@
 import type { ZoomLevel, ZoomResponse } from '@szrs/llm-proxy-contracts';
 import { describe, expect, it } from 'vitest';
 
-import { allBlocks, checkZoomResult } from '../../../src/zoom/validate.js';
+import { allBlocks } from '../../../src/zoom/saved-blocks.js';
+import { checkZoomResult } from '../../../src/zoom/validate.js';
 
 const workspace = (...blocks: unknown[]) => ({ blocks: { languageVersion: 0, blocks } });
 
@@ -112,6 +113,69 @@ describe('checkZoomResult', () => {
 		expect(errors).toEqual([]);
 	});
 
+	it('rejects a child in an input the definition does not declare', () => {
+		const errors = checkZoomResult(
+			result({
+				blockDefs: [
+					{
+						type: 'zoom_x_repeat',
+						message0: 'repeat up to %1',
+						args0: [{ type: 'field_number', name: 'LIMIT' }],
+						previousStatement: null
+					}
+				],
+				workspaceJson: workspace({
+					type: 'zoom_x_repeat',
+					id: 's1',
+					inputs: { DO: { block: { type: 'text_print', id: 's2' } } }
+				})
+			}),
+			detailWorkspace
+		);
+		expect(errors[0]).toMatch(
+			/^semantic\.workspaceJson: block "s1" \(zoom_x_repeat\) puts a block in input "DO", but its definition has no input_value or input_statement named "DO"/
+		);
+	});
+
+	it('rejects a following block when the definition has no nextStatement', () => {
+		const errors = checkZoomResult(
+			result({
+				workspaceJson: workspace({
+					type: 'zoom_x_concept',
+					id: 'c1',
+					next: { block: { type: 'zoom_x_concept', id: 'c2' } }
+				})
+			}),
+			detailWorkspace
+		);
+		expect(errors[0]).toMatch(
+			/block "c1" \(zoom_x_concept\) has a block after it, but its definition has no "nextStatement"/
+		);
+	});
+
+	it('accepts a child in an input_statement the definition declares', () => {
+		const errors = checkZoomResult(
+			result({
+				blockDefs: [
+					{
+						type: 'zoom_x_repeat',
+						message0: 'repeat %1',
+						args0: [{ type: 'input_statement', name: 'DO' }],
+						nextStatement: null
+					}
+				],
+				workspaceJson: workspace({
+					type: 'zoom_x_repeat',
+					id: 's1',
+					inputs: { DO: { block: { type: 'text_print', id: 's2' } } },
+					next: { block: { type: 'text_print', id: 's3' } }
+				})
+			}),
+			detailWorkspace
+		);
+		expect(errors).toEqual([]);
+	});
+
 	it('rejects a binding to a missing zoomed block', () => {
 		expect(
 			concept([{ block: 'nope', field: 'TIMES', detail: [{ block: 'times', field: 'NUM' }] }])
@@ -149,6 +213,23 @@ describe('checkZoomResult', () => {
 		).toEqual([
 			'concept.bindings[0]: Detail block "repeat" (controls_repeat_ext) has no field "NUM". "NUM" is on block "times" (math_number) inside it; bind that block instead'
 		]);
+	});
+
+	it('does not point to blocks that come after the bound block', () => {
+		const after = workspace({
+			type: 'text_print',
+			id: 'first',
+			next: { block: { type: 'math_number', id: 'later', fields: { NUM: 3 } } }
+		});
+		const errors = checkZoomResult(
+			result({
+				bindings: [{ block: 'c1', field: 'TIMES', detail: [{ block: 'first', field: 'NUM' }] }]
+			}),
+			after
+		);
+		expect(errors[0]).toBe(
+			'semantic.bindings[0]: Detail block "first" (text_print) has no field "NUM"'
+		);
 	});
 
 	it('rejects fields bound to a value of another kind', () => {

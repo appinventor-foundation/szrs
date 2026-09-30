@@ -32,7 +32,12 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			}
 
 			try {
-				return parseZoomResponse(result.response.content, body.workspaceJson);
+				const { result: zoom, repairs } = parseZoomResponse(
+					result.response.content,
+					body.workspaceJson
+				);
+				if (repairs.length > 0) request.log.info({ attempt, repairs }, 'repaired zoom output');
+				return zoom;
 			} catch (error) {
 				lastError = errorMessage(error);
 				request.log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
@@ -87,7 +92,9 @@ async function* zoomEvents(
 		}
 
 		try {
-			yield { type: 'done', result: parseZoomResponse(text, body.workspaceJson) };
+			const { result: zoom, repairs } = parseZoomResponse(text, body.workspaceJson);
+			if (repairs.length > 0) log.info({ attempt, repairs }, 'repaired zoom output');
+			yield { type: 'done', result: zoom };
 			return;
 		} catch (error) {
 			lastError = errorMessage(error);

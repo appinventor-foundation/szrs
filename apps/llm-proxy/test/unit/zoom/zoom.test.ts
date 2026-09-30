@@ -54,15 +54,19 @@ describe('parseZoomResponse', () => {
 		withSemantic({ blockDefs: [{ type: 'zoom_x_op', ...def }] });
 
 	it('parses plain JSON', () => {
-		expect(parseZoomResponse(JSON.stringify(valid), detail)).toEqual(valid);
+		expect(parseZoomResponse(JSON.stringify(valid), detail).result).toEqual(valid);
 	});
 
 	it('strips markdown fences', () => {
-		expect(parseZoomResponse('```json\n' + JSON.stringify(valid) + '\n```', detail)).toEqual(valid);
+		expect(parseZoomResponse('```json\n' + JSON.stringify(valid) + '\n```', detail).result).toEqual(
+			valid
+		);
 	});
 
 	it('strips leading prose', () => {
-		expect(parseZoomResponse('Here you go: ' + JSON.stringify(valid), detail)).toEqual(valid);
+		expect(parseZoomResponse('Here you go: ' + JSON.stringify(valid), detail).result).toEqual(
+			valid
+		);
 	});
 
 	it('defaults bindings to an empty list', () => {
@@ -70,7 +74,7 @@ describe('parseZoomResponse', () => {
 			blockDefs: valid.semantic.blockDefs,
 			workspaceJson: valid.semantic.workspaceJson
 		};
-		const parsed = parseZoomResponse(JSON.stringify({ ...valid, semantic }), detail);
+		const parsed = parseZoomResponse(JSON.stringify({ ...valid, semantic }), detail).result;
 		expect(parsed.semantic.bindings).toEqual([]);
 	});
 
@@ -100,6 +104,26 @@ describe('parseZoomResponse', () => {
 		expect(() =>
 			parseZoomResponse(withDef({ args0: [{ type: 'field_image', src: 'https://x' }] }), detail)
 		).toThrow(/arg type must be one of/);
+	});
+
+	it('rejects a message that repeats a placeholder', () => {
+		const def = {
+			message0: 'repeat up to %1 %1',
+			args0: [
+				{ type: 'field_number', name: 'LIMIT' },
+				{ type: 'input_statement', name: 'DO' }
+			]
+		};
+		expect(() => parseZoomResponse(withDef(def), detail)).toThrow(
+			'message0 must use each of its 2 args exactly once, as %1 %2; it uses %1 %1'
+		);
+	});
+
+	it('rejects a message placeholder beyond its args', () => {
+		const def = { message0: 'repeat %1 %2', args0: [{ type: 'field_number', name: 'LIMIT' }] };
+		expect(() => parseZoomResponse(withDef(def), detail)).toThrow(
+			'message0 must use each of its 1 args exactly once, as %1; it uses %1 %2'
+		);
 	});
 
 	it('rejects a dropdown without options', () => {
