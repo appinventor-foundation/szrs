@@ -11,10 +11,14 @@ import type { Config } from '../config.js';
 import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
 import { lookupZoom, type ZoomCache } from '../zoom/cache.js';
 import { zoomCacheKey } from '../zoom/cache-key.js';
+import { ZoomFlights } from '../zoom/flights.js';
 import { normalizeWorkspace, restoreIds } from '../zoom/normalize.js';
 import { buildZoomMessages, MAX_ATTEMPTS, parseZoomResponse } from '../zoom/zoom.js';
 
 export default async function zoomRoutes(fastify: FastifyInstance): Promise<void> {
+	// Streaming requests for the same program share one model call while it runs.
+	const flights = new ZoomFlights();
+
 	fastify.post('/v1/zoom', async (request, reply) => {
 		const body = ZoomRequestSchema.parse(request.body);
 		// The model works on, and answers in, a canonical copy of the workspace.
@@ -64,37 +68,45 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 	// is committed to 200, so every later failure is sent as an `error` event.
 	fastify.post('/v1/zoom/stream', async (request, reply) => {
 		const body = ZoomRequestSchema.parse(request.body);
+		const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
+		const canonical = { ...body, workspaceJson };
+		const key = zoomCacheKey(canonical);
+
+		let events: AsyncGenerator<ZoomStreamEvent>;
+		const cached = await lookupZoom(fastify.zoomCache, key, workspaceJson, request.log);
+		if (cached) {
+			events = only({ type: 'done', result: restoreIds(cached, originalIds), cached: true });
+		} else {
+			const flight = flights.join(key, () =>
+				runZoom(fastify.config, fastify.zoomCache, canonical, key, request.log)
+			);
+			request.log.info({ flight: flight.joined ? 'joined' : 'started', key }, 'zoom flight');
+			// However the response ends, this request stops counting as a listener.
+			reply.raw.on('close', flight.close);
+			events = withOwnIds(flight.events, originalIds);
+		}
 
 		reply.type('text/event-stream').header('cache-control', 'no-cache');
-		return Readable.from(
-			toSse(zoomEvents(fastify.config, fastify.zoomCache, body, request.log), request.log)
-		);
+		return Readable.from(toSse(events, request.log));
 	});
 }
 
-async function* zoomEvents(
+// The model's side of a zoom: asks, retries and validates. Its events are in
+// canonical ids, so they can be shared between requests (see withOwnIds).
+async function* runZoom(
 	config: Config,
 	cache: ZoomCache | null,
-	body: ZoomRequest,
+	canonical: ZoomRequest,
+	key: string,
 	log: FastifyBaseLogger
 ): AsyncGenerator<ZoomStreamEvent> {
-	const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
-	const canonical = { ...body, workspaceJson };
-
-	const key = zoomCacheKey(canonical);
-	const cached = await lookupZoom(cache, key, workspaceJson, log);
-	if (cached) {
-		yield { type: 'done', result: restoreIds(cached, originalIds), cached: true };
-		return;
-	}
-
 	let lastError: string | undefined;
 
 	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 		yield { type: 'attempt', attempt, maxAttempts: MAX_ATTEMPTS, previousError: lastError };
 
 		const result = await chatCompletionStream(config, {
-			model: body.model,
+			model: canonical.model,
 			messages: buildZoomMessages(canonical, lastError)
 		});
 		if (!result.ok) {
@@ -117,8 +129,11 @@ async function* zoomEvents(
 		try {
 			const { result: zoom, repairs } = parseZoomResponse(text, canonical.workspaceJson);
 			if (repairs.length > 0) log.info({ attempt, repairs }, 'repaired zoom output');
-			void cache?.set(key, zoom);
-			yield { type: 'done', result: restoreIds(zoom, originalIds) };
+			yield { type: 'done', result: zoom };
+			// Everyone listening has the result by now. Keeping the run open until it
+			// is stored means a request arriving in between joins it instead of
+			// starting another model call.
+			await cache?.set(key, zoom);
 			return;
 		} catch (error) {
 			lastError = errorMessage(error);
@@ -127,6 +142,22 @@ async function* zoomEvents(
 	}
 
 	yield { type: 'error', code: 'invalid_model_output', message: lastError ?? '' };
+}
+
+// Shared events are in canonical ids; each request gets the result in its own.
+async function* withOwnIds(
+	events: AsyncGenerator<ZoomStreamEvent>,
+	originalIds: Map<string, string>
+): AsyncGenerator<ZoomStreamEvent> {
+	for await (const event of events) {
+		yield event.type === 'done'
+			? { ...event, result: restoreIds(event.result, originalIds) }
+			: event;
+	}
+}
+
+async function* only(event: ZoomStreamEvent): AsyncGenerator<ZoomStreamEvent> {
+	yield event;
 }
 
 async function* toSse(
