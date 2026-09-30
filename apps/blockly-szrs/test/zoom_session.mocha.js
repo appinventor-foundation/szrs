@@ -127,6 +127,19 @@ suite('ZoomSession', function () {
 		assert.strictEqual(fake.calls.length, 2);
 	});
 
+	test('retarget() serves the cached result for another target', async function () {
+		const fake = fakeRequester();
+		const session = new ZoomSession(fake.request);
+
+		const first = session.zoom(target('before-edit'));
+		fake.calls[0].resolve(resultFor('before-edit'));
+		await first;
+		session.retarget(target('after-edit'));
+
+		assert.deepStrictEqual(await session.zoom(target('after-edit')), resultFor('before-edit'));
+		assert.strictEqual(fake.calls.length, 1);
+	});
+
 	test('forwards progress events', async function () {
 		const fake = fakeRequester();
 		const progress = [];

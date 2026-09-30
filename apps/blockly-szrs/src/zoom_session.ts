@@ -57,6 +57,11 @@ export class ZoomSession {
 		return promise;
 	}
 
+	/** Makes the cached result also apply to `target`, e.g. after an edit that only changed bound values. */
+	retarget(target: ZoomTarget): void {
+		if (this.cached) this.cached.key = JSON.stringify(target);
+	}
+
 	/** Drops the cached result, so the next zoom asks the proxy again. */
 	forget(): void {
 		this.cached = null;

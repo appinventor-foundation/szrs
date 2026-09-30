@@ -8,20 +8,30 @@
 import * as Blockly from 'blockly/core';
 import type { ZoomLevel as ZoomLevelResult } from '@szrs/llm-proxy-contracts';
 import { ZoomLevelLoader } from './zoom_level_loader';
+import { ZoomViewEditor } from './zoom_view_editor';
 
 /**
- * Shows zoomed levels in their own read-only workspace, over the main one.
- * The main workspace, which holds the Detail program, is never changed
- * (DECISIONS.md #9). The overlay also hides the main toolbox, so Detail
- * can't be edited while it's out of sight.
+ * Shows zoomed levels in their own workspace, over the main one. Everything
+ * in the view is locked except bound fields, whose edits are written through
+ * to the Detail program in the main workspace (DECISIONS.md #8, #9). The
+ * overlay also hides the main toolbox, so Detail can't be edited while it's
+ * out of sight.
  */
 export class ZoomView {
 	private container: HTMLDivElement | null = null;
 	private viewWorkspace: Blockly.WorkspaceSvg | null = null;
 	private resizeObserver: ResizeObserver | null = null;
+	private editor: ZoomViewEditor | null = null;
 	private readonly loader = new ZoomLevelLoader();
 
-	constructor(private readonly mainWorkspace: Blockly.WorkspaceSvg) {}
+	/**
+	 * @param mainWorkspace The workspace holding the Detail program.
+	 * @param onDetailEdited Called after an edit in the view changed a Detail value.
+	 */
+	constructor(
+		private readonly mainWorkspace: Blockly.WorkspaceSvg,
+		private readonly onDetailEdited: () => void
+	) {}
 
 	/**
 	 * Shows `level` over the main workspace.
@@ -32,6 +42,7 @@ export class ZoomView {
 		const view = this.ensureWorkspace();
 		try {
 			this.loader.load(level, view, this.mainWorkspace);
+			this.editor?.setBindings(level.bindings);
 		} catch (error) {
 			this.hide();
 			throw error;
@@ -44,6 +55,7 @@ export class ZoomView {
 	/** Hides the view and removes the zoomed blocks and their definitions. */
 	hide(): void {
 		if (this.container) this.container.style.display = 'none';
+		this.editor?.setBindings([]);
 		this.viewWorkspace?.clear();
 		this.loader.unregister();
 		// Clicking in the view can make it Blockly's main workspace; undo that.
@@ -52,10 +64,12 @@ export class ZoomView {
 
 	dispose(): void {
 		this.resizeObserver?.disconnect();
+		this.editor?.dispose();
 		this.viewWorkspace?.dispose();
 		this.loader.unregister();
 		Blockly.utils.dom.removeNode(this.container);
 		this.resizeObserver = null;
+		this.editor = null;
 		this.viewWorkspace = null;
 		this.container = null;
 	}
@@ -68,7 +82,14 @@ export class ZoomView {
 		this.mainWorkspace.getInjectionDiv().appendChild(container);
 
 		const view = Blockly.inject(container, {
-			readOnly: true,
+			// Not read-only, so bound fields can be edited; the loader locks
+			// everything else.
+			readOnly: false,
+			trashcan: false,
+			comments: false,
+			disable: false,
+			collapse: false,
+			sounds: false,
 			theme: this.mainWorkspace.getTheme(),
 			renderer: this.mainWorkspace.options.renderer,
 			move: { scrollbars: true, drag: true, wheel: true },
@@ -77,6 +98,7 @@ export class ZoomView {
 		// inject() makes the new workspace Blockly's "main" one, and host code
 		// often relies on Blockly.getMainWorkspace() meaning its own workspace.
 		Blockly.common.setMainWorkspace(this.mainWorkspace);
+		this.editor = new ZoomViewEditor(view, this.mainWorkspace, this.onDetailEdited);
 		this.resizeObserver = new ResizeObserver(() => Blockly.svgResize(view));
 		this.resizeObserver.observe(container);
 

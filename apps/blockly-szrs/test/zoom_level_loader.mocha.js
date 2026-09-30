@@ -63,6 +63,19 @@ suite('ZoomLevelLoader', function () {
 		assert.strictEqual(block.getFieldValue('TIMES'), 7);
 	});
 
+	test('locks the level: blocks stay put and only bound fields are enabled', function () {
+		const locked = level('zoom_greet_concept');
+		locked.blockDefs[0].message0 = 'greet %1 times %2';
+		locked.blockDefs[0].args0.push({ type: 'field_input', name: 'NOTE' });
+		loader.load(locked, target, detail);
+
+		const block = target.getBlockById('c1');
+		assert.strictEqual(block.isMovable(), false);
+		assert.strictEqual(block.isDeletable(), false);
+		assert.strictEqual(block.getField('TIMES').isEnabled(), true);
+		assert.strictEqual(block.getField('NOTE').isEnabled(), false);
+	});
+
 	test('removes the previous level’s block types when loading another', function () {
 		loader.load(level('zoom_greet_semantic'), target, detail);
 		loader.load(level('zoom_greet_concept'), target, detail);

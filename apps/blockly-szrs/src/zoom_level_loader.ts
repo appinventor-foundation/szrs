@@ -42,6 +42,22 @@ export class ZoomLevelLoader {
 			const field = target.getBlockById(binding.block)?.getField(binding.field);
 			if (field && value !== null && value !== undefined) field.setValue(value);
 		}
+
+		// Only bound fields can be edited; nothing else in a zoomed level
+		// changes (DECISIONS.md #8).
+		const bound = new Map<string, Set<string>>();
+		for (const binding of level.bindings) {
+			bound.set(binding.block, (bound.get(binding.block) ?? new Set<string>()).add(binding.field));
+		}
+		for (const block of target.getAllBlocks(false)) {
+			block.setMovable(false);
+			block.setDeletable(false);
+			for (const input of block.inputList) {
+				for (const field of input.fieldRow) {
+					field.setEnabled(bound.get(block.id)?.has(field.name ?? '') ?? false);
+				}
+			}
+		}
 	}
 
 	/**

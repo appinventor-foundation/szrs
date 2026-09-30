@@ -40,6 +40,8 @@ export class SemanticZoomPlugin {
 	protected zoomView: ZoomView;
 	private readonly getSlug: () => string;
 	private level: ZoomLevel = 'detail';
+	/** The slug the current zoom was requested with. */
+	private zoomedSlug = '';
 	/** The Detail workspace, saved when the user first leaves the Detail level. */
 	private detailSnapshot: Record<string, unknown> | null = null;
 
@@ -63,7 +65,7 @@ export class SemanticZoomPlugin {
 			(target, init) => requestZoom(options.proxy, target, init),
 			this.handleProgress
 		);
-		this.zoomView = new ZoomView(workspace);
+		this.zoomView = new ZoomView(workspace, this.handleDetailEdited);
 	}
 
 	/**
@@ -105,7 +107,8 @@ export class SemanticZoomPlugin {
 		this.zoomControls.setStatus('Zooming…');
 		let result;
 		try {
-			result = await this.zoomSession.zoom({ slug: this.getSlug(), workspaceJson });
+			this.zoomedSlug = this.getSlug();
+			result = await this.zoomSession.zoom({ slug: this.zoomedSlug, workspaceJson });
 		} catch (error) {
 			if ((error as { name?: unknown } | null)?.name === 'AbortError') return;
 			console.warn('Semantic zoom failed:', error);
@@ -125,6 +128,13 @@ export class SemanticZoomPlugin {
 		}
 		this.zoomControls.setStatus(null);
 	}
+
+	private handleDetailEdited = (): void => {
+		// Only bound values changed, so the zoom result still applies: keep it
+		// cached for the edited program rather than zooming again.
+		this.detailSnapshot = Blockly.serialization.workspaces.save(this.workspace);
+		this.zoomSession.retarget({ slug: this.zoomedSlug, workspaceJson: this.detailSnapshot });
+	};
 
 	private handleProgress = (event: ZoomProgressEvent): void => {
 		if (event.type === 'attempt' && event.attempt > 1) {
