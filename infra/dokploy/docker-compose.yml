@@ -1,0 +1,340 @@
+# Dokploy deployment of the whole system: the three apps (llm-proxy, dashboard,
+# docs) plus the LLM infra from ../llm-proxy/docker-compose.yml (LiteLLM,
+# Langfuse, Jaeger and their stores). Standalone on purpose (no `include`):
+# Dokploy edits the compose file when you add domains and its handling of
+# `include` is unverified. If you change ../llm-proxy/docker-compose.yml
+# (images, env, healthchecks), mirror it here.
+#
+# Differences from the local-dev compose file:
+#   - Adds the apps, built from the repo root (context ../..).
+#   - No host ports (`expose` only). Route through Traefik with the Domains tab:
+#       llm-proxy:3000, dashboard:3000, docs:80, langfuse-web:3000, minio:9000.
+#     litellm and jaeger stay internal: jaeger's UI (16686) has no auth, and
+#     litellm is reached by the proxy over the compose network.
+#   - The zoom cache is always on (no profile) and the proxy uses it.
+#   - LiteLLM/ClickHouse config is baked into images (build:) because Dokploy's
+#     repo re-clone can empty bind mounts. litellm's host.docker.internal
+#     mapping is dropped.
+#   - Database passwords and the public URLs come from env (.env.example).
+#   - restart: unless-stopped everywhere.
+# Turn on "Isolated Deployments" for the app so Dokploy handles networking.
+#
+# First deploy is two steps: LiteLLM must be running before it can mint the
+# proxy's virtual key. Deploy with LITELLM_VIRTUAL_KEY empty (the proxy starts
+# but can't call the model), mint the key (apps/llm-proxy/README.md,
+# "Bootstrapping LiteLLM"), set it in Dokploy and redeploy.
+services:
+  llm-proxy:
+    build:
+      context: ../..
+      dockerfile: apps/llm-proxy/Dockerfile
+    image: szrs-llm-proxy:dokploy
+    restart: unless-stopped
+    expose:
+      - '3000'
+    environment:
+      PORT: '3000'
+      DEPLOYMENT_ENVIRONMENT: ${DEPLOYMENT_ENVIRONMENT:-production}
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_VIRTUAL_KEY: ${LITELLM_VIRTUAL_KEY:-} # empty on the first deploy; see the header
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-60}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-1 minute}
+      TRUST_PROXY: 'true' # behind Traefik: rate limit on X-Forwarded-For
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+      CACHE_URL: redis://:${ZOOM_CACHE_AUTH}@zoom-cache:6379
+    healthcheck:
+      # The slim Node image has no curl or wget.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      litellm:
+        condition: service_started
+      zoom-cache:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: apps/dashboard/Dockerfile
+    image: szrs-dashboard:dokploy
+    restart: unless-stopped
+    expose:
+      - '3000'
+    environment:
+      PORT: '3000'
+      # SvelteKit rejects form posts unless this matches the public URL.
+      ORIGIN: ${DASHBOARD_URL:?set DASHBOARD_URL}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  docs:
+    build:
+      context: ../..
+      dockerfile: apps/docs/Dockerfile
+    image: szrs-docs:dokploy
+    restart: unless-stopped
+    expose:
+      - '80'
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    expose:
+      - '16686'
+      - '4318'
+
+  litellm-db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${LITELLM_DB_PASSWORD:?set LITELLM_DB_PASSWORD}
+      POSTGRES_DB: litellm
+    volumes:
+      - llm-proxy-litellm-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U litellm']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  litellm:
+    build: ../llm-proxy/docker/litellm
+    image: llm-proxy-litellm:dokploy
+    restart: unless-stopped
+    expose:
+      - '4000'
+    command: ['--config', '/app/config.yaml']
+    environment:
+      DATABASE_URL: postgresql://litellm:${LITELLM_DB_PASSWORD}@litellm-db:5432/litellm
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?set LITELLM_SALT_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-ollama/llama3.1}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      LMSTUDIO_API_BASE: ${LMSTUDIO_API_BASE:-http://host.docker.internal:1234/v1}
+      LMSTUDIO_API_KEY: ${LMSTUDIO_API_KEY:-not-needed}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/z-ai/glm-5.3-flash}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: http://langfuse-web:3000 # internal compose-network address
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+      langfuse-web:
+        condition: service_started
+
+  langfuse-postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: ${LANGFUSE_DB_PASSWORD:?set LANGFUSE_DB_PASSWORD}
+      POSTGRES_DB: langfuse
+    volumes:
+      - llm-proxy-langfuse-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U langfuse']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  clickhouse:
+    build: ../llm-proxy/docker/clickhouse
+    image: llm-proxy-clickhouse:dokploy
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}
+    volumes:
+      - llm-proxy-clickhouse-data:/var/lib/clickhouse
+      - llm-proxy-clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      # 127.0.0.1, not localhost: the baked-in listen-ipv4.xml means nothing
+      # listens on ::1.
+      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    expose:
+      - '9000'
+      - '9001'
+    volumes:
+      - llm-proxy-minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: --requirepass ${REDIS_AUTH:?set REDIS_AUTH}
+    volumes:
+      - llm-proxy-redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_AUTH}', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zoom-cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # A cache, not a store: when it is full, the least recently used zooms go.
+    command: --requirepass ${ZOOM_CACHE_AUTH:?set ZOOM_CACHE_AUTH} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    expose:
+      - '6379'
+    volumes:
+      - llm-proxy-zoom-cache-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${ZOOM_CACHE_AUTH}', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  langfuse-web:
+    image: langfuse/langfuse:4.37.0
+    restart: unless-stopped
+    expose:
+      - '3000'
+    environment:
+      DATABASE_URL: postgresql://langfuse:${LANGFUSE_DB_PASSWORD}@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_CLUSTER_ENABLED: 'false'
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: 'true'
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:?set MINIO_PUBLIC_ENDPOINT}
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: 'true'
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: '0'
+      LANGFUSE_MIGRATION_V4_WRITE_MODE: dual # Langfuse v4 defaults to events_only, which drops LiteLLM's legacy ingestion protocol
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_AUTH: ${REDIS_AUTH}
+      NEXTAUTH_URL: ${LANGFUSE_URL:?set LANGFUSE_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET}
+      SALT: ${LANGFUSE_SALT:?set LANGFUSE_SALT}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:?set LANGFUSE_ENCRYPTION_KEY}
+      TELEMETRY_ENABLED: 'false'
+      LANGFUSE_INIT_ORG_ID: bszrs
+      LANGFUSE_INIT_ORG_NAME: bszrs
+      LANGFUSE_INIT_PROJECT_ID: llm-proxy
+      LANGFUSE_INIT_PROJECT_NAME: llm-proxy
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:?set LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:?set LANGFUSE_SECRET_KEY}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:?set LANGFUSE_INIT_USER_EMAIL}
+      LANGFUSE_INIT_USER_NAME: admin
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:?set LANGFUSE_INIT_USER_PASSWORD}
+      LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS: 100.64.0.0/10
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:4.37.0
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://langfuse:${LANGFUSE_DB_PASSWORD}@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_CLUSTER_ENABLED: 'false'
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: 'true'
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: 'true'
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      LANGFUSE_MIGRATION_V4_WRITE_MODE: dual
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_AUTH: ${REDIS_AUTH}
+      SALT: ${LANGFUSE_SALT}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY}
+      TELEMETRY_ENABLED: 'false'
+      LANGFUSE_LLM_CONNECTION_WHITELISTED_IP_SEGMENTS: 100.64.0.0/10
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  llm-proxy-litellm-pgdata:
+  llm-proxy-langfuse-pgdata:
+  llm-proxy-clickhouse-data:
+  llm-proxy-clickhouse-logs:
+  llm-proxy-minio-data:
+  llm-proxy-redis-data:
+  llm-proxy-zoom-cache-data:

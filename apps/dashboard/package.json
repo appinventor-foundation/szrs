@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "@sveltejs/adapter-auto": "catalog:sveltejs",
+    "@sveltejs/adapter-node": "catalog:sveltejs",
     "@sveltejs/kit": "catalog:sveltejs",
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
     "@szrs/eslint-config": "workspace:*",

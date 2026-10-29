@@ -1,0 +1,4 @@
+<clickhouse>
+	<!-- Default is 0.9 of host RAM, which leaves little for the other services on a shared Dokploy host. -->
+	<max_server_memory_usage_to_ram_ratio>0.5</max_server_memory_usage_to_ram_ratio>
+</clickhouse>

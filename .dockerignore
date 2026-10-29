@@ -1,0 +1,12 @@
+# Build contexts are the monorepo root (apps/*/Dockerfile), so keep host
+# artifacts and secrets out of them.
+.git
+**/node_modules
+**/.turbo
+**/.svelte-kit
+**/dist
+**/build
+**/coverage
+**/test-results
+**/.env*
+!**/.env.example
