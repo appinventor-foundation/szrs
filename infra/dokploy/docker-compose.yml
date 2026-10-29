@@ -17,7 +17,10 @@
 #     mapping is dropped.
 #   - Database passwords and the public URLs come from env (.env.example).
 #   - restart: unless-stopped everywhere.
-# Turn on "Isolated Deployments" for the app so Dokploy handles networking.
+# Networking: leave "Isolated Deployments" off (deprecated in Dokploy v0.30).
+# Adding a domain makes Dokploy put that service on both dokploy-network and
+# `default`, which Preview Compose confirmed; the others stay on `default`
+# only. Don't give a service a domain without checking Preview Compose.
 #
 # First deploy is two steps: LiteLLM must be running before it can mint the
 # proxy's virtual key. Deploy with LITELLM_VIRTUAL_KEY empty (the proxy starts
@@ -187,7 +190,9 @@ services:
       retries: 10
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # MinIO stopped publishing images (quay.io/minio/minio and minio/minio are
+    # gone). coollabsio builds the last community release from MinIO's source.
+    image: coollabsio/minio:RELEASE.2025-10-15T17-29-55Z
     restart: unless-stopped
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
