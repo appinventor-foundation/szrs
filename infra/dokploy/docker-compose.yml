@@ -244,6 +244,9 @@ services:
     expose:
       - '3000'
     environment:
+      # Next.js binds to $HOSTNAME (Docker sets it to the container ID), which is
+      # a single address; on two networks the other one is refused. Bind all.
+      HOSTNAME: 0.0.0.0
       DATABASE_URL: postgresql://langfuse:${LANGFUSE_DB_PASSWORD}@langfuse-postgres:5432/langfuse
       CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
       CLICKHOUSE_URL: http://clickhouse:8123
