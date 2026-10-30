@@ -186,6 +186,9 @@ catalogs:
       specifier: 5.57.3
       version: 5.57.3
 
+overrides:
+  dompurify: 3.4.17
+
 importers:
 
   .:
@@ -210,17 +213,17 @@ importers:
         version: link:../../packages/llm-proxy-contracts
     devDependencies:
       '@blockly/dev-scripts':
-        specifier: ^13.3.0
-        version: 13.3.0(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(supports-color@8.1.1)(typescript@5.9.3)
+        specifier: ^13.4.0
+        version: 13.4.0(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(supports-color@8.1.1)(typescript@5.9.3)
       '@blockly/dev-tools':
-        specifier: ^13.3.0
-        version: 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+        specifier: ^13.4.0
+        version: 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
       '@szrs/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
       blockly:
-        specifier: ^13.3.0
-        version: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+        specifier: ^13.4.0
+        version: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
       eslint:
         specifier: 10.8.1
         version: 10.8.1(supports-color@8.1.1)
@@ -540,13 +543,13 @@ packages:
   '@blazediff/core@1.9.1':
     resolution: {integrity: sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA==}
 
-  '@blockly/block-test@13.3.0':
-    resolution: {integrity: sha512-GWgwzHkMvp0ux/lJtFFx1/eGu5Cr63GtdH/TEb9gNataCLffUJvTo3ucngDnLcr5gjoCLVETF92BXXyCMDdDuw==}
+  '@blockly/block-test@13.4.0':
+    resolution: {integrity: sha512-P9MBpwfrLhU9eMmBfxklF7/CXlvg+bZM9YFz2xDNI9Z6tvsaRHLo9gaNYRtl59dSNKVzZgrH1YLbyIE5afEZ7Q==}
     peerDependencies:
       blockly: ^13.2.0
 
-  '@blockly/dev-scripts@13.3.0':
-    resolution: {integrity: sha512-W5isjBiBKeG3k98npp36nJPdM0TwQb9Fkcy6QfzWArf0Eebi9Mfh2kcQHOBl4g93v6v3Op6pIZ8zPhmrsou2BQ==}
+  '@blockly/dev-scripts@13.4.0':
+    resolution: {integrity: sha512-J8dIkOoK6i/n48LMPqUtfU8Gt8elzjUwy6nxv6wN2FOZ5KY3knnA3Ud7ZdKLxUnqSiEhqEj1rg5p+s7ZojFeVw==}
     hasBin: true
     peerDependencies:
       typescript: ^4.3.2 || ^5
@@ -554,28 +557,28 @@ packages:
       typescript:
         optional: true
 
-  '@blockly/dev-tools@13.3.0':
-    resolution: {integrity: sha512-b/wKIkCrxrg5Uh0kLoBZyW/c1e2Rp2/3ixN/1TLcp2ShSidjjy2dkm7ZjV7u84/rrOkYXXL8P6bMdr5uGoBFwg==}
+  '@blockly/dev-tools@13.4.0':
+    resolution: {integrity: sha512-1dwXgFa/VRlWtFqhyty0l5AcAgm5Xa3aa3aJKOEWo5ggmdgNkr8/8umwbVu5eSeihFMqmHjnHKJnv+QGk0FJww==}
     peerDependencies:
       blockly: ^13.2.0
 
-  '@blockly/theme-dark@13.3.0':
-    resolution: {integrity: sha512-0dGj2NINVoxdgKmbqm71Y/3+JL7+unbjXeHUWhvjCo3HB0k5tKnbTtW5HS3wVgdarI6OxhZo17t1om5tx8f4yg==}
+  '@blockly/theme-dark@13.4.0':
+    resolution: {integrity: sha512-xAB1ui0yudee4KfNATQ9/n/D73grFdHg5WI2Tkq2ubmOSXjZBj2EqpZVwn+g/fSBisZpn6AQ6VDXIfeATZ/gAQ==}
     peerDependencies:
       blockly: ^13.2.0
 
-  '@blockly/theme-deuteranopia@13.3.0':
-    resolution: {integrity: sha512-EaWbOgvEhO2zYCFs+R1BAa1vECOvWwGBmX7r7CS7w5ZBc5VUMu2gRduIJr315/E/J57/jZzfZjLi0vjRifPhFw==}
+  '@blockly/theme-deuteranopia@13.4.0':
+    resolution: {integrity: sha512-OUQTeJ6TOZNovpkejz8t9vdM/aEY1PH5Kr7ZG5o9Tac2rAD6eRREnEN1rccHpiz+dHHLDMCG37Uz4nPTQ0kiGQ==}
     peerDependencies:
       blockly: ^13.2.0
 
-  '@blockly/theme-highcontrast@13.3.0':
-    resolution: {integrity: sha512-tw8klpzeArFW16qmGwUOhRVKSj/1xeQOrqAJLtKF9K2MLjmSRNgUdhzUqaW2rPmbGwAMkNqf6SmBp7zLE5ZcPw==}
+  '@blockly/theme-highcontrast@13.4.0':
+    resolution: {integrity: sha512-4ZUvpO9twnH6lzjfekbcdGpoEYnyCWrBPe6L13TDWDSnFEIexQ9rHBqYhJ4eg+kTASQcIQj+qjVNGcVYgfGSmQ==}
     peerDependencies:
       blockly: ^13.2.0
 
-  '@blockly/theme-tritanopia@13.3.0':
-    resolution: {integrity: sha512-k0VH5jzMANV5jkKQX3VffJXHe/1+/yLnqGhhJPPoHWTeck1oazXtJkAB3i5uy5X1BC5sp4jX89zsNrRW9Qz1hw==}
+  '@blockly/theme-tritanopia@13.4.0':
+    resolution: {integrity: sha512-IaqFyrVFG2JCE9YDCJV51S9tmNZhTpc6O6cQ2MJ7bDZDpqZDfwaNhzU8lbotKqiL7KuLLt4rrfZg14GXaBuwmQ==}
     peerDependencies:
       blockly: ^13.2.0
 
@@ -2183,14 +2186,14 @@ packages:
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
 
-  blockly@13.3.0:
-    resolution: {integrity: sha512-qAHFGMGTSF67Lupr3pjZz9LQu4JCFdN76CMZxegBKiveZreK08yXhaCz0g9q9/xe5GEdoeFT3POAlQavPIRPEw==}
+  blockly@13.4.0:
+    resolution: {integrity: sha512-cWZJV5nocL+VWOG9Vfm6j8shdOLGyvKkyoGOS2bk9u6PKb4qqLp50NeL8YoNMTEi7fHmY37eBYT1yC6Y7/yZ7w==}
     engines: {node: '>=22'}
     peerDependencies:
-      jsdom: '>=27.4.0 <30.0.0'
+      jsdom: '>=27.4.0 <31.0.0'
 
-  body-parser@2.3.0:
-    resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
+  body-parser@2.4.0:
+    resolution: {integrity: sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==}
     engines: {node: '>=18'}
 
   bonjour-service@1.4.4:
@@ -2252,9 +2255,17 @@ packages:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
     engines: {node: '>=18'}
 
+  chai@6.3.0:
+    resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
+    engines: {node: '>=18'}
+
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
+
+  chalk@6.0.1:
+    resolution: {integrity: sha512-/Ce6KNm3vIbWdMlNna6RVIZ/ICQxnJxCicet5LBKK9ZffBkqzDw0xh9EiKSljdRtiIQ1S1z4YgcscUUGzNCWrA==}
+    engines: {node: '>=22'}
 
   chokidar@4.0.3:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
@@ -2442,8 +2453,8 @@ packages:
     resolution: {integrity: sha512-l4gcSouhcgIKRvyy99RNVOgxXiicE+2jZoNmaNmZ6JXiGajBOJAesk1OBlJuM5k2c+eudGdLxDqXuPCKIj6kpw==}
     engines: {node: '>=6'}
 
-  dompurify@3.4.8:
-    resolution: {integrity: sha512-yb1cEmaOum7wFvOCSQxyfgVlv5D47Rc30iZWoMpbDIWTnJ6grDDQyu2KFJzB2k7u0pMuJcQ1zphH//fFnw2tjQ==}
+  dompurify@3.4.17:
+    resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
   dotenv@16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
@@ -3027,8 +3038,8 @@ packages:
   known-css-properties@0.37.0:
     resolution: {integrity: sha512-JCDrsP4Z1Sb9JwG0aJ8Eo2r7k4Ou5MwmThS/6lcIe1ICyb7UBJKGRIUUdqc2ASdE/42lgz6zFUnzAIhtXnBVrQ==}
 
-  launch-editor@2.14.1:
-    resolution: {integrity: sha512-QWBrQsMpH7gPr965dsKD/3cKWiNoTjpATQf++Xq63N6sKRGMwlVXz41O1IZTMfZQgBctD/K5Zt06+/I6pP6+HA==}
+  launch-editor@2.14.2:
+    resolution: {integrity: sha512-NHJEb30MGBCkmZXLZwz25t37QR4aY03ZzPYUJXOJaOa92uWwExI9SBQUuIznBYc1xkD7cJNGX7oc3Nl3sq2kQQ==}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -3275,16 +3286,16 @@ packages:
     resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
 
-  mocha@12.0.2:
-    resolution: {integrity: sha512-SjAulGHxlMJLCD1bhvJBAiYwYxglydRzA9PDQ5MALq1oLRMMtIhxSQJ0olCFgA7c9YbTdxC0KOV0wl8JEDYVhA==}
+  mocha@12.0.3:
+    resolution: {integrity: sha512-beammieDdiWdkjANWeWPpkxUROYGi5FN88fPOkLiticz7HTg3Y+Pho3EYE6SUdcuWnZ3h2WD8EXCA55JF4o6wg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
   module-details-from-path@1.0.4:
     resolution: {integrity: sha512-EGWKgxALGMgzvxYF1UyGTy0HXX/2vHLkw6+NvDKW2jypWbHpjQuj4UMcqQWXHERJhVGKikolT06G3bcKe4fi7w==}
 
-  monaco-editor@0.56.0:
-    resolution: {integrity: sha512-sXboRm3BeBeLm938eaiyLMe0OxzfXIlZvbv4ir/jVgQy1zDhWjgmny0WoN45fuDKhCCQsYMbBJrv/A6jd8aCUg==}
+  monaco-editor@0.57.0:
+    resolution: {integrity: sha512-5BkI9KGoqrNvBGUe15/QlZq3OooZ8WLg1AxTpaqHRCP3HNpzPPZKE2EDz8M7c+VRmCeUw1Brp4cx/PWm3kI/5A==}
 
   mrmime@2.0.1:
     resolution: {integrity: sha512-Y3wQdFg2Va6etvQ5I82yUhGdsKrcYox6p7FfL1LbK2J4V01F9TGlepTIhnK24t7koZibmg82KGglhA1XK5IsLQ==}
@@ -3581,8 +3592,8 @@ packages:
     resolution: {integrity: sha512-BbubeCEyTuQjVMakvJQ/Sxbc93F2pwmbsxONT/ZRrwU7Ua38d8unYTwXpTVLAKJ4BDuH9IGztCjQcd/N/39Dvg==}
     engines: {node: '>=16.0.0'}
 
-  qs@6.16.0:
-    resolution: {integrity: sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==}
+  qs@6.17.1:
+    resolution: {integrity: sha512-jd3COkaKVgGUW+ZHyEHCG9bH7RoaaiWuMgzsIBjUMVjLAaWGWpoUAVwljVvBHxRu/2qEHnadLGZrkutYUBPQJA==}
     engines: {node: '>=0.6'}
 
   quick-format-unescaped@4.0.4:
@@ -3709,8 +3720,8 @@ packages:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
 
-  serialize-javascript@7.1.2:
-    resolution: {integrity: sha512-GL2BWwVa6JydKO6l/ljVgjAZF4QJ3S7dWDWi53s5GZT8PJzD2fNxi67HANQGKAqPrwEpL5ba7gUBGi0Ls/sEoQ==}
+  serialize-javascript@7.1.4:
+    resolution: {integrity: sha512-FqlEuoTq/zRmA4Lg6aOqyH3lCHbUtCB0bmHCeFniX2GBdDqMJM3FwdvEhlE5Pim1dlt2FfBdVPmUNNiGhhKqpw==}
     engines: {node: '>=20.0.0'}
 
   serve-index@1.9.2:
@@ -3735,8 +3746,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  shell-quote@1.10.0:
-    resolution: {integrity: sha512-w1aiOKwKuRgtwAReIIj89puqg+I7GvX4IbLrvmhXbzQsj1+Zwi4VO3+fa6ZF91TWSjIxoEkKnMeHcLEODK5ZXA==}
+  shell-quote@1.12.0:
+    resolution: {integrity: sha512-PcByqNyT/38F2kDNi006HAMRJaULuBzq/FOsw3qdZvX/GA9W/jamDaRskgHjubHiftXK5sIFxLNkvrXUwcof6Q==}
     engines: {node: '>= 0.4'}
 
   side-channel-list@1.0.1:
@@ -3771,10 +3782,6 @@ packages:
 
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
-
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
-    engines: {node: '>=0.10.0'}
 
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
@@ -4345,16 +4352,16 @@ snapshots:
 
   '@blazediff/core@1.9.1': {}
 
-  '@blockly/block-test@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/block-test@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
 
-  '@blockly/dev-scripts@13.3.0(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(supports-color@8.1.1)(typescript@5.9.3)':
+  '@blockly/dev-scripts@13.4.0(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(supports-color@8.1.1)(typescript@5.9.3)':
     dependencies:
       '@babel/code-frame': 8.0.6
-      chalk: 4.1.2
+      chalk: 6.0.1
       fork-ts-checker-webpack-plugin: 9.1.0(typescript@5.9.3)(webpack@5.111.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
-      mocha: 12.0.2
+      mocha: 12.0.3
       rimraf: 6.1.3
       source-map-loader: 5.0.0(webpack@5.111.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
       ts-loader: 9.6.2(typescript@5.9.3)(webpack@5.111.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))
@@ -4385,36 +4392,36 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-  '@blockly/dev-tools@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/dev-tools@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      '@blockly/block-test': 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
-      '@blockly/theme-dark': 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
-      '@blockly/theme-deuteranopia': 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
-      '@blockly/theme-highcontrast': 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
-      '@blockly/theme-tritanopia': 13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
-      chai: 6.2.2
+      '@blockly/block-test': 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      '@blockly/theme-dark': 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      '@blockly/theme-deuteranopia': 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      '@blockly/theme-highcontrast': 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      '@blockly/theme-tritanopia': 13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      chai: 6.3.0
       dat.gui: 0.7.9
       lodash.assign: 4.2.0
       lodash.merge: 4.6.2
-      monaco-editor: 0.56.0
+      monaco-editor: 0.57.0
       sinon: 22.1.0
 
-  '@blockly/theme-dark@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/theme-dark@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
 
-  '@blockly/theme-deuteranopia@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/theme-deuteranopia@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
 
-  '@blockly/theme-highcontrast@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/theme-highcontrast@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
 
-  '@blockly/theme-tritanopia@13.3.0(blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
+  '@blockly/theme-tritanopia@13.4.0(blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)))':
     dependencies:
-      blockly: 13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0))
+      blockly: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
 
   '@bramus/specificity@2.4.2':
     dependencies:
@@ -6201,11 +6208,11 @@ snapshots:
 
   bignumber.js@9.3.1: {}
 
-  blockly@13.3.0(jsdom@29.1.1(@noble/hashes@1.8.0)):
+  blockly@13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0)):
     dependencies:
       jsdom: 29.1.1(@noble/hashes@1.8.0)
 
-  body-parser@2.3.0(supports-color@8.1.1):
+  body-parser@2.4.0(supports-color@8.1.1):
     dependencies:
       bytes: 3.1.2
       content-type: 2.1.0
@@ -6213,7 +6220,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.3
       on-finished: 2.4.1
-      qs: 6.16.0
+      qs: 6.17.1
       raw-body: 3.0.2
       type-is: 2.1.0
     transitivePeerDependencies:
@@ -6277,10 +6284,14 @@ snapshots:
 
   chai@6.2.2: {}
 
+  chai@6.3.0: {}
+
   chalk@4.1.2:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
+
+  chalk@6.0.1: {}
 
   chokidar@4.0.3:
     dependencies:
@@ -6427,7 +6438,7 @@ snapshots:
     dependencies:
       '@leichtgewicht/ip-codec': 2.0.5
 
-  dompurify@3.4.8:
+  dompurify@3.4.17:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -6641,7 +6652,7 @@ snapshots:
   express@5.2.1(supports-color@8.1.1):
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.3.0(supports-color@8.1.1)
+      body-parser: 2.4.0(supports-color@8.1.1)
       content-disposition: 1.1.0
       content-type: 1.0.5
       cookie: 0.7.2
@@ -6660,7 +6671,7 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.8
-      qs: 6.16.0
+      qs: 6.17.1
       range-parser: 1.3.0
       router: 2.2.0(supports-color@8.1.1)
       send: 1.2.1(supports-color@8.1.1)
@@ -7098,10 +7109,10 @@ snapshots:
 
   known-css-properties@0.37.0: {}
 
-  launch-editor@2.14.1:
+  launch-editor@2.14.2:
     dependencies:
       picocolors: 1.1.1
-      shell-quote: 1.10.0
+      shell-quote: 1.12.0
 
   levn@0.4.1:
     dependencies:
@@ -7279,7 +7290,7 @@ snapshots:
 
   minipass@7.1.3: {}
 
-  mocha@12.0.2:
+  mocha@12.0.3:
     dependencies:
       browser-stdout: 1.3.1
       chokidar: 5.0.0
@@ -7293,16 +7304,16 @@ snapshots:
       minimatch: 10.2.6
       ms: 2.1.3
       picocolors: 1.1.1
-      serialize-javascript: 7.1.2
+      serialize-javascript: 7.1.4
       strip-json-comments: 5.0.3
       supports-color: 8.1.1
       workerpool: 10.0.3
 
   module-details-from-path@1.0.4: {}
 
-  monaco-editor@0.56.0:
+  monaco-editor@0.57.0:
     dependencies:
-      dompurify: 3.4.8
+      dompurify: 3.4.17
       marked: 14.0.0
 
   mrmime@2.0.1: {}
@@ -7572,7 +7583,7 @@ snapshots:
 
   pvutils@1.2.0: {}
 
-  qs@6.16.0:
+  qs@6.17.1:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1
@@ -7722,7 +7733,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  serialize-javascript@7.1.2: {}
+  serialize-javascript@7.1.4: {}
 
   serve-index@1.9.2(supports-color@8.1.1):
     dependencies:
@@ -7755,7 +7766,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  shell-quote@1.10.0: {}
+  shell-quote@1.12.0: {}
 
   side-channel-list@1.0.1:
     dependencies:
@@ -7806,14 +7817,12 @@ snapshots:
     dependencies:
       atomic-sleep: 1.0.0
 
-  source-map-js@1.2.1: {}
-
   source-map-js@1.2.2: {}
 
   source-map-loader@5.0.0(webpack@5.111.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)):
     dependencies:
       iconv-lite: 0.6.3
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
       webpack: 5.111.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)
 
   source-map-support@0.5.21:
@@ -8186,7 +8195,7 @@ snapshots:
       graceful-fs: 4.2.11
       http-proxy-middleware: 4.2.0(supports-color@8.1.1)
       ipaddr.js: 2.5.0
-      launch-editor: 2.14.1
+      launch-editor: 2.14.2
       open: 11.0.4
       p-retry: 8.0.1
       schema-utils: 4.5.0

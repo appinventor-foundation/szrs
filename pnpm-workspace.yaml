@@ -16,6 +16,11 @@ catalogs:
     "prettier-plugin-svelte": "4.1.1"
     "svelte": "5.57.3"
 
+# monaco-editor (via @blockly/dev-tools) pins dompurify 3.4.15 exactly, which has
+# known XSS advisories. Drop this once a monaco-editor release depends on >=3.4.17.
+overrides:
+  dompurify: 3.4.17
+
 minimumReleaseAgeExclude:
   - '@opentelemetry/auto-instrumentations-node@0.80.0'
   - '@opentelemetry/instrumentation-amqplib@0.69.0'
