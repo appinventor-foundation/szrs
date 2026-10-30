@@ -7,6 +7,10 @@ allowBuilds:
   protobufjs: true
 
 catalogs:
+  styling:
+    "@skeletonlabs/skeleton": "5.0.1"
+    "@tailwindcss/vite": "4.3.3"
+    "tailwindcss": "4.3.3"
   sveltejs:
     "@sveltejs/adapter-node": "6.0.1"
     "@sveltejs/adapter-static": "4.0.1"

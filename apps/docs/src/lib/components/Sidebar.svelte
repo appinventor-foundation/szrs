@@ -17,20 +17,27 @@
 </script>
 
 {#snippet link(node: NavNode)}
-	<a href={pageUrl(node.slug ?? '')} aria-current={node.slug === currentSlug ? 'page' : undefined}
-		>{node.title}</a
+	<a
+		href={pageUrl(node.slug ?? '')}
+		aria-current={node.slug === currentSlug ? 'page' : undefined}
+		class={[
+			'block rounded-base px-2 py-1',
+			node.slug === currentSlug ? 'preset-tonal-primary font-semibold' : 'hover:bg-surface-100-900'
+		]}>{node.title}</a
 	>
 {/snippet}
 
 {#snippet item(node: NavNode)}
-	<li>
+	<li class="my-0.5">
 		{#if node.slug !== null}
 			{@render link(node)}
 		{:else}
-			<span class="section">{node.title}</span>
+			<span class="mt-2.5 block px-2 py-1 text-xs tracking-wider text-surface-800-200 uppercase"
+				>{node.title}</span
+			>
 		{/if}
 		{#if node.children.length > 0}
-			<ul>
+			<ul class="ml-3 border-l border-surface-200-800 pl-2.5">
 				{#each node.children as child (child.slug ?? child.title)}
 					{@render item(child)}
 				{/each}
@@ -42,58 +49,10 @@
 <nav aria-label="Documentation">
 	<ul>
 		{#if nav.slug !== null}
-			<li>{@render link(nav)}</li>
+			<li class="my-0.5">{@render link(nav)}</li>
 		{/if}
 		{#each nav.children as child (child.slug ?? child.title)}
 			{@render item(child)}
 		{/each}
 	</ul>
 </nav>
-
-<style>
-	ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	ul ul {
-		margin-left: 0.8rem;
-		padding-left: 0.6rem;
-		border-left: 1px solid var(--border);
-	}
-
-	li {
-		margin: 0.15rem 0;
-	}
-
-	a,
-	.section {
-		display: block;
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-	}
-
-	a {
-		color: var(--fg);
-		text-decoration: none;
-	}
-
-	a:hover {
-		background: var(--code-bg);
-	}
-
-	a[aria-current='page'] {
-		background: var(--accent-bg);
-		color: var(--accent);
-		font-weight: 600;
-	}
-
-	.section {
-		margin-top: 0.6rem;
-		font-size: 0.75rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-</style>

@@ -1,0 +1,85 @@
+@import '@szrs/ui/theme.css';
+
+/*
+ * Rendered markdown. Tailwind's preflight strips the browser's heading, list and
+ * link styling, so it is put back here, using Skeleton's theme-aware typography.
+ */
+@layer components {
+	.prose {
+		@apply max-w-[46rem] min-w-0 flex-1 leading-relaxed;
+
+		& > :first-child {
+			margin-top: 0;
+		}
+
+		& h1 {
+			@apply mb-4 h1;
+		}
+
+		& h2 {
+			@apply mt-9 mb-3 border-b border-surface-200-800 pb-1 h2;
+		}
+
+		& h3 {
+			@apply mt-6 mb-2 h3;
+		}
+
+		& h4 {
+			@apply mt-5 mb-2 h4;
+		}
+
+		& :is(p, ul, ol, pre, table, blockquote) {
+			@apply my-4;
+		}
+
+		& ul {
+			@apply list-disc pl-6;
+		}
+
+		& ol {
+			@apply list-decimal pl-6;
+		}
+
+		& li {
+			@apply my-1;
+		}
+
+		/* Skeleton's own anchor colour is too faint in some themes, so only its underline is kept. */
+		& a {
+			@apply anchor;
+			color: light-dark(var(--color-tertiary-900), var(--color-tertiary-200));
+		}
+
+		& blockquote {
+			@apply blockquote;
+		}
+
+		& hr {
+			@apply my-6 hr;
+		}
+
+		& pre {
+			@apply overflow-x-auto rounded-container bg-surface-100-900 p-4;
+		}
+
+		& code {
+			@apply text-[0.9em];
+		}
+
+		& :not(pre) > code {
+			@apply rounded-base bg-surface-100-900 px-1.5 py-0.5;
+		}
+
+		& table {
+			@apply border-collapse;
+		}
+
+		& :is(th, td) {
+			@apply border border-surface-200-800 px-3 py-1.5 text-left;
+		}
+
+		& img {
+			@apply max-w-full;
+		}
+	}
+}

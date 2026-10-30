@@ -1,0 +1,22 @@
+/*
+ * Shared styling for the dashboard and docs apps: Tailwind, Skeleton and the
+ * themes offered by ThemeControls. Each app imports this from its layout.css.
+ */
+@import 'tailwindcss';
+
+/*
+ * Light and dark follow data-mode on <html>, which ThemeControls (and the inline
+ * script in each app.html) set. Skeleton's dark styles key off this variant.
+ */
+@custom-variant dark (&:where([data-mode='dark'], [data-mode='dark'] *));
+
+@import '@skeletonlabs/skeleton';
+
+/* Keep this list in step with THEMES in theme.svelte.ts and the script in app.html. */
+@import '@skeletonlabs/skeleton/themes/catppuccin';
+@import '@skeletonlabs/skeleton/themes/mona';
+@import '@skeletonlabs/skeleton/themes/seafoam';
+@import '@skeletonlabs/skeleton/themes/vintage';
+
+/* Classes used by the components in this package. */
+@source './';

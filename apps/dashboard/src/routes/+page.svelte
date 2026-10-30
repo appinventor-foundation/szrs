@@ -7,6 +7,10 @@
 	import { CounterView } from '@szrs/ui';
 </script>
 
-<h1>Dashboard</h1>
-<CounterView />
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<h1 class="h1">Dashboard</h1>
+<div class="mt-4 flex items-center gap-2">
+	<CounterView />
+</div>
+<p class="mt-4">
+	Visit <a class="anchor" href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation
+</p>

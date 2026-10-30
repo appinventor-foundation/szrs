@@ -25,6 +25,7 @@
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
     "@szrs/eslint-config": "workspace:*",
     "@szrs/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "catalog:styling",
     "@types/node": "26.2.0",
     "@vitest/browser-playwright": "4.1.12",
     "eslint": "10.8.1",

@@ -4,87 +4,31 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
+	import './layout.css';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Sidebar from '#lib/components/Sidebar.svelte';
 	import { normalizeSlug } from '#lib/nav.js';
+	import { SITE_NAME } from '#lib/site.js';
+	import { ThemeControls } from '@szrs/ui';
 
 	const { data, children } = $props();
 </script>
 
-<div class="layout">
-	<aside>
+<header class="border-b border-surface-200-800">
+	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+		<a href={resolve('/')} class="text-lg font-bold">{SITE_NAME}</a>
+		<ThemeControls />
+	</div>
+</header>
+
+<div class="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8 md:flex-row">
+	<aside
+		class="md:sticky md:top-8 md:max-h-[calc(100vh-4rem)] md:w-60 md:flex-none md:self-start md:overflow-y-auto"
+	>
 		<Sidebar nav={data.nav} currentSlug={normalizeSlug(page.params.slug ?? '')} />
 	</aside>
-	<main>
+	<main class="min-w-0 flex-1">
 		{@render children()}
 	</main>
 </div>
-
-<style>
-	:global(:root) {
-		--fg: #1f2328;
-		--muted: #656d76;
-		--bg: #ffffff;
-		--border: #d8dee4;
-		--code-bg: #f3f4f6;
-		--accent: #0b5cad;
-		--accent-bg: #e6f0fb;
-	}
-
-	@media (prefers-color-scheme: dark) {
-		:global(:root) {
-			--fg: #e6edf3;
-			--muted: #9198a1;
-			--bg: #0d1117;
-			--border: #30363d;
-			--code-bg: #161b22;
-			--accent: #79b8ff;
-			--accent-bg: #16283d;
-		}
-	}
-
-	:global(body) {
-		margin: 0;
-		background: var(--bg);
-		color: var(--fg);
-		font-family: system-ui, sans-serif;
-	}
-
-	:global(a) {
-		color: var(--accent);
-	}
-
-	.layout {
-		display: flex;
-		gap: 2rem;
-		max-width: 80rem;
-		margin: 0 auto;
-		padding: 2rem 1.5rem;
-	}
-
-	aside {
-		position: sticky;
-		top: 2rem;
-		align-self: flex-start;
-		flex: 0 0 15rem;
-		max-height: calc(100vh - 4rem);
-		overflow-y: auto;
-	}
-
-	main {
-		flex: 1;
-		min-width: 0;
-	}
-
-	@media (max-width: 800px) {
-		.layout {
-			flex-direction: column;
-		}
-
-		aside {
-			position: static;
-			flex-basis: auto;
-			max-height: none;
-		}
-	}
-</style>

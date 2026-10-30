@@ -10,60 +10,18 @@
 </script>
 
 {#if headings.length > 0}
-	<nav class="toc" aria-label="On this page">
-		<h2>On this page</h2>
+	<nav class="sticky top-8 hidden w-52 flex-none text-sm lg:block" aria-label="On this page">
+		<h2 class="mb-2.5 text-xs font-semibold tracking-wider text-surface-800-200 uppercase">
+			On this page
+		</h2>
 		<ul>
 			{#each headings as heading (heading.id)}
-				<li class:nested={heading.depth > 2}>
-					<a href="#{heading.id}">{heading.text}</a>
+				<li class={['my-1.5', heading.depth > 2 && 'pl-3.5']}>
+					<a href="#{heading.id}" class="text-surface-800-200 hover:text-surface-950-50"
+						>{heading.text}</a
+					>
 				</li>
 			{/each}
 		</ul>
 	</nav>
 {/if}
-
-<style>
-	.toc {
-		position: sticky;
-		top: 2rem;
-		flex: 0 0 13rem;
-		font-size: 0.85rem;
-	}
-
-	h2 {
-		margin: 0 0 0.6rem;
-		font-size: 0.75rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	li {
-		margin: 0.35rem 0;
-	}
-
-	li.nested {
-		padding-left: 0.9rem;
-	}
-
-	a {
-		color: var(--muted);
-		text-decoration: none;
-	}
-
-	a:hover {
-		color: var(--fg);
-	}
-
-	@media (max-width: 1100px) {
-		.toc {
-			display: none;
-		}
-	}
-</style>

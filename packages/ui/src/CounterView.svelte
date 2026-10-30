@@ -9,8 +9,8 @@
 	const _counter = newCounter();
 </script>
 
-<button onclick={() => _counter.decrement()}>-</button>
+<button class="btn preset-tonal-primary" onclick={() => _counter.decrement()}>-</button>
 
 Current count: {_counter.count}
 
-<button onclick={() => _counter.increment()}>+</button>
+<button class="btn preset-tonal-primary" onclick={() => _counter.increment()}>+</button>

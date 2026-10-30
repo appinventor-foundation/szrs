@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { rehypeDocs } from './src/lib/markdown/rehype-docs.js';
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
 
 // Set BASE_PATH when the site is served from a sub path, e.g. BASE_PATH=/szrs for GitHub Pages.
 const base = (process.env.BASE_PATH ?? '') as '' | `/${string}`;
@@ -13,6 +14,7 @@ const contentDir = fileURLToPath(new URL('./content', import.meta.url));
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		sveltekit({
 			extensions: ['.svelte', '.md'],
 			preprocess: [
