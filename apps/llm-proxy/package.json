@@ -14,9 +14,9 @@
     "test:unit": "vitest run test/unit"
   },
   "dependencies": {
-    "@fastify/cors": "11.3.0",
-    "@fastify/rate-limit": "11.2.0",
-    "@fastify/sensible": "6.0.5",
+    "@fastify/cors": "11.3.1",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/sensible": "6.0.7",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/auto-instrumentations-node": "0.80.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
@@ -24,11 +24,11 @@
     "@opentelemetry/sdk-node": "0.222.0",
     "@opentelemetry/semantic-conventions": "1.43.0",
     "@szrs/llm-proxy-contracts": "workspace:*",
-    "fastify": "5.12.1",
-    "fastify-plugin": "6.0.0",
+    "fastify": "5.12.7",
+    "fastify-plugin": "6.0.1",
     "pino": "10.3.1",
     "redis": "6.2.1",
-    "zod": "4.5.4"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@szrs/eslint-config": "workspace:*",
@@ -37,6 +37,6 @@
     "eslint": "10.8.1",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   }
 }
