@@ -5,11 +5,11 @@
 -->
 <script lang="ts">
 	import './layout.css';
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Sidebar from '#lib/components/Sidebar.svelte';
 	import { normalizeSlug } from '#lib/nav.js';
 	import { SITE_NAME } from '#lib/site.js';
+	import { pageUrl } from '#lib/url.js';
 	import { ThemeControls } from '@szrs/ui';
 
 	const { data, children } = $props();
@@ -17,7 +17,7 @@
 
 <header class="border-b border-surface-200-800">
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-		<a href={resolve('/')} class="text-lg font-bold">{SITE_NAME}</a>
+		<a href={pageUrl('')} class="text-lg font-bold">{SITE_NAME}</a>
 		<ThemeControls />
 	</div>
 </header>

@@ -4,16 +4,10 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import type { NavNode } from '#lib/nav.js';
+	import { pageUrl } from '#lib/url.js';
 
 	const { nav, currentSlug }: { nav: NavNode; currentSlug: string } = $props();
-
-	// The site uses trailingSlash: 'always', but resolve() doesn't add the slash itself.
-	function pageUrl(slug: string): string {
-		const url = resolve('/[...slug]', { slug });
-		return url.endsWith('/') ? url : `${url}/`;
-	}
 </script>
 
 {#snippet link(node: NavNode)}

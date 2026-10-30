@@ -19,6 +19,7 @@ catalogs:
     "eslint-plugin-svelte": "3.23.0"
     "prettier-plugin-svelte": "4.1.1"
     "svelte": "5.57.3"
+    "svelte-check": "4.7.7"
 
 # monaco-editor (via @blockly/dev-tools) pins dompurify 3.4.15 exactly, which has
 # known XSS advisories. Drop this once a monaco-editor release depends on >=3.4.17.
