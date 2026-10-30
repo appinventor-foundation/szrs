@@ -31,9 +31,13 @@
     "prettier-plugin-svelte": "catalog:sveltejs",
     "svelte": "catalog:sveltejs",
     "tslib": "2.8.1",
-    "typescript": "7.0.2",
-    "vite": "8.2.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.5",
     "vitest": "4.1.11",
     "vitest-browser-svelte": "3.0.0"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
   }
 }

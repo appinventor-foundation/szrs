@@ -1,6 +1,7 @@
 {
-	"extends": ["@szrs/typescript-config/svelte.json", "./.svelte-kit/tsconfig.json"],
+	"extends": ["@szrs/typescript-config/svelte.json", "$app/tsconfig"],
 	"compilerOptions": {
 		"strictNullChecks": true
-	}
+	},
+	"include": ["src", "vite.config.ts", "playwright.config.ts"]
 }

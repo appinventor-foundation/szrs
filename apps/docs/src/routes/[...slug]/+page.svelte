@@ -4,8 +4,8 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import Toc from '$lib/components/Toc.svelte';
-	import { SITE_NAME } from '$lib/site';
+	import Toc from '#lib/components/Toc.svelte';
+	import { SITE_NAME } from '#lib/site.js';
 
 	const { data } = $props();
 	const Content = $derived(data.content);

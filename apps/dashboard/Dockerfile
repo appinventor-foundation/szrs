@@ -24,8 +24,8 @@ COPY --from=pruner /app/out/full/ .
 RUN pnpm turbo run build --filter=@szrs/dashboard
 
 # adapter-node's build/ is a standalone server (build/index.js). Behind a
-# reverse proxy, set ORIGIN (e.g. https://dashboard.example.com) or SvelteKit
-# rejects form posts.
+# reverse proxy, set PROTOCOL_HEADER and HOST_HEADER (e.g. x-forwarded-proto and
+# x-forwarded-host) or SvelteKit rejects form posts.
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production

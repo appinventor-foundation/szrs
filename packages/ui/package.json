@@ -5,10 +5,10 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "svelte-kit sync && tsc --noEmit",
+    "build": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check-types": "svelte-kit sync && tsc --noEmit",
+    "check-types": "tsc --noEmit",
     "test:unit": "vitest run"
   },
   "sideEffects": [
@@ -22,10 +22,9 @@
     }
   },
   "peerDependencies": {
-    "svelte": "5.56.9"
+    "svelte": "5.57.3"
   },
   "devDependencies": {
-    "@sveltejs/kit": "catalog:sveltejs",
     "@sveltejs/vite-plugin-svelte": "catalog:sveltejs",
     "@szrs/eslint-config": "workspace:*",
     "@szrs/typescript-config": "workspace:*",
@@ -35,8 +34,8 @@
     "globals": "17.11.0",
     "playwright": "1.62.1",
     "svelte": "catalog:sveltejs",
-    "typescript": "7.0.2",
-    "vite": "8.2.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.5",
     "vitest": "4.1.11",
     "vitest-browser-svelte": "3.0.0"
   }

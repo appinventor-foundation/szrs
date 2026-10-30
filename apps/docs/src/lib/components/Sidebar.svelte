@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { NavNode } from '$lib/nav';
+	import type { NavNode } from '#lib/nav.js';
 
 	const { nav, currentSlug }: { nav: NavNode; currentSlug: string } = $props();
 

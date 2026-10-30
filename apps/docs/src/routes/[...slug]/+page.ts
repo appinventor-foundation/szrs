@@ -3,7 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { error } from '@sveltejs/kit';
-import { findPage, pageComponent, pages } from '$lib/content';
+import { findPage, pageComponent, pages } from '#lib/content.js';
 import type { EntryGenerator, PageLoad } from './$types';
 
 export const entries: EntryGenerator = () => pages.map(({ slug }) => ({ slug }));

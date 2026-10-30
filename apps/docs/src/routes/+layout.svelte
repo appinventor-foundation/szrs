@@ -5,8 +5,8 @@
 -->
 <script lang="ts">
 	import { page } from '$app/state';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import { normalizeSlug } from '$lib/nav';
+	import Sidebar from '#lib/components/Sidebar.svelte';
+	import { normalizeSlug } from '#lib/nav.js';
 
 	const { data, children } = $props();
 </script>

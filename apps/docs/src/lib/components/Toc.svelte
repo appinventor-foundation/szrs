@@ -4,7 +4,7 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import type { Heading } from '$lib/nav';
+	import type { Heading } from '#lib/nav.js';
 
 	const { headings }: { headings: Heading[] } = $props();
 </script>

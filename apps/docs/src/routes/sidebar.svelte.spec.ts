@@ -5,8 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
-import Sidebar from '$lib/components/Sidebar.svelte';
-import { buildNav, buildPages } from '$lib/nav';
+import Sidebar from '#lib/components/Sidebar.svelte';
+import { buildNav, buildPages } from '#lib/nav.js';
 
 const nav = buildNav(
 	buildPages({

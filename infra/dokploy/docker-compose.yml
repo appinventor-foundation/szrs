@@ -77,8 +77,10 @@ services:
       - '3000'
     environment:
       PORT: '3000'
-      # SvelteKit rejects form posts unless this matches the public URL.
-      ORIGIN: ${DASHBOARD_URL:?set DASHBOARD_URL}
+      # SvelteKit 3 derives the public origin from these headers, which Traefik
+      # sets. It rejects form posts when the origin does not match.
+      PROTOCOL_HEADER: x-forwarded-proto
+      HOST_HEADER: x-forwarded-host
     healthcheck:
       test:
         [

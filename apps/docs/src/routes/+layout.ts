@@ -2,8 +2,8 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-import { pages } from '$lib/content';
-import { buildNav } from '$lib/nav';
+import { pages } from '#lib/content.js';
+import { buildNav } from '#lib/nav.js';
 import type { LayoutLoad } from './$types';
 
 export const prerender = true;
