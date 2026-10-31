@@ -27,6 +27,7 @@ The database comes from the repo's compose stack: `docker compose -f infra/llm-p
 - **No business logic in `.svelte` files.** Script blocks are TypeScript and hold UI wiring only: props, local view state, handlers that call imported functions. Database access, business rules and API calls live in their own layer and are imported.
 - **Never use `$effect` to derive state.** Use `$derived`. `$effect` is only for syncing with an external system, with an eslint-disable and a reason. Lint bans it in `.svelte`, `.svelte.ts` and `.svelte.js` files.
 - Components cannot import `drizzle-orm`, `postgres` or `#lib/server/*` (lint rule, and Kit's build guard fails too).
+- **Never experiment against the dev database.** Spikes, throwaway scripts and manual tests go against `dashboard_test` (`TEST_DATABASE_URL`), or clean up everything you created. A stray admin left in the dev database makes `pnpm auth:seed` skip, so the documented dev admin never gets created.
 - **Auth is server-side only.** Routes call services, services call `auth.api.*` through repositories. There is no browser auth client; forms post to actions and work without JS.
 
 ## Layers (`src/lib`)
@@ -58,7 +59,7 @@ Imports use the `#lib/...` alias **with a `.js` extension** (`#lib/server/errors
 - **Protection happens in one place: `hooks.server.ts`**, via `server/auth/hooks.ts` and the pure policy in `server/auth/guard.ts`. Anything under `src/routes/(protected)/` needs a signed-in user, and anything under `(protected)/admin/` needs the `admin` role. Everything else is public (`/`, `/login`, `/healthz`, `/api/auth/*`). A visitor gets a 303 to `/login?redirectTo=...` on GET and a 401 otherwise; a non-admin gets 403. **Put new protected pages under `(protected)`; do not add per-route checks.** A layout `load` is not a guard: layout loads do not run before form actions or `+server.ts` endpoints.
 - `redirectTo` goes through `safeRedirectPath` (same-site paths only). The layout's `+layout.server.ts` only supplies the user for the header.
 - **Users and sessions:** `repositories/users.ts` reads with Drizzle and writes through better-auth's admin API (it owns password hashing and validation); `repositories/sessions.ts` does sign-in and sign-out. Admin calls need the signed-in admin's request headers, so `getUserService(event)` is built per request. `services/users.ts` holds the rules: nobody can change the role of, ban or delete themselves, and the last active admin can never be removed, demoted or banned.
-- **First admin:** registration is closed, so `scripts/ensure-admin.ts` creates one from `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD`, only when no active admin exists. It runs after migrations in the Docker `migrate` target, and as `pnpm auth:seed` locally. It exits 1 if there is no admin and no credentials.
+- **First admin:** registration is closed, so `scripts/ensure-admin.ts` creates one from `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD`, only when no active admin exists. It runs after migrations in the Docker `migrate` target, and as `pnpm auth:seed` locally. It exits 1 if there is no admin and no credentials. Any active admin, even a leftover test one, makes it do nothing (it prints "An admin already exists"), so if you cannot sign in as the seeded admin, list the users first.
 - Rate limiting is better-auth's default: off outside production, on (in memory) in production.
 
 ## Adding a feature (the demos feature is the template)
@@ -99,4 +100,5 @@ Kit 3 has no `$env/*` modules. Variables are declared in `src/env.ts` with `defi
 - TypeScript is pinned to 6.0.3 (see the repo notes on the Kit 3 migration). `pnpm-workspace.yaml` has a release-age gate: a brand-new package version may need `minimumReleaseAgeExclude`.
 - ESLint `no-restricted-imports` patterns need `\\#` for `#lib/...` (a leading `#` is a comment in those patterns).
 - In `hooks.ts` the hook's `resolve` argument shadows `$app/paths`' `resolve`; the latter is imported as `resolvePath`.
+- **The dev port is pinned:** `vite.config.ts` sets `server: { port: 5174, strictPort: true }`. `DASHBOARD_URL` has to match the address you open (better-auth trusts only that origin), and `turbo dev` starts the docs app at the same time, which defaults to 5173. `strictPort` makes a clash fail with "Port 5174 is already in use" instead of silently moving. If you change the port, change `DASHBOARD_URL` in `.env.local` and `.env.example` too.
 - The "Theme preview" section on the home page (`src/routes/+page.svelte`) is temporary; remove it once the dashboard has real content.
