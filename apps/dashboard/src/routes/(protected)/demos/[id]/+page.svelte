@@ -21,5 +21,5 @@
 		errors={form?.errors}
 		values={form?.values}
 	/>
-	<a class="anchor mt-4 inline-block" href={resolve('/demos')}>Back to demos</a>
+	<a class="anchor mt-4 inline-block" href={resolve('/(protected)/demos')}>Back to demos</a>
 </div>

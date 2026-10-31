@@ -82,6 +82,10 @@ services:
       PROTOCOL_HEADER: x-forwarded-proto
       HOST_HEADER: x-forwarded-host
       DATABASE_URL: postgresql://dashboard:${DASHBOARD_DB_PASSWORD}@dashboard-db:5432/dashboard
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      # The dashboard's public URL. better-auth uses it as its base URL and
+      # trusted origin, and it must match what the browser sees.
+      DASHBOARD_URL: ${DASHBOARD_URL:?set DASHBOARD_URL}
     healthcheck:
       test:
         [
@@ -97,9 +101,10 @@ services:
       dashboard-migrate:
         condition: service_completed_successfully
 
-  # One-shot: applies the committed drizzle-kit migrations, then exits. The
-  # dashboard starts only after it succeeds. Dokploy shows it as exited; that
-  # is expected.
+  # One-shot: applies the committed drizzle-kit migrations, creates the first
+  # admin when none exists, then exits. The dashboard starts only after it
+  # succeeds, so a first deploy without INITIAL_ADMIN_* fails here, loudly.
+  # Dokploy shows it as exited; that is expected.
   dashboard-migrate:
     build:
       context: ../..
@@ -109,6 +114,12 @@ services:
     restart: 'no'
     environment:
       DATABASE_URL: postgresql://dashboard:${DASHBOARD_DB_PASSWORD}@dashboard-db:5432/dashboard
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      DASHBOARD_URL: ${DASHBOARD_URL:?set DASHBOARD_URL}
+      # Only used while no admin exists. Safe to leave set or to remove afterwards.
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-}
     depends_on:
       dashboard-db:
         condition: service_healthy

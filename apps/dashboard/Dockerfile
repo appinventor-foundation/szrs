@@ -21,10 +21,13 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=installer /app .
 COPY --from=pruner /app/out/full/ .
-# SvelteKit validates its environment variables while building, so DATABASE_URL
-# needs a value here. Nothing connects at build time, and an ARG is not part of
-# the runtime environment: the real URL comes from the compose file.
+# SvelteKit validates its environment variables while building, so these need
+# values here. They are placeholders: nothing connects or signs anything at build
+# time, and an ARG is not part of the runtime environment. The real values come
+# from the compose file.
 ARG DATABASE_URL=postgresql://build:build@localhost:5432/build
+ARG BETTER_AUTH_SECRET=build-only-placeholder-not-a-secret-0000
+ARG DASHBOARD_URL=http://localhost:3000
 RUN pnpm turbo run build --filter=@szrs/dashboard
 
 # adapter-node leaves the runtime dependencies (postgres, drizzle-orm, zod, ...)
@@ -36,12 +39,15 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 RUN pnpm install --frozen-lockfile --prod
 
-# One-shot image that applies the committed migrations with drizzle-kit:
+# One-shot image that applies the committed migrations with drizzle-kit, then
+# creates the first admin if there is none (scripts/ensure-admin.ts):
 # docker build --target migrate -f apps/dashboard/Dockerfile .
-# Needs DATABASE_URL. It runs before the dashboard starts (see the compose file).
+# Needs DATABASE_URL, BETTER_AUTH_SECRET, DASHBOARD_URL and, until an admin
+# exists, INITIAL_ADMIN_EMAIL / INITIAL_ADMIN_PASSWORD. It runs before the
+# dashboard starts (see the compose file); a failure here blocks the dashboard.
 FROM builder AS migrate
 WORKDIR /app/apps/dashboard
-CMD ["pnpm", "exec", "drizzle-kit", "migrate"]
+CMD ["sh", "-c", "pnpm exec drizzle-kit migrate && pnpm exec tsx scripts/ensure-admin.ts"]
 
 # adapter-node's build/ is a standalone server (build/index.js). Behind a
 # reverse proxy, set PROTOCOL_HEADER and HOST_HEADER (e.g. x-forwarded-proto and

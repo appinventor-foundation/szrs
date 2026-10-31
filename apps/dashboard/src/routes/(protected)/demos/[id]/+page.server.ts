@@ -25,6 +25,6 @@ export const actions: Actions = {
 		if (!form.ok) return fail(400, { errors: form.errors, values: form.values });
 
 		await mapDomainErrors(() => getDemoService().update(parseId(params.id), form.data));
-		redirect(303, resolve('/demos'));
+		redirect(303, resolve('/(protected)/demos'));
 	}
 };

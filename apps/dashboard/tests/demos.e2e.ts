@@ -3,11 +3,13 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { expect, test, type Page } from '@playwright/test';
+import { adminCredentials } from './support/auth.js';
 import { resetDatabase } from './support/database.js';
-import { visit } from './support/page.js';
+import { signIn, visit } from './support/page.js';
 
-test.beforeEach(async () => {
+test.beforeEach(async ({ page }) => {
 	await resetDatabase();
+	await signIn(page, adminCredentials);
 });
 
 async function createDemo(page: Page, title: string, description = '') {

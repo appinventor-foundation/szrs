@@ -3,15 +3,9 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { DATABASE_URL } from '$app/env/private';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import * as schema from '#lib/server/db/schema/index.js';
+import { createDatabase, type Database } from '#lib/server/db/create-database.js';
 
-export type Database = ReturnType<typeof createDatabase>;
-
-export function createDatabase(url: string) {
-	return drizzle(postgres(url), { schema });
-}
+export { createDatabase, type Database };
 
 let cached: Database | undefined;
 

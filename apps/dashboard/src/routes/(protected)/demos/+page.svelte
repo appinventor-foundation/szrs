@@ -40,7 +40,7 @@
 					<div class="flex items-center gap-2">
 						<a
 							class="btn preset-tonal"
-							href={resolve('/demos/[id]', { id: demo.id })}
+							href={resolve('/(protected)/demos/[id]', { id: demo.id })}
 							aria-label={`Edit ${demo.title}`}>Edit</a
 						>
 						<form method="POST" action="?/delete" use:enhance>

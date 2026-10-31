@@ -11,5 +11,13 @@ export const variables = defineEnvVars({
 	DATABASE_URL: {
 		schema: z.url(),
 		description: 'Postgres connection string for the dashboard database'
+	},
+	BETTER_AUTH_SECRET: {
+		schema: z.string().min(32),
+		description: 'Secret that signs sessions and encrypts auth data (openssl rand -hex 32)'
+	},
+	DASHBOARD_URL: {
+		schema: z.url(),
+		description: "The dashboard's public URL, used as better-auth's base URL and trusted origin"
 	}
 });

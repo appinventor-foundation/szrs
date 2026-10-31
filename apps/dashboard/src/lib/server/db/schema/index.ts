@@ -5,3 +5,4 @@
 // drizzle-kit reads this file without alias support, so keep it free of
 // `#lib` imports.
 export * from './demos';
+export * from './auth';
