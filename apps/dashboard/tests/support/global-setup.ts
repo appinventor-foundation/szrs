@@ -3,13 +3,14 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { execFileSync } from 'node:child_process';
+import { testAuthEnv } from './auth.js';
 import { testDatabaseUrl } from './database.js';
 
-// Applies the committed migrations to the test database with drizzle-kit, the
-// same way every other environment gets its schema.
+// Prepares the test database the way every other environment gets it:
+// migrations through drizzle-kit, then the first admin through the same script
+// the deploy uses.
 export default function globalSetup() {
-	execFileSync('pnpm', ['exec', 'drizzle-kit', 'migrate'], {
-		env: { ...process.env, DATABASE_URL: testDatabaseUrl },
-		stdio: 'inherit'
-	});
+	const env = { ...process.env, ...testAuthEnv, DATABASE_URL: testDatabaseUrl };
+	execFileSync('pnpm', ['exec', 'drizzle-kit', 'migrate'], { env, stdio: 'inherit' });
+	execFileSync('pnpm', ['exec', 'tsx', 'scripts/ensure-admin.ts'], { env, stdio: 'inherit' });
 }

@@ -17,10 +17,14 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "auth:generate": "auth generate --config src/lib/server/auth/cli.ts --output src/lib/server/db/schema/auth.ts --yes && node scripts/format-generated-auth.mjs",
+    "auth:seed": "tsx --env-file-if-exists=.env.local scripts/ensure-admin.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.14",
     "@szrs/ui": "workspace:*",
+    "better-auth": "1.7.14",
     "drizzle-orm": "0.45.4",
     "postgres": "3.4.9",
     "zod": "4.6.7"
@@ -35,6 +39,7 @@
     "@tailwindcss/vite": "catalog:styling",
     "@types/node": "26.2.0",
     "@vitest/browser-playwright": "4.1.12",
+    "auth": "1.7.14",
     "drizzle-kit": "0.31.11",
     "drizzle-zod": "0.8.3",
     "eslint": "10.8.1",
@@ -42,6 +47,7 @@
     "svelte": "catalog:sveltejs",
     "svelte-check": "catalog:sveltejs",
     "tslib": "2.8.1",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vite": "8.3.5",
     "vitest": "4.1.12",
