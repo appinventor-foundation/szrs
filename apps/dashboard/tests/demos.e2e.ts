@@ -4,6 +4,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 import { resetDatabase } from './support/database.js';
+import { visit } from './support/page.js';
 
 test.beforeEach(async () => {
 	await resetDatabase();
@@ -15,14 +16,23 @@ async function createDemo(page: Page, title: string, description = '') {
 	await page.getByRole('button', { name: 'Create demo' }).click();
 }
 
+// The Edit link navigates on the client. Wait until the edit page has actually
+// replaced the list: until then `getByLabel('Title')` still matches the create
+// form, and a fill would go to the wrong input.
+async function openEditor(page: Page, title: string) {
+	await page.getByRole('link', { name: `Edit ${title}` }).click();
+	await expect(page.getByRole('heading', { name: 'Edit demo' })).toBeVisible();
+	await expect(page.getByLabel('Title')).toHaveValue(title);
+}
+
 test('shows an empty state', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 
 	await expect(page.getByText('No demos yet.')).toBeVisible();
 });
 
 test('creates a demo and keeps it after a reload', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 
 	await createDemo(page, 'First demo', 'About the first demo');
 
@@ -35,7 +45,7 @@ test('creates a demo and keeps it after a reload', async ({ page }) => {
 });
 
 test('lists the newest demo first', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 
 	await createDemo(page, 'Older');
 	await expect(page.getByText('Older')).toBeVisible();
@@ -45,7 +55,7 @@ test('lists the newest demo first', async ({ page }) => {
 });
 
 test('rejects a blank title and keeps what was typed', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 
 	await createDemo(page, '   ', 'Keep this text');
 
@@ -55,7 +65,7 @@ test('rejects a blank title and keeps what was typed', async ({ page }) => {
 });
 
 test('rejects a title over 120 characters', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 
 	await createDemo(page, 'x'.repeat(121));
 
@@ -63,12 +73,10 @@ test('rejects a title over 120 characters', async ({ page }) => {
 });
 
 test('edits a demo', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 	await createDemo(page, 'Before', 'Old text');
-	await page.getByRole('link', { name: 'Edit Before' }).click();
+	await openEditor(page, 'Before');
 
-	await expect(page.getByRole('heading', { name: 'Edit demo' })).toBeVisible();
-	await expect(page.getByLabel('Title')).toHaveValue('Before');
 	await page.getByLabel('Title').fill('After');
 	await page.getByRole('button', { name: 'Save changes' }).click();
 
@@ -78,9 +86,9 @@ test('edits a demo', async ({ page }) => {
 });
 
 test('shows validation errors when editing', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 	await createDemo(page, 'Keep me');
-	await page.getByRole('link', { name: 'Edit Keep me' }).click();
+	await openEditor(page, 'Keep me');
 
 	await page.getByLabel('Title').fill('   ');
 	await page.getByRole('button', { name: 'Save changes' }).click();
@@ -89,7 +97,7 @@ test('shows validation errors when editing', async ({ page }) => {
 });
 
 test('deletes a demo', async ({ page }) => {
-	await page.goto('/demos');
+	await visit(page, '/demos');
 	await createDemo(page, 'Doomed');
 
 	await page.getByRole('button', { name: 'Delete Doomed' }).click();
