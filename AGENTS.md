@@ -56,6 +56,7 @@ Dev ports: dashboard 5174 (pinned with `strictPort`), docs 5173 (Vite's default)
 - **Svelte 5 with runes.** Components hold UI wiring only: no business logic, no database or API code. Derive state with `$derived`, never `$effect` (the shared `packages/eslint-config` bans it in every `.svelte`, `.svelte.ts` and `.svelte.js` file of every package that uses it). `$effect` is only for syncing with an external system, with an eslint-disable and a reason.
 - **SvelteKit 3 specifics:** the `#lib/...` alias (from `package.json` `imports`) replaces `$lib`, with `.js` extensions on imports; env variables are declared in `src/env.ts` and read from `$app/env/private`; there is no `svelte.config.js` (options live in `sveltekit({...})` in `vite.config.ts`); adapter-node ignores `ORIGIN`, so deployments set `PROTOCOL_HEADER` and `HOST_HEADER`.
 - **Tests live next to the code they test** (`*.test.ts`, `*.spec.ts`; the proxy uses `test/unit`). New features need tests; the dashboard also requires Playwright e2e tests for every new feature.
+- **Vitest browser mode needs its own port per package.** Turborepo runs packages' `test:unit` in parallel, and Vitest fails ("Port 63315 is already in use", with the browser tests silently not running) when two start together. Each package that sets `browser.enabled` pins a distinct `browser.api.port` in its `vitest.config.ts`: dashboard 63315, docs 63316, ui 63317. Give a new one the next free port. It passes locally by luck of timing and fails on slower CI runners.
 
 ## Environment variables and CI
 
