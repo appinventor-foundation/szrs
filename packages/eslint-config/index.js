@@ -38,5 +38,50 @@ export const config = defineConfig(
 				parser: ts.parser
 			}
 		}
+	},
+	{
+		// State is derived with $derived, never synced with $effect. The one
+		// legitimate use is syncing with an external system: disable this rule
+		// on that line and say why.
+		files: ['**/*.svelte', '**/*.svelte.js', '**/*.svelte.ts'],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: "CallExpression[callee.name='$effect']",
+					message:
+						'Do not use $effect to derive state; use $derived. Only sync with an external system, with an eslint-disable and a reason.'
+				},
+				{
+					selector: "CallExpression[callee.object.name='$effect']",
+					message:
+						'Do not use $effect.* to derive state; use $derived. Only sync with an external system, with an eslint-disable and a reason.'
+				}
+			]
+		}
+	},
+	{
+		// Components wire UI to data that routes load for them. Database access
+		// and business logic live in the server layers, so they cannot be
+		// imported from a component.
+		files: ['**/*.svelte'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					patterns: [
+						{
+							group: ['drizzle-orm', 'drizzle-orm/*', 'drizzle-kit', 'postgres'],
+							message: 'Database access belongs in a repository (lib/server/repositories).'
+						},
+						{
+							// `#` starts a comment in these gitignore-style patterns, so escape it.
+							group: ['\\#lib/server/*', '$lib/server/*'],
+							message: 'Components must not import server-layer code; routes pass data in.'
+						}
+					]
+				}
+			]
+		}
 	}
 );

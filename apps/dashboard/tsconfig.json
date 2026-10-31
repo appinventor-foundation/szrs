@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"strictNullChecks": true
 	},
-	"include": ["src", "vite.config.ts", "playwright.config.ts"]
+	"include": ["src", "tests", "vite.config.ts", "playwright.config.ts", "drizzle.config.ts"]
 }

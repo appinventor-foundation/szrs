@@ -6,8 +6,39 @@ on:
     branches: [main, develop]
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # SvelteKit validates its environment variables during the build, and the
+      # build runs before the type check. Nothing connects to this database.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.20.0'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Check types
+        run: pnpm check-types
+
   test-unit:
     runs-on: ubuntu-latest
+    env:
+      # SvelteKit validates its environment variables during the build, and the
+      # build runs before these tests. Nothing connects to this database.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
     steps:
       - uses: actions/checkout@v5
 
@@ -28,3 +59,42 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test:unit
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: dashboard
+          POSTGRES_PASSWORD: dashboard
+          POSTGRES_DB: dashboard_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U dashboard"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://dashboard:dashboard@localhost:5433/dashboard_test
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.20.0'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run dashboard e2e tests
+        run: pnpm --filter @szrs/dashboard test:e2e

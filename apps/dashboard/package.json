@@ -13,10 +13,17 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@szrs/ui": "workspace:*"
+    "@szrs/ui": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "postgres": "3.4.9",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
@@ -28,6 +35,8 @@
     "@tailwindcss/vite": "catalog:styling",
     "@types/node": "26.2.0",
     "@vitest/browser-playwright": "4.1.12",
+    "drizzle-kit": "0.31.11",
+    "drizzle-zod": "0.8.3",
     "eslint": "10.8.1",
     "prettier-plugin-svelte": "catalog:sveltejs",
     "svelte": "catalog:sveltejs",
