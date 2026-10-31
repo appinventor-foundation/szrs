@@ -5,10 +5,17 @@
 -->
 <script lang="ts">
 	import './layout.css';
+	import { onMount } from 'svelte';
 	import { ThemeControls } from '@szrs/ui';
 	import { resolve } from '$app/paths';
 
 	const { children } = $props();
+
+	// Marks the page as interactive. The e2e tests wait for it: hydration resets
+	// form fields, so anything typed before it finishes is lost.
+	onMount(() => {
+		document.documentElement.dataset.hydrated = 'true';
+	});
 </script>
 
 <header class="border-b border-surface-200-800">

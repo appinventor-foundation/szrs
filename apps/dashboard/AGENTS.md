@@ -63,6 +63,8 @@ Kit 3 has no `$env/*` modules. Variables are declared in `src/env.ts` with `defi
 ## Testing notes
 
 - E2E runs one worker against a shared database and truncates between tests. Keep tests independent of each other's data.
+- **Open pages with `visit(page, path)` from `tests/support/page.ts`, not `page.goto`, whenever the test types or clicks.** It waits for the `data-hydrated` marker that the root layout sets. Hydration resets form fields to their initial values, so typing before it finishes silently loses the text; this only shows up on slow machines like CI.
+- **After clicking a client-side link, wait for something unique to the new page** (a heading, a field value) before interacting. Until then locators such as `getByLabel('Title')` still match the old page's form. See `openEditor` in `tests/demos.e2e.ts`.
 - Form POSTs return 403 ("Cross-site POST form submissions are forbidden") unless the server derives the right origin. adapter-node assumes `https` unless `PROTOCOL_HEADER` names a header. The e2e config sets `PROTOCOL_HEADER=x-forwarded-proto` on the server and sends that header from the browser, which is what Traefik does in production. Dev (`pnpm dev`) does not have this problem.
 - Kit's server-only import check is disabled under Vitest, so a leaked server import will not show up in unit tests. Lint and the build catch it.
 - Locators: demo rows use `aria-label`s like `Edit <title>` and `Delete <title>`. Use `{ exact: true }` with `getByText` when a title is also a substring of other text.
