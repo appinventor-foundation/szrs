@@ -1,38 +1,88 @@
-# create-svelte
+# Dashboard
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+The SZRS dashboard: a SvelteKit 3 app (Svelte 5, Tailwind 4, Skeleton 5) with its own Postgres database, accessed through Drizzle ORM and validated with Zod. It lives in the pnpm/Turborepo monorepo at the repo root and shares UI components with the other apps through `@szrs/ui`.
 
-## Creating a project
+Today it ships the foundation and one proving feature: a list of demos with full create, read, update and delete. Real features and authentication build on top of it.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Prerequisites
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+- Node 24.20.0 (pinned in the repo's `mise.toml`)
+- pnpm 12 (the repo pins it in `packageManager`)
+- Docker, for the database
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+## Getting started
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+From the repo root:
 
 ```bash
-npm run dev
+pnpm install
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# Start the dashboard's Postgres (also creates the dashboard_test database)
+docker compose -f infra/llm-proxy/docker-compose.yml up -d dashboard-db
+
+cd apps/dashboard
+cp .env.example .env.local
+pnpm db:migrate
+pnpm dev
 ```
 
-## Building
+Open http://localhost:5173/demos. If you develop over SSH, forward port 5173 to your browser.
 
-To create a production version of your app:
+`GET /healthz` reports whether the app can reach the database.
+
+## Scripts
+
+Run these in `apps/dashboard`. The repo root has Turborepo equivalents that cover every app.
+
+| Command            | What it does                                                            |
+| ------------------ | ----------------------------------------------------------------------- |
+| `pnpm dev`         | Start the dev server                                                    |
+| `pnpm build`       | Production build (adapter-node, output in `build/`)                     |
+| `pnpm lint`        | ESLint                                                                  |
+| `pnpm check-types` | `svelte-check`, failing on warnings                                     |
+| `pnpm test:unit`   | Vitest: server tests in Node, component tests in a browser              |
+| `pnpm test:e2e`    | Playwright against a production build and the `dashboard_test` database |
+| `pnpm db:generate` | Generate a migration from schema changes                                |
+| `pnpm db:migrate`  | Apply migrations to the database in `DATABASE_URL`                      |
+| `pnpm db:studio`   | Browse the database in Drizzle Studio                                   |
+
+`pnpm test` at the repo root runs lint, type checks, unit tests and e2e in that order. The e2e tests need the `dashboard-db` container running, and they empty `dashboard_test` between tests, never your dev database.
+
+## Configuration
+
+Environment variables are declared and validated in `src/env.ts`. The app refuses to start if one is missing or invalid.
+
+| Variable            | Used for                                                                          |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | Postgres connection string (the dev value is in `.env.example`)                   |
+| `TEST_DATABASE_URL` | Optional override for the e2e database; defaults to `dashboard_test` on port 5433 |
+
+## How the code is organised
+
+Server code is split into layers under `src/lib/server/`:
+
+```
+route  ->  service  ->  repository  ->  database
+```
+
+Routes validate input with Zod and call a service. Services hold the business rules. Repositories are the only place that writes Drizzle queries. Svelte components only display data and wire up events. The Drizzle tables live in `src/lib/server/db/schema`, so SvelteKit refuses to bundle them into the browser. The Zod schemas shared with the browser are in `src/lib/schemas`.
+
+Contributors and coding agents should read [AGENTS.md](./AGENTS.md) for the rules, the step-by-step checklist for adding a feature, and the pitfalls we have already hit.
+
+## Database migrations
+
+Migrations are generated and applied only with drizzle-kit. Change a table in `src/lib/server/db/schema`, run `pnpm db:generate`, review the SQL and commit the new files in `drizzle/`. Never edit generated migrations or use `drizzle-kit push`.
+
+## Deployment
+
+The app is deployed with Dokploy from `infra/dokploy/docker-compose.yml`, alongside its own Postgres (`dashboard-db`). A one-shot `dashboard-migrate` service applies migrations before the dashboard starts. The `Dockerfile` has a `migrate` target for that job and a `runner` target for the app, and its build context is the repo root:
 
 ```bash
-npm run build
+docker build -f apps/dashboard/Dockerfile -t szrs-dashboard .
 ```
 
-You can preview the production build with `npm run preview`.
+Set `DASHBOARD_DB_PASSWORD` in Dokploy before the first deploy. Behind Traefik the app learns its public address from the forwarded protocol and host headers, so no `ORIGIN` variable is needed.
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+## Continuous integration
+
+`.github/workflows/test.yml` runs three jobs: `check` (lint and type checks), `test-unit`, and `test-e2e`, which uses a throwaway Postgres service container.
