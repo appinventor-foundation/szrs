@@ -6,13 +6,17 @@
 <script lang="ts">
 	import './layout.css';
 	import { ThemeControls } from '@szrs/ui';
+	import { resolve } from '$app/paths';
 
 	const { children } = $props();
 </script>
 
 <header class="border-b border-surface-200-800">
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-		<span class="text-lg font-bold">SZRS</span>
+		<nav class="flex items-center gap-6">
+			<a class="text-lg font-bold" href={resolve('/')}>SZRS</a>
+			<a class="anchor" href={resolve('/demos')}>Demos</a>
+		</nav>
 		<ThemeControls />
 	</div>
 </header>

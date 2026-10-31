@@ -81,6 +81,7 @@ services:
       # sets. It rejects form posts when the origin does not match.
       PROTOCOL_HEADER: x-forwarded-proto
       HOST_HEADER: x-forwarded-host
+      DATABASE_URL: postgresql://dashboard:${DASHBOARD_DB_PASSWORD}@dashboard-db:5432/dashboard
     healthcheck:
       test:
         [
@@ -91,6 +92,40 @@ services:
         ]
       interval: 10s
       timeout: 5s
+      retries: 5
+    depends_on:
+      dashboard-migrate:
+        condition: service_completed_successfully
+
+  # One-shot: applies the committed drizzle-kit migrations, then exits. The
+  # dashboard starts only after it succeeds. Dokploy shows it as exited; that
+  # is expected.
+  dashboard-migrate:
+    build:
+      context: ../..
+      dockerfile: apps/dashboard/Dockerfile
+      target: migrate
+    image: szrs-dashboard-migrate:dokploy
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://dashboard:${DASHBOARD_DB_PASSWORD}@dashboard-db:5432/dashboard
+    depends_on:
+      dashboard-db:
+        condition: service_healthy
+
+  dashboard-db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dashboard
+      POSTGRES_PASSWORD: ${DASHBOARD_DB_PASSWORD:?set DASHBOARD_DB_PASSWORD}
+      POSTGRES_DB: dashboard
+    volumes:
+      - llm-proxy-dashboard-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dashboard']
+      interval: 5s
+      timeout: 3s
       retries: 5
 
   docs:
@@ -344,6 +379,7 @@ services:
 volumes:
   llm-proxy-litellm-pgdata:
   llm-proxy-langfuse-pgdata:
+  llm-proxy-dashboard-pgdata:
   llm-proxy-clickhouse-data:
   llm-proxy-clickhouse-logs:
   llm-proxy-minio-data:

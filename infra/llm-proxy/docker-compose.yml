@@ -70,6 +70,27 @@ services:
       timeout: 3s
       retries: 5
 
+  # The dashboard's own database (apps/dashboard), separate from LiteLLM's and
+  # Langfuse's. The init script also creates `dashboard_test` for the e2e tests;
+  # it only runs when the volume is first created, so on an existing volume run
+  # `CREATE DATABASE dashboard_test OWNER dashboard;` once by hand.
+  dashboard-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: dashboard
+      POSTGRES_PASSWORD: dashboard
+      POSTGRES_DB: dashboard
+    ports:
+      - '5433:5432' # so the dashboard run with `pnpm dev` on the host can reach it
+    volumes:
+      - llm-proxy-dashboard-pgdata:/var/lib/postgresql
+      - ./docker/dashboard-db/create-test-db.sql:/docker-entrypoint-initdb.d/create-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dashboard']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   clickhouse:
     image: clickhouse/clickhouse-server:25.12
     environment:
@@ -242,6 +263,7 @@ services:
 volumes:
   llm-proxy-litellm-pgdata:
   llm-proxy-langfuse-pgdata:
+  llm-proxy-dashboard-pgdata:
   llm-proxy-clickhouse-data:
   llm-proxy-clickhouse-logs:
   llm-proxy-minio-data:
