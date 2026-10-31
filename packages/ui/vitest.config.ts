@@ -11,6 +11,10 @@ export default defineConfig({
 					name: 'client',
 					browser: {
 						enabled: true,
+						// Turborepo runs several packages' tests at once and Vitest fails when its
+						// browser port is taken, so each package that uses browser mode has its own:
+						// dashboard 63315, docs 63316, ui 63317. Give a new one the next free port.
+						api: { port: 63317 },
 						provider: playwright(),
 						instances: [{ browser: 'chromium', headless: true }]
 					},
