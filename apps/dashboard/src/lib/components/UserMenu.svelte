@@ -14,7 +14,9 @@
 
 	// A <details> element, so the menu opens and Sign out works without JS.
 	// The handlers below add the usual extras: Escape and outside click close it.
-	let open = $state(false);
+	// They read and write the element's own `open`, not a bound copy: bind:open only
+	// updates when the browser later fires `toggle`, so right after opening it is
+	// still stale and an immediate Escape would be ignored (flaky on slow CI).
 	let menu: HTMLDetailsElement | undefined = $state();
 	let trigger: HTMLElement | undefined = $state();
 
@@ -27,17 +29,17 @@
 		// composedPath() is fixed at dispatch time. event.target can be detached by a
 		// re-render before this runs (the mode toggle swaps its icon), so it would
 		// wrongly look like a click outside.
-		if (open && menu && !event.composedPath().includes(menu)) open = false;
+		if (menu?.open && !event.composedPath().includes(menu)) menu.open = false;
 	}}
 	onkeydown={(event) => {
-		if (open && event.key === 'Escape') {
-			open = false;
+		if (menu?.open && event.key === 'Escape') {
+			menu.open = false;
 			trigger?.focus();
 		}
 	}}
 />
 
-<details class="relative" bind:this={menu} bind:open>
+<details class="relative" bind:this={menu}>
 	<summary
 		bind:this={trigger}
 		aria-label="Account menu"
