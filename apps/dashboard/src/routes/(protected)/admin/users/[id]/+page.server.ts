@@ -70,7 +70,7 @@ export const actions: Actions = {
 
 	remove: async (event) => {
 		const outcome = await run(event, 'remove', noFields, (service, id) => service.remove(id));
-		if ('success' in outcome) redirect(303, resolve('/(protected)/admin/users'));
+		if ('success' in outcome) redirect(303, `${resolve('/(protected)/admin/users')}?deleted=1`);
 		return outcome;
 	}
 };

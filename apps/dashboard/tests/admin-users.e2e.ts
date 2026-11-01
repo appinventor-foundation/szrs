@@ -13,25 +13,93 @@ test.beforeEach(async ({ page }) => {
 	await signIn(page, adminCredentials);
 });
 
-// Opens a user's management page. The "Back to users" link only exists there,
-// so it tells us the client-side navigation has finished.
+// The row of the users table for an email address.
+const rowFor = (page: Page, email: string) =>
+	page.getByRole('table', { name: 'Users' }).getByRole('row', { name: new RegExp(email) });
+
+// Opens a user's management page from the list. The breadcrumb only exists
+// there, so it tells us the client-side navigation has finished.
 async function manage(page: Page, email: string) {
 	await visit(page, '/admin/users');
-	await page.getByRole('link', { name: `Manage ${email}` }).click();
-	await expect(page.getByRole('link', { name: 'Back to users' })).toBeVisible();
+	await rowFor(page, email).getByRole('link').click();
+	await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Sign out everywhere' })).toBeVisible();
 }
 
-test.describe('creating users', () => {
-	test('creates a user who can then sign in', async ({ page }) => {
-		await visit(page, '/admin/users');
-		await page.getByLabel('Name').fill('Grace Hopper');
-		await page.getByLabel('Email').fill('grace@example.com');
-		await page.getByLabel('Password').fill('compiler-password-1');
-		await page.getByRole('button', { name: 'Create user' }).click();
+// Fills the "New user" page and submits it.
+async function createViaForm(
+	page: Page,
+	user: { name: string; email: string; password: string; role?: string }
+) {
+	await visit(page, '/admin/users/new');
+	await page.getByLabel('Name').fill(user.name);
+	await page.getByLabel('Email').fill(user.email);
+	await page.getByLabel('Password').fill(user.password);
+	if (user.role) await page.getByLabel('Role').selectOption(user.role);
+	await page.getByRole('button', { name: 'Create user' }).click();
+}
 
-		await expect(
-			page.getByRole('table', { name: 'Users' }).getByText('grace@example.com')
-		).toBeVisible();
+test.describe('the list', () => {
+	test('shows users in a table with their role and status', async ({ page }) => {
+		const member = await createUser(page, { name: 'Listed Member' });
+		await visit(page, '/admin/users');
+
+		const table = page.getByRole('table', { name: 'Users' });
+		await expect(table.getByRole('columnheader')).toHaveText(['Name', 'Email', 'Role', 'Status']);
+		await expect(rowFor(page, adminCredentials.email)).toContainText('admin');
+		await expect(rowFor(page, member.email)).toContainText('Listed Member');
+		await expect(rowFor(page, member.email)).toContainText('user');
+		await expect(rowFor(page, member.email)).toContainText('Active');
+	});
+
+	test('does not show the creation form, only a New user button', async ({ page }) => {
+		await visit(page, '/admin/users');
+
+		await expect(page.getByLabel('Password')).toHaveCount(0);
+		await page.getByRole('link', { name: 'New user' }).click();
+
+		await expect(page).toHaveURL('/admin/users/new');
+		await expect(page.getByRole('heading', { name: 'New user' })).toBeVisible();
+	});
+
+	test('opens the user from the name, and from anywhere in the row', async ({ page }) => {
+		const member = await createUser(page, { name: 'Row Target' });
+		await visit(page, '/admin/users');
+
+		await page.getByRole('link', { name: 'Row Target' }).click();
+		await expect(page.getByRole('heading', { level: 1, name: 'Row Target' })).toBeVisible();
+
+		await visit(page, '/admin/users');
+		// The name link is stretched over the row, so it takes this click.
+		await rowFor(page, member.email).getByRole('cell').nth(1).click({ force: true });
+		await expect(page.getByRole('heading', { level: 1, name: 'Row Target' })).toBeVisible();
+	});
+
+	test('marks a banned user', async ({ page }) => {
+		const member = await createUser(page);
+		await manage(page, member.email);
+		await page.getByRole('button', { name: 'Ban', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'Unban' })).toBeVisible();
+
+		await visit(page, '/admin/users');
+
+		await expect(rowFor(page, member.email)).toContainText('Banned');
+	});
+});
+
+test.describe('creating users', () => {
+	test('creates a user, shows their page, and they can then sign in', async ({ page }) => {
+		await createViaForm(page, {
+			name: 'Grace Hopper',
+			email: 'grace@example.com',
+			password: 'compiler-password-1'
+		});
+
+		await expect(page.getByRole('heading', { level: 1, name: 'Grace Hopper' })).toBeVisible();
+		await expect(page).toHaveURL(/\/admin\/users\/[^/]+$/);
+
+		await visit(page, '/admin/users');
+		await expect(rowFor(page, 'grace@example.com')).toBeVisible();
 
 		await signOut(page);
 		await signIn(page, { email: 'grace@example.com', password: 'compiler-password-1' });
@@ -41,38 +109,73 @@ test.describe('creating users', () => {
 
 	test('rejects a duplicate email', async ({ page }) => {
 		const existing = await createUser(page);
-		await visit(page, '/admin/users');
 
-		await page.getByLabel('Name').fill('Someone Else');
-		await page.getByLabel('Email').fill(existing.email);
-		await page.getByLabel('Password').fill('another-password-1');
-		await page.getByRole('button', { name: 'Create user' }).click();
+		await createViaForm(page, {
+			name: 'Someone Else',
+			email: existing.email,
+			password: 'another-password-1'
+		});
 
 		await expect(page.getByRole('alert')).toHaveText('A user with this email already exists');
 	});
 
 	test('rejects a short password and keeps what was typed', async ({ page }) => {
-		await visit(page, '/admin/users');
-
-		await page.getByLabel('Name').fill('Short Pass');
-		await page.getByLabel('Email').fill('short@example.com');
-		await page.getByLabel('Password').fill('short');
-		await page.getByRole('button', { name: 'Create user' }).click();
+		await createViaForm(page, {
+			name: 'Short Pass',
+			email: 'short@example.com',
+			password: 'short'
+		});
 
 		await expect(page.getByRole('alert')).toHaveText('Password must be at least 8 characters');
 		await expect(page.getByLabel('Email')).toHaveValue('short@example.com');
+		await expect(page).toHaveURL('/admin/users/new');
 	});
 
 	test('lets an admin create another admin', async ({ page }) => {
-		await visit(page, '/admin/users');
-		await page.getByLabel('Name').fill('Second Admin');
-		await page.getByLabel('Email').fill('second@example.com');
-		await page.getByLabel('Password').fill('second-admin-pass-1');
-		await page.getByLabel('Role').selectOption('admin');
-		await page.getByRole('button', { name: 'Create user' }).click();
+		await createViaForm(page, {
+			name: 'Second Admin',
+			email: 'second@example.com',
+			password: 'second-admin-pass-1',
+			role: 'admin'
+		});
+		await expect(page.getByRole('heading', { level: 1, name: 'Second Admin' })).toBeVisible();
 
-		const row = page.getByRole('row', { name: /second@example.com/ });
-		await expect(row).toContainText('admin');
+		await visit(page, '/admin/users');
+
+		await expect(rowFor(page, 'second@example.com')).toContainText('admin');
+	});
+
+	test('cancel goes back to the list without creating anyone', async ({ page }) => {
+		await visit(page, '/admin/users/new');
+
+		await page.getByRole('link', { name: 'Cancel' }).click();
+
+		await expect(page).toHaveURL('/admin/users');
+		await expect(page.getByRole('table', { name: 'Users' }).getByRole('row')).toHaveCount(2);
+	});
+
+	test('a member cannot open the new user page', async ({ page }) => {
+		const member = await createUser(page);
+		await signOut(page);
+		await signIn(page, member);
+
+		const response = await page.goto('/admin/users/new');
+
+		expect(response?.status()).toBe(403);
+	});
+});
+
+test.describe('the detail page', () => {
+	test('has breadcrumbs back to the list', async ({ page }) => {
+		const member = await createUser(page, { name: 'Crumb Member' });
+		await manage(page, member.email);
+
+		const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' });
+		await expect(crumbs.getByText('Crumb Member')).toHaveAttribute('aria-current', 'page');
+		await crumbs.getByRole('link', { name: 'Users' }).click();
+
+		await expect(page).toHaveURL('/admin/users');
+		await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
 	});
 });
 
@@ -167,8 +270,9 @@ test.describe('managing a user', () => {
 
 		await page.getByRole('button', { name: 'Delete user' }).click();
 
-		await expect(page).toHaveURL('/admin/users');
-		await expect(page.getByRole('link', { name: `Manage ${member.email}` })).toHaveCount(0);
+		await expect(page).toHaveURL('/admin/users?deleted=1');
+		await expect(page.getByRole('status')).toHaveText('User deleted.');
+		await expect(rowFor(page, member.email)).toHaveCount(0);
 
 		await signOut(page);
 		await visit(page, '/login');
@@ -197,9 +301,7 @@ test.describe('protecting the admin from locking themselves out', () => {
 
 	test('refuses the same actions when sent directly', async ({ page }) => {
 		await visit(page, '/admin/users');
-		const href = await page
-			.getByRole('link', { name: `Manage ${adminCredentials.email}` })
-			.getAttribute('href');
+		const href = await rowFor(page, adminCredentials.email).getByRole('link').getAttribute('href');
 		const send = (action: string, form: Record<string, string> = {}) =>
 			page.request.post(`${href}?/${action}`, {
 				form,

@@ -26,15 +26,16 @@ describe('decideAccess', () => {
 		expect(decideAccess('/(protected)/demos/[id]', admin)).toBe('allow');
 	});
 
-	it.each(['/(protected)/admin/users', '/(protected)/admin/users/[id]'])(
-		'keeps %s for admins',
-		(routeId) => {
-			expect(decideAccess(routeId, undefined)).toBe('login');
-			expect(decideAccess(routeId, member)).toBe('forbidden');
-			expect(decideAccess(routeId, { role: null })).toBe('forbidden');
-			expect(decideAccess(routeId, admin)).toBe('allow');
-		}
-	);
+	it.each([
+		'/(protected)/admin/users',
+		'/(protected)/admin/users/new',
+		'/(protected)/admin/users/[id]'
+	])('keeps %s for admins', (routeId) => {
+		expect(decideAccess(routeId, undefined)).toBe('login');
+		expect(decideAccess(routeId, member)).toBe('forbidden');
+		expect(decideAccess(routeId, { role: null })).toBe('forbidden');
+		expect(decideAccess(routeId, admin)).toBe('allow');
+	});
 
 	it('accepts an admin who has several roles', () => {
 		expect(decideAccess('/(protected)/admin/users', { role: 'user,admin' })).toBe('allow');

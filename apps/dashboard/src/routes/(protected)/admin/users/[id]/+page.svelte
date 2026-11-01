@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
 	import FieldErrors from '#lib/components/FieldErrors.svelte';
 	import { ROLES } from '#lib/schemas/user.js';
 	import type { PageProps } from './$types';
@@ -18,6 +19,10 @@
 	const succeeded = (name: string) =>
 		form && 'action' in form && form.action === name && 'success' in form && form.success;
 </script>
+
+<Breadcrumbs
+	items={[{ label: 'Users', href: resolve('/(protected)/admin/users') }, { label: data.user.name }]}
+/>
 
 <h1 class="h1">{data.user.name}</h1>
 <p class="mt-2">
@@ -101,5 +106,3 @@
 		</form>
 	</section>
 </div>
-
-<a class="anchor mt-6 inline-block" href={resolve('/(protected)/admin/users')}>Back to users</a>
