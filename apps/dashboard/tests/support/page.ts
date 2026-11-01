@@ -20,16 +20,30 @@ export async function visit(page: Page, path: string) {
 	await waitForHydration(page);
 }
 
-// Signs in through the real login form and waits for the header to show it.
+// Signs in through the real login form and waits for the account menu to appear.
 export async function signIn(page: Page, { email, password }: Credentials) {
 	await visit(page, '/login');
 	await page.getByLabel('Email').fill(email);
 	await page.getByLabel('Password').fill(password);
 	await page.getByRole('button', { name: 'Sign in' }).click();
+	await expect(accountMenuTrigger(page)).toBeVisible();
+}
+
+// The header's account menu: a disclosure holding the profile, theme and Sign out.
+export function accountMenuTrigger(page: Page) {
+	return page.getByLabel('Account menu');
+}
+
+// Opens the menu unless it is already open (the trigger toggles it).
+export async function openAccountMenu(page: Page) {
+	if (!(await page.getByRole('button', { name: 'Sign out', exact: true }).isVisible())) {
+		await accountMenuTrigger(page).click();
+	}
 	await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
 }
 
 export async function signOut(page: Page) {
+	await openAccountMenu(page);
 	await page.getByRole('button', { name: 'Sign out', exact: true }).click();
 	await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
 }

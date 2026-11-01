@@ -4,56 +4,71 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
-	import DemoForm from '#lib/components/DemoForm.svelte';
 	import type { PageProps } from './$types';
 
-	const { data, form }: PageProps = $props();
+	const { data }: PageProps = $props();
+
+	const dateFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' });
 </script>
 
-<h1 class="h1">Demos</h1>
+<div class="flex items-center justify-between gap-4">
+	<h1 class="h1">Demos</h1>
+	<a class="btn preset-filled" href={resolve('/(protected)/demos/new')}>
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 24 24"
+			width="18"
+			height="18"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2.5"
+			stroke-linecap="round"
+		>
+			<path d="M12 5v14M5 12h14" />
+		</svg>
+		<span>New demo</span>
+	</a>
+</div>
 
-<section class="card preset-outlined-surface-200-800 mt-6 max-w-xl p-4">
-	<h2 class="h4 mb-4">New demo</h2>
-	<DemoForm
-		action="?/create"
-		submitLabel="Create demo"
-		errors={form && 'errors' in form ? form.errors : undefined}
-		values={form && 'values' in form ? form.values : undefined}
-	/>
-</section>
+{#if data.deleted}
+	<p class="card preset-tonal-success mt-4 p-3" role="status">Demo deleted.</p>
+{/if}
 
-<section class="mt-8">
+<section class="mt-6">
 	{#if data.demos.length === 0}
-		<p>No demos yet.</p>
+		<div class="card preset-outlined-surface-200-800 p-8 text-center">
+			<p class="mb-4">No demos yet.</p>
+			<a class="btn preset-tonal" href={resolve('/(protected)/demos/new')}>Create your first demo</a
+			>
+		</div>
 	{:else}
-		<ul class="space-y-3" aria-label="Demos">
-			{#each data.demos as demo (demo.id)}
-				<li class="card preset-outlined-surface-200-800 flex items-center justify-between p-4">
-					<div>
-						<p class="font-bold">{demo.title}</p>
-						{#if demo.description}
-							<p>{demo.description}</p>
-						{/if}
-					</div>
-					<div class="flex items-center gap-2">
-						<a
-							class="btn preset-tonal"
-							href={resolve('/(protected)/demos/[id]', { id: demo.id })}
-							aria-label={`Edit ${demo.title}`}>Edit</a
-						>
-						<form method="POST" action="?/delete" use:enhance>
-							<input type="hidden" name="id" value={demo.id} />
-							<button
-								class="btn preset-tonal-error"
-								type="submit"
-								aria-label={`Delete ${demo.title}`}>Delete</button
+		<div class="table-wrap">
+			<table class="table" aria-label="Demos">
+				<thead>
+					<tr>
+						<th scope="col">Title</th>
+						<th scope="col">Description</th>
+						<th scope="col">Created</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each data.demos as demo (demo.id)}
+						<tr class="hover:preset-tonal relative">
+							<td class="font-bold">
+								<a
+									class="anchor after:absolute after:inset-0"
+									href={resolve('/(protected)/demos/[id]', { id: demo.id })}>{demo.title}</a
+								>
+							</td>
+							<td class="max-w-md"
+								><p class="line-clamp-2 break-words">{demo.description ?? ''}</p></td
 							>
-						</form>
-					</div>
-				</li>
-			{/each}
-		</ul>
+							<td class="whitespace-nowrap">{dateFormat.format(demo.createdAt)}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	{/if}
 </section>

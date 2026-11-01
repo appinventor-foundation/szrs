@@ -62,6 +62,10 @@ Imports use the `#lib/...` alias **with a `.js` extension** (`#lib/server/errors
 - **First admin:** registration is closed, so `scripts/ensure-admin.ts` creates one from `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD`, only when no active admin exists. It runs after migrations in the Docker `migrate` target, and as `pnpm auth:seed` locally. It exits 1 if there is no admin and no credentials. Any active admin, even a leftover test one, makes it do nothing (it prints "An admin already exists"), so if you cannot sign in as the seeded admin, list the users first.
 - Rate limiting is better-auth's default: off outside production, on (in memory) in production.
 
+## Demos UI
+
+`/demos` is a table (title link, description, created) with a **New demo** button to `/demos/new`; `/demos/[id]` is the read-only detail page (delete sits behind a `<details>` confirm there); `/demos/[id]/edit` is the form. Create and edit redirect to the detail page. Pages use `Breadcrumbs.svelte`. The header's `UserMenu.svelte` holds the profile, `ThemeControls` and Sign out; visitors see only Sign in (no theme controls).
+
 ## Adding a feature (the demos feature is the template)
 
 1. Table in `server/db/schema/<name>.ts`, exported from `schema/index.ts`. Keep those files free of `#lib` imports: drizzle-kit loads them without alias support.
@@ -86,7 +90,7 @@ Kit 3 has no `$env/*` modules. Variables are declared in `src/env.ts` with `defi
 - Form POSTs return 403 ("Cross-site POST form submissions are forbidden") unless the server derives the right origin. adapter-node assumes `https` unless `PROTOCOL_HEADER` names a header. The e2e config sets `PROTOCOL_HEADER=x-forwarded-proto` on the server and sends that header from the browser, which is what Traefik does in production. Dev (`pnpm dev`) does not have this problem. better-auth additionally checks the `Origin` header of cookie-authenticated requests against `DASHBOARD_URL`, so raw API calls from tests pass `Origin: baseURL`.
 - The `client` Vitest project runs in a browser on its own pinned port (`browser.api.port` in `vitest.config.ts`, 63315 here; docs and ui use 63316 and 63317). Do not remove it: without distinct ports, parallel `test:unit` runs from Turborepo collide and the browser tests do not run.
 - Kit's server-only import check is disabled under Vitest, so a leaked server import will not show up in unit tests. Lint and the build catch it.
-- Locators: demo rows use `aria-label`s like `Edit <title>` and `Delete <title>`, and user rows use `Manage <email>`. Use `{ exact: true }` when a name is also a substring of another control (`Sign out` vs `Sign out everywhere`, `Ban` vs `Unban`) or of other text.
+- Locators: demo rows are links named by the demo's title (the row itself is a stretched link, so click cells with `{ force: true }`), user rows use `Manage <email>`. Sign out and the theme controls live in the header's account menu (a `<details>` labelled `Account menu`): use `openAccountMenu(page)` / `signOut(page)` from `tests/support/page.ts`, which open it only when closed. Use `{ exact: true }` when a name is also a substring of another control (`Sign out` vs `Sign out everywhere`, `Ban` vs `Unban`) or of other text.
 
 ## Deploy
 
@@ -102,4 +106,3 @@ Kit 3 has no `$env/*` modules. Variables are declared in `src/env.ts` with `defi
 - ESLint `no-restricted-imports` patterns need `\\#` for `#lib/...` (a leading `#` is a comment in those patterns).
 - In `hooks.ts` the hook's `resolve` argument shadows `$app/paths`' `resolve`; the latter is imported as `resolvePath`.
 - **The dev port is pinned:** `vite.config.ts` sets `server: { port: 5174, strictPort: true }`. `DASHBOARD_URL` has to match the address you open (better-auth trusts only that origin), and `turbo dev` starts the docs app at the same time, which defaults to 5173. `strictPort` makes a clash fail with "Port 5174 is already in use" instead of silently moving. If you change the port, change `DASHBOARD_URL` in `.env.local` and `.env.example` too.
-- The "Theme preview" section on the home page (`src/routes/+page.svelte`) is temporary; remove it once the dashboard has real content.

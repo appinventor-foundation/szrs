@@ -29,7 +29,6 @@ export const demoInputSchema = z.object({
 });
 
 export const demoIdSchema = z.uuid();
-export const demoIdFormSchema = z.object({ id: demoIdSchema });
 
 export type Demo = z.infer<typeof demoSchema>;
 export type DemoInput = z.infer<typeof demoInputSchema>;

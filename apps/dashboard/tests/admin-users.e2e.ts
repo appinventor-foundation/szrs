@@ -5,7 +5,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { adminCredentials, baseURL } from './support/auth.js';
 import { resetDatabase } from './support/database.js';
-import { newSession, signIn, signOut, visit } from './support/page.js';
+import { newSession, openAccountMenu, signIn, signOut, visit } from './support/page.js';
 import { createUser } from './support/users.js';
 
 test.beforeEach(async ({ page }) => {
@@ -35,6 +35,7 @@ test.describe('creating users', () => {
 
 		await signOut(page);
 		await signIn(page, { email: 'grace@example.com', password: 'compiler-password-1' });
+		await openAccountMenu(page);
 		await expect(page.getByText('Grace Hopper')).toBeVisible();
 	});
 

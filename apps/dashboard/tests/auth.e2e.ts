@@ -5,7 +5,14 @@
 import { expect, test } from '@playwright/test';
 import { adminCredentials, baseURL } from './support/auth.js';
 import { resetDatabase } from './support/database.js';
-import { signIn, signOut, visit, waitForHydration } from './support/page.js';
+import {
+	accountMenuTrigger,
+	openAccountMenu,
+	signIn,
+	signOut,
+	visit,
+	waitForHydration
+} from './support/page.js';
 import { createUser } from './support/users.js';
 
 test.beforeEach(async () => {
@@ -16,7 +23,9 @@ test.describe('signing in and out', () => {
 	test('signs in, shows who is signed in, and signs out', async ({ page }) => {
 		await signIn(page, adminCredentials);
 
+		await openAccountMenu(page);
 		await expect(page.getByText(adminCredentials.name)).toBeVisible();
+		await expect(page.getByText(adminCredentials.email)).toBeVisible();
 		await expect(page.getByRole('link', { name: 'Demos' })).toBeVisible();
 
 		await signOut(page);
@@ -74,17 +83,30 @@ test.describe('protected pages', () => {
 		await page.getByLabel('Password').fill(adminCredentials.password);
 		await page.getByRole('button', { name: 'Sign in' }).click();
 
-		await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+		await expect(accountMenuTrigger(page)).toBeVisible();
 		await expect(page).toHaveURL('/');
 	});
 
 	test('reject an unauthenticated form post', async ({ request }) => {
-		const response = await request.post('/demos?/create', {
+		const response = await request.post('/demos/new?/create', {
 			form: { title: 'sneaky' },
 			headers: { Origin: baseURL }
 		});
 
 		expect(response.status()).toBe(401);
+	});
+
+	test('reject an unauthenticated delete and edit', async ({ request }) => {
+		const id = '3f1c2b6e-9a4d-4c52-8f0e-2a7b1d5e6c90';
+
+		const remove = await request.post(`/demos/${id}?/delete`, { headers: { Origin: baseURL } });
+		const update = await request.post(`/demos/${id}/edit?/update`, {
+			form: { title: 'sneaky' },
+			headers: { Origin: baseURL }
+		});
+
+		expect(remove.status()).toBe(401);
+		expect(update.status()).toBe(401);
 	});
 
 	test('reject an unauthenticated admin request', async ({ page }) => {

@@ -6,8 +6,8 @@
 <script lang="ts">
 	import './layout.css';
 	import { onMount } from 'svelte';
-	import { ThemeControls } from '@szrs/ui';
 	import { resolve } from '$app/paths';
+	import UserMenu from '#lib/components/UserMenu.svelte';
 	import type { LayoutProps } from './$types';
 
 	const { children, data }: LayoutProps = $props();
@@ -30,17 +30,11 @@
 				{/if}
 			{/if}
 		</nav>
-		<div class="flex items-center gap-4">
-			{#if data.user}
-				<span>{data.user.name}</span>
-				<form method="POST" action={resolve('/logout')}>
-					<button class="btn preset-tonal" type="submit">Sign out</button>
-				</form>
-			{:else}
-				<a class="btn preset-filled" href={resolve('/login')}>Sign in</a>
-			{/if}
-			<ThemeControls />
-		</div>
+		{#if data.user}
+			<UserMenu user={data.user} />
+		{:else}
+			<a class="btn preset-filled" href={resolve('/login')}>Sign in</a>
+		{/if}
 	</div>
 </header>
 
