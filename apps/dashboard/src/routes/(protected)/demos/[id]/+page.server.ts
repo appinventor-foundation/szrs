@@ -4,13 +4,14 @@
 
 import { redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
+import { demoView } from '#lib/schemas/demo.js';
 import { getDemoService } from '#lib/server/container.js';
 import { parseDemoId } from '#lib/server/demo-params.js';
 import { mapDomainErrors } from '#lib/server/forms.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => ({
-	demo: await mapDomainErrors(() => getDemoService().get(parseDemoId(params.id)))
+	demo: demoView(await mapDomainErrors(() => getDemoService().get(parseDemoId(params.id))))
 });
 
 export const actions: Actions = {

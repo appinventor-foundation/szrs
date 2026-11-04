@@ -15,7 +15,7 @@ export const testDatabaseUrl =
 export async function resetDatabase(): Promise<void> {
 	const sql = postgres(testDatabaseUrl);
 	try {
-		await sql`TRUNCATE TABLE demos`;
+		await sql`TRUNCATE TABLE demos, demo_workspaces`;
 		await sql`DELETE FROM verification`;
 		await sql`DELETE FROM session`;
 		await sql`DELETE FROM "user" WHERE email <> ${adminCredentials.email}`;

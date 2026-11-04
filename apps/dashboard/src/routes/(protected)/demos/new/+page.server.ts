@@ -4,17 +4,17 @@
 
 import { fail, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
-import { demoInputSchema } from '#lib/schemas/demo.js';
+import { isAdmin } from '#lib/server/auth/roles.js';
 import { getDemoService } from '#lib/server/container.js';
-import { parseForm } from '#lib/server/forms.js';
+import { parseDemoForm } from '#lib/server/demo-form.js';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
-	create: async ({ request }) => {
-		const form = parseForm(demoInputSchema, await request.formData());
+	create: async ({ request, locals }) => {
+		const form = parseDemoForm(await request.formData(), isAdmin(locals.user));
 		if (!form.ok) return fail(400, { errors: form.errors, values: form.values });
 
-		const demo = await getDemoService().create(form.data);
+		const demo = await getDemoService().create(form.data.input, form.data.setup);
 		redirect(303, resolve('/(protected)/demos/[id]', { id: demo.id }));
 	}
 };

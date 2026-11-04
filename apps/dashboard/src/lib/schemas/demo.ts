@@ -3,16 +3,30 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { z } from 'zod';
+import { SAMPLE_IDS } from '#lib/samples/index.js';
+import { workspaceSchema } from './workspace.js';
 
 // Plain Zod, safe for the browser: nothing here imports the database layer.
 // server/db/schema/demos.test.ts checks these stay in step with the table.
 export const DEMO_TITLE_MAX = 120;
 export const DEMO_DESCRIPTION_MAX = 2000;
+export const STARTER_KINDS = ['empty', 'sample', 'custom'] as const;
+export const DEMO_KINDS = ['none', 'plugin'] as const;
+
+// How each demo reads on a page.
+export const DEMO_LABELS: Record<(typeof DEMO_KINDS)[number], string> = {
+	none: 'No demo',
+	plugin: 'Plugin demo'
+};
 
 export const demoSchema = z.object({
 	id: z.uuid(),
 	title: z.string(),
 	description: z.string().nullable(),
+	demoKind: z.enum(DEMO_KINDS),
+	starterKind: z.enum(STARTER_KINDS),
+	sampleId: z.string().nullable(),
+	starterWorkspace: workspaceSchema.nullable(),
 	createdAt: z.date(),
 	updatedAt: z.date()
 });
@@ -28,7 +42,42 @@ export const demoInputSchema = z.object({
 		.nullish()
 });
 
+// Where a demo's workspace starts. Only admins set it.
+export const starterSchema = z.discriminatedUnion('kind', [
+	z.object({ kind: z.literal('empty') }),
+	z.object({ kind: z.literal('sample'), sampleId: z.enum(SAMPLE_IDS) }),
+	z.object({ kind: z.literal('custom'), workspace: workspaceSchema })
+]);
+
+// What the admin's demo form can ask for. 'custom' means "keep the program
+// saved from the runner": that program cannot be typed into a form, so the
+// form never carries it.
+export const starterChoiceSchema = z.discriminatedUnion('starterKind', [
+	z.object({ starterKind: z.literal('empty') }),
+	z.object({ starterKind: z.literal('sample'), sampleId: z.enum(SAMPLE_IDS, 'Pick a sample') }),
+	z.object({ starterKind: z.literal('custom') })
+]);
+
+// What the admin's demo form says about the entry's demo: which one it runs.
+// The starting program only matters for the plugin demo.
+export const demoChoiceSchema = z.object({ demoKind: z.enum(DEMO_KINDS) });
+
 export const demoIdSchema = z.uuid();
+
+// What pages get: a demo without its saved starter program, which can be large
+// and which only the runner needs.
+export type DemoView = Omit<Demo, 'starterWorkspace'>;
+
+export function demoView(demo: Demo): DemoView {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- dropped on purpose
+	const { starterWorkspace, ...view } = demo;
+	return view;
+}
 
 export type Demo = z.infer<typeof demoSchema>;
 export type DemoInput = z.infer<typeof demoInputSchema>;
+export type DemoKind = (typeof DEMO_KINDS)[number];
+export type Starter = z.infer<typeof starterSchema>;
+// What an admin sets on an entry: its demo and, for the plugin demo, where it starts.
+export type DemoSetup = { demoKind: DemoKind; starter?: Starter };
+export type StarterChoice = z.infer<typeof starterChoiceSchema>;

@@ -9,7 +9,7 @@
 	import DemoForm from '#lib/components/DemoForm.svelte';
 	import type { PageProps } from './$types';
 
-	const { form }: PageProps = $props();
+	const { data, form }: PageProps = $props();
 </script>
 
 <Breadcrumbs
@@ -22,6 +22,7 @@
 	<DemoForm
 		action="?/create"
 		submitLabel="Create demo"
+		canSetDemo={data.user?.isAdmin ?? false}
 		errors={form?.errors}
 		values={form?.values}
 	/>

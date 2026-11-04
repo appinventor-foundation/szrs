@@ -10,6 +10,13 @@ export default defineConfig({
 	// also defaults to 5173. strictPort makes a clash fail loudly instead of
 	// moving to another port.
 	server: { port: 5174, strictPort: true },
+	optimizeDeps: {
+		// The plugin ships a webpack UMD bundle, which only works once Vite
+		// pre-bundles it; a linked workspace package is otherwise served as it is,
+		// and the wrapper then fails on `this` being undefined in a module.
+		// Listed with blockly so both land in one pre-bundle and share one Blockly.
+		include: ['blockly', '@szrs/blockly-szrs']
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({

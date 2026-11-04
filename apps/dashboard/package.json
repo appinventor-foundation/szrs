@@ -23,8 +23,10 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.14",
+    "@szrs/blockly-szrs": "workspace:*",
     "@szrs/ui": "workspace:*",
     "better-auth": "1.7.14",
+    "blockly": "13.4.0",
     "drizzle-orm": "0.45.4",
     "postgres": "3.4.9",
     "zod": "4.6.7"

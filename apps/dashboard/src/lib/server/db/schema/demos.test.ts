@@ -5,8 +5,13 @@
 import { getTableColumns } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { describe, expect, it } from 'vitest';
-import { demoInputSchema, demoSchema } from '#lib/schemas/demo.js';
-import { demos } from './demos.js';
+import {
+	DEMO_KINDS as schemaDemoKinds,
+	demoInputSchema,
+	demoSchema,
+	STARTER_KINDS as schemaKinds
+} from '#lib/schemas/demo.js';
+import { DEMO_KINDS as tableDemoKinds, demos, STARTER_KINDS as tableKinds } from './demos.js';
 
 // The shared Zod schemas are written by hand so the browser never loads the
 // database layer. These tests are what stops them drifting from the table.
@@ -29,6 +34,32 @@ describe('demo schemas match the demos table', () => {
 			id: '3f1c2b6e-9a4d-4c52-8f0e-2a7b1d5e6c90',
 			title: 'A demo',
 			description: null,
+			demoKind: 'none',
+			starterKind: 'empty',
+			sampleId: null,
+			starterWorkspace: null,
+			createdAt: new Date(),
+			updatedAt: new Date()
+		};
+
+		expect(demoSchema.safeParse(row).success).toBe(true);
+		expect(createSelectSchema(demos).safeParse(row).success).toBe(true);
+	});
+
+	it('lists the same starter kinds as the table', () => {
+		expect([...schemaKinds]).toEqual([...tableKinds]);
+		expect([...schemaDemoKinds]).toEqual([...tableDemoKinds]);
+	});
+
+	it('accepts a saved starter in the same shape as the table', () => {
+		const row = {
+			id: '3f1c2b6e-9a4d-4c52-8f0e-2a7b1d5e6c90',
+			title: 'A demo',
+			description: null,
+			demoKind: 'plugin',
+			starterKind: 'custom',
+			sampleId: null,
+			starterWorkspace: { blocks: {} },
 			createdAt: new Date(),
 			updatedAt: new Date()
 		};

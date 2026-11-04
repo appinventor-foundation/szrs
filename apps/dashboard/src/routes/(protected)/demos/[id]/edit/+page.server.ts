@@ -4,22 +4,26 @@
 
 import { fail, redirect } from '@sveltejs/kit';
 import { resolve } from '$app/paths';
-import { demoInputSchema } from '#lib/schemas/demo.js';
+import { demoView } from '#lib/schemas/demo.js';
+import { isAdmin } from '#lib/server/auth/roles.js';
 import { getDemoService } from '#lib/server/container.js';
+import { parseDemoForm } from '#lib/server/demo-form.js';
 import { parseDemoId } from '#lib/server/demo-params.js';
-import { mapDomainErrors, parseForm } from '#lib/server/forms.js';
+import { mapDomainErrors } from '#lib/server/forms.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => ({
-	demo: await mapDomainErrors(() => getDemoService().get(parseDemoId(params.id)))
+	demo: demoView(await mapDomainErrors(() => getDemoService().get(parseDemoId(params.id))))
 });
 
 export const actions: Actions = {
-	update: async ({ params, request }) => {
-		const form = parseForm(demoInputSchema, await request.formData());
+	update: async ({ params, request, locals }) => {
+		const form = parseDemoForm(await request.formData(), isAdmin(locals.user));
 		if (!form.ok) return fail(400, { errors: form.errors, values: form.values });
 
-		await mapDomainErrors(() => getDemoService().update(parseDemoId(params.id), form.data));
+		await mapDomainErrors(() =>
+			getDemoService().update(parseDemoId(params.id), form.data.input, form.data.setup)
+		);
 		redirect(303, resolve('/(protected)/demos/[id]', { id: params.id }));
 	}
 };

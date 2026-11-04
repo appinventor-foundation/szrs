@@ -27,6 +27,7 @@
 		action="?/update"
 		submitLabel="Save changes"
 		initial={data.demo}
+		canSetDemo={data.user?.isAdmin ?? false}
 		errors={form?.errors}
 		values={form?.values}
 	/>

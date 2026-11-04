@@ -6,9 +6,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+	import { DEMO_LABELS } from '#lib/schemas/demo.js';
+	import { describeStarter } from '#lib/samples/index.js';
 	import type { PageProps } from './$types';
 
 	const { data }: PageProps = $props();
+
+	const starterLabel = $derived(describeStarter(data.demo));
 
 	const dateFormat = new Intl.DateTimeFormat('en', {
 		dateStyle: 'medium',
@@ -23,9 +27,17 @@
 
 <div class="flex flex-wrap items-start justify-between gap-4">
 	<h1 class="h1 min-w-0 break-words">{data.demo.title}</h1>
-	<a class="btn preset-tonal" href={resolve('/(protected)/demos/[id]/edit', { id: data.demo.id })}
-		>Edit</a
-	>
+	<div class="flex gap-2">
+		{#if data.demo.demoKind !== 'none'}
+			<a
+				class="btn preset-filled"
+				href={resolve('/(protected)/demos/[id]/run', { id: data.demo.id })}>Start demo</a
+			>
+		{/if}
+		<a class="btn preset-tonal" href={resolve('/(protected)/demos/[id]/edit', { id: data.demo.id })}
+			>Edit</a
+		>
+	</div>
 </div>
 
 <div class="mt-6 max-w-2xl space-y-6">
@@ -41,6 +53,12 @@
 	<dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
 		<dt class="font-semibold">Created</dt>
 		<dd>{dateFormat.format(data.demo.createdAt)} UTC</dd>
+		<dt class="font-semibold">Demo</dt>
+		<dd>{DEMO_LABELS[data.demo.demoKind]}</dd>
+		{#if data.demo.demoKind !== 'none'}
+			<dt class="font-semibold">Opens with</dt>
+			<dd>{starterLabel}</dd>
+		{/if}
 		<dt class="font-semibold">Last updated</dt>
 		<dd>{dateFormat.format(data.demo.updatedAt)} UTC</dd>
 	</dl>
