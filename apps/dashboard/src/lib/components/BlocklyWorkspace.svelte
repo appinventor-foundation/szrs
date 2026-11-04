@@ -21,3 +21,13 @@
 {#if editor.failure}
 	<p class="mt-2 text-error-500" role="alert">{editor.failure}</p>
 {/if}
+
+<style>
+	/* Blockly hides things such as the flyout's scrollbar with a display="none"
+	   attribute on an <svg>. Tailwind's base styles give every <svg> display:block,
+	   and a stylesheet beats that attribute, so the scrollbar stayed on screen after
+	   the flyout closed. */
+	div :global(svg[display='none']) {
+		display: none;
+	}
+</style>

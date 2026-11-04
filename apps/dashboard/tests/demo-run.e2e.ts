@@ -226,6 +226,24 @@ test.describe('the demo form', () => {
 	});
 });
 
+test.describe('the toolbox flyout', () => {
+	test('leaves nothing behind once it closes', async ({ page }) => {
+		await createDemo(page, 'Flyout');
+		await startDemo(page);
+		const scrollbar = workspace(page).locator('svg.blocklyFlyoutScrollbar[display="none"]').first();
+
+		await workspace(page).locator('.blocklyToolboxCategory', { hasText: 'Loops' }).click();
+		await expect(
+			workspace(page).locator('.blocklyFlyout g.blocklyDraggable').first()
+		).toBeVisible();
+		await workspace(page).locator('.blocklyToolboxCategory', { hasText: 'Loops' }).click();
+
+		await expect(workspace(page).locator('.blocklyToolboxFlyout')).toBeHidden();
+		// Blockly hides it with an attribute that a stylesheet can override.
+		await expect(scrollbar).toHaveCSS('display', 'none');
+	});
+});
+
 test.describe('examples in the runner', () => {
 	test('loads an example into the workspace, and an empty one again', async ({ page }) => {
 		await createDemo(page, 'Examples');
