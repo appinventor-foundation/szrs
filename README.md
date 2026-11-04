@@ -25,7 +25,7 @@ This repository holds the Blockly plugin, the proxy that keeps the LLM credentia
 - The **plugin** is client-side code with nowhere safe to keep an API key, so it talks to the **proxy**. The proxy holds the one LiteLLM virtual key, validates requests and forwards them.
 - **LiteLLM** does the provider routing, rate limits and spend tracking. The virtual key's budget is the real spending cap.
 - Every site that uses the plugin runs its own proxy, with its own LiteLLM and keys. There is no shared hosted proxy.
-- The **dashboard** is deliberately not a client of the proxy. It has its own backend and database.
+- The **dashboard** has its own backend and database. Its demo runner hosts the plugin and forwards the plugin's two calls to the proxy server-side, so the proxy can stay internal.
 
 ## What's in the repo
 

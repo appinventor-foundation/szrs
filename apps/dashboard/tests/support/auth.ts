@@ -4,6 +4,10 @@
 
 export const baseURL = 'http://localhost:4173';
 
+// A fake LLM proxy (tests/support/fake-proxy.ts) stands in for apps/llm-proxy.
+export const fakeProxyPort = 4174;
+export const fakeProxyURL = `http://localhost:${fakeProxyPort}`;
+
 // The admin that global setup seeds once; resetDatabase() keeps it.
 export const adminCredentials = {
 	name: 'E2E Admin',
@@ -15,6 +19,7 @@ export const adminCredentials = {
 export const testAuthEnv = {
 	BETTER_AUTH_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0123456789',
 	DASHBOARD_URL: baseURL,
+	PROXY_URL: fakeProxyURL,
 	INITIAL_ADMIN_NAME: adminCredentials.name,
 	INITIAL_ADMIN_EMAIL: adminCredentials.email,
 	INITIAL_ADMIN_PASSWORD: adminCredentials.password

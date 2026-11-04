@@ -28,6 +28,7 @@ COPY --from=pruner /app/out/full/ .
 ARG DATABASE_URL=postgresql://build:build@localhost:5432/build
 ARG BETTER_AUTH_SECRET=build-only-placeholder-not-a-secret-0000
 ARG DASHBOARD_URL=http://localhost:3000
+ARG PROXY_URL=http://localhost:3000
 RUN pnpm turbo run build --filter=@szrs/dashboard
 
 # adapter-node leaves the runtime dependencies (postgres, drizzle-orm, zod, ...)

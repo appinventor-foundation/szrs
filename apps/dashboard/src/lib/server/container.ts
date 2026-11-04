@@ -2,6 +2,7 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
+import { PROXY_API_KEY, PROXY_URL } from '$app/env/private';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { getAuth } from '#lib/server/auth/index.js';
 import { getDatabase } from '#lib/server/db/client.js';
@@ -11,15 +12,22 @@ import { createUserRepository } from '#lib/server/repositories/users.js';
 import { createAuthService, type AuthService } from '#lib/server/services/auth.js';
 import { createDemoService, type DemoService } from '#lib/server/services/demos.js';
 import { createUserService, type UserService } from '#lib/server/services/users.js';
+import { createZoomProxy, type ZoomProxy } from '#lib/server/services/zoom-proxy.js';
 
 // The one place that wires repositories into services. Routes call these
 // getters and never touch the database themselves.
 let demoService: DemoService | undefined;
 let authService: AuthService | undefined;
+let zoomProxy: ZoomProxy | undefined;
 
 export function getDemoService(): DemoService {
 	demoService ??= createDemoService(createDemoRepository(getDatabase()));
 	return demoService;
+}
+
+export function getZoomProxy(): ZoomProxy {
+	zoomProxy ??= createZoomProxy({ baseUrl: PROXY_URL, apiKey: PROXY_API_KEY });
+	return zoomProxy;
 }
 
 export function getAuthService(): AuthService {

@@ -14,6 +14,7 @@ jobs:
       DATABASE_URL: postgresql://build:build@localhost:5432/build
       BETTER_AUTH_SECRET: build-only-placeholder-not-a-secret-0000
       DASHBOARD_URL: http://localhost:3000
+      PROXY_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v5
 
@@ -43,6 +44,7 @@ jobs:
       DATABASE_URL: postgresql://build:build@localhost:5432/build
       BETTER_AUTH_SECRET: build-only-placeholder-not-a-secret-0000
       DASHBOARD_URL: http://localhost:3000
+      PROXY_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v5
 

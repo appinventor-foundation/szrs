@@ -6,7 +6,9 @@
     "DATABASE_URL",
     "TEST_DATABASE_URL",
     "BETTER_AUTH_SECRET",
-    "DASHBOARD_URL"
+    "DASHBOARD_URL",
+    "PROXY_URL",
+    "PROXY_API_KEY"
   ],
   "globalDependencies": [
     ".gitignore",

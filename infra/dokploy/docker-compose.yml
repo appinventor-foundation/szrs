@@ -86,6 +86,16 @@ services:
       # The dashboard's public URL. better-auth uses it as its base URL and
       # trusted origin, and it must match what the browser sees.
       DASHBOARD_URL: ${DASHBOARD_URL:?set DASHBOARD_URL}
+      # The dashboard forwards the plugin's zoom requests to the proxy over the
+      # compose network, so the proxy needs no public domain and no CORS.
+      PROXY_URL: http://llm-proxy:3000
+      PROXY_API_KEY: ${INTERNAL_API_KEY:-}
+      ZOOM_DEFAULT_MODEL: ${ZOOM_DEFAULT_MODEL:-openrouter}
+      # Behind Traefik the socket address is Traefik's. The forwarder passes the
+      # person's address to the proxy for its per-IP rate limit, so read it
+      # from the header Traefik sets.
+      ADDRESS_HEADER: x-forwarded-for
+      XFF_DEPTH: '1'
     healthcheck:
       test:
         [

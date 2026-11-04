@@ -23,7 +23,7 @@ Semantic zoom for Blockly: a Blockly plugin (`apps/blockly-szrs`) that shows a b
 
 Cross-app facts that are easy to get wrong:
 
-- The dashboard is **deliberately not** a client of the proxy. Do not add dashboard routes to `apps/llm-proxy`. Every site that uses the plugin runs its own proxy and LiteLLM.
+- The dashboard's only use of the proxy is the **demo runner**: `src/routes/(protected)/api/szrs/v1/{models,zoom/stream}` forward the plugin's two calls server-side (`PROXY_URL`, optional `PROXY_API_KEY`), so the proxy stays on the internal network with no public address and no CORS. Nothing else is forwarded, and the forwarders sit behind the dashboard's sign-in. Do not add dashboard routes to `apps/llm-proxy`. Every site that uses the plugin runs its own proxy and LiteLLM.
 - The proxy's real spending cap is the LiteLLM virtual key (budget, rate limit, model list). CORS, per-IP limits and `INTERNAL_API_KEY` are not security boundaries: a key the plugin sends from the browser is visible to every visitor.
 - Routes: `/v1/chat/completions`, `/v1/models`, `/v1/zoom`, `/v1/zoom/stream` (SSE), `/healthz`, `/readyz`. Request and response shapes live in `packages/llm-proxy-contracts`.
 
@@ -60,7 +60,7 @@ Dev ports: dashboard 5174 (pinned with `strictPort`), docs 5173 (Vite's default)
 
 ## Environment variables and CI
 
-- `turbo.json` runs tasks with a filtered environment. A variable that a task needs must be in `globalPassThroughEnv` (today: `CI`, `DATABASE_URL`, `TEST_DATABASE_URL`, `BETTER_AUTH_SECRET`, `DASHBOARD_URL`) or the task won't see it, and lint's `turbo/no-undeclared-env-vars` rule flags it.
+- `turbo.json` runs tasks with a filtered environment. A variable that a task needs must be in `globalPassThroughEnv` (today: `CI`, `DATABASE_URL`, `TEST_DATABASE_URL`, `BETTER_AUTH_SECRET`, `DASHBOARD_URL`, `PROXY_URL`, `PROXY_API_KEY`) or the task won't see it, and lint's `turbo/no-undeclared-env-vars` rule flags it.
 - SvelteKit validates its environment variables **during `vite build`**, and `check-types` and `test:unit` build first. So CI jobs and Dockerfile builder stages set placeholder values for the dashboard's required variables. If you add a required variable, add placeholders in `.github/workflows/test.yml` and the Dockerfile `ARG`s too.
 - Secrets live in gitignored files: `apps/*/.env.local`, `infra/llm-proxy/.env` (Compose only auto-loads a file named `.env`) and `infra/dokploy/.env`. Commit only the `.env.example` files, and keep them in step with the code and compose files.
 - CI (`.github/workflows/test.yml`) has three jobs: `check` (lint, types), `test-unit`, `test-e2e` (dashboard, with a Postgres service container). Keep `pnpm test` and CI equivalent.
@@ -91,6 +91,6 @@ These are stale, not instructions. Fix them when you work in those areas.
 
 From the project notes of 2026-10-30; check they are still open before relying on them.
 
-- Whether to make the llm-proxy public, or host the Blockly plugin inside the dashboard with the proxy staying internal. Before any public exposure, set `INTERNAL_API_KEY` (unset in the deployed compose today) and give the LiteLLM virtual key a budget, rate limit and model list.
+- Decided 2026-11-04: the Blockly plugin is hosted inside the dashboard (demo runner) and the proxy stays internal. The proxy is still **not** safe to expose publicly: before any public exposure, set `INTERNAL_API_KEY` (unset in the deployed compose today) and give the LiteLLM virtual key a budget, rate limit and model list.
 - Server housekeeping: the broken `claude-3-5-sonnet` alias in `infra/llm-proxy/docker/litellm/config.yaml`, and real `OPENAI_API_KEY` / `OPENROUTER_API_KEY` values in Dokploy.
 - A self-service change-password page for the dashboard (admins set passwords for now).

@@ -73,6 +73,8 @@ The Blockly plugin and this proxy ship as a pair. Every site that uses the plugi
 
 **A key sent from the browser is not a secret.** If the plugin sends `INTERNAL_API_KEY`, anyone using the site can read it in devtools. It only identifies the caller; it doesn't authenticate anyone. That's why it's optional. It's useful for server-to-server callers, and a site with user logins can put its own auth in front of the proxy instead.
 
+**The dashboard's demo runner is the one client that needs no CORS:** it forwards the plugin's `/v1/models` and `/v1/zoom/stream` calls server-side over the internal network (`PROXY_URL`), setting `x-forwarded-for` to the visitor's address. With `TRUST_PROXY=true` the per-IP rate limit then sees each visitor, not the dashboard.
+
 **The real spending cap is the LiteLLM virtual key.** CORS stops other websites from calling the proxy through their visitors' browsers, but not scripts or curl, and per-IP limits can be spread across many IPs. Mint the proxy's virtual key with a budget, a rate limit and a model list, so a leaked or abused proxy can only spend so much:
 
 ```bash

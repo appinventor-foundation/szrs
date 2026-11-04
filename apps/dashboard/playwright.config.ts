@@ -3,7 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { defineConfig } from '@playwright/test';
-import { baseURL, testAuthEnv } from './tests/support/auth.js';
+import { baseURL, fakeProxyURL, testAuthEnv } from './tests/support/auth.js';
 import { testDatabaseUrl } from './tests/support/database.js';
 
 const port = 4173;
@@ -21,16 +21,24 @@ export default defineConfig({
 		// rejects form posts whose Origin does not match.
 		extraHTTPHeaders: { 'x-forwarded-proto': 'http' }
 	},
-	webServer: {
-		command: 'pnpm build && node build',
-		url: `http://localhost:${port}/healthz`,
-		reuseExistingServer: !process.env.CI,
-		timeout: 120_000,
-		env: {
-			...testAuthEnv,
-			PORT: String(port),
-			PROTOCOL_HEADER: 'x-forwarded-proto',
-			DATABASE_URL: testDatabaseUrl
+	webServer: [
+		{
+			// The LLM proxy the dashboard forwards to, faked.
+			command: 'pnpm exec tsx tests/support/fake-proxy.ts',
+			url: `${fakeProxyURL}/healthz`,
+			reuseExistingServer: !process.env.CI
+		},
+		{
+			command: 'pnpm build && node build',
+			url: `http://localhost:${port}/healthz`,
+			reuseExistingServer: !process.env.CI,
+			timeout: 120_000,
+			env: {
+				...testAuthEnv,
+				PORT: String(port),
+				PROTOCOL_HEADER: 'x-forwarded-proto',
+				DATABASE_URL: testDatabaseUrl
+			}
 		}
-	}
+	]
 });
