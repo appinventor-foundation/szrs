@@ -38,6 +38,7 @@ describe('demo schemas match the demos table', () => {
 			starterKind: 'empty',
 			sampleId: null,
 			starterWorkspace: null,
+			iframeUrl: null,
 			createdAt: new Date(),
 			updatedAt: new Date()
 		};
@@ -60,6 +61,7 @@ describe('demo schemas match the demos table', () => {
 			starterKind: 'custom',
 			sampleId: null,
 			starterWorkspace: { blocks: {} },
+			iframeUrl: null,
 			createdAt: new Date(),
 			updatedAt: new Date()
 		};

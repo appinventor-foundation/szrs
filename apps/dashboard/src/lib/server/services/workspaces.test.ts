@@ -105,6 +105,17 @@ describe('workspace service', () => {
 		await expect(service.reset(entry.id, 'u1')).rejects.toBeInstanceOf(NotFoundError);
 	});
 
+	it('treats an embedded page as having no workspace', async () => {
+		const { demos, service } = await setup();
+		const entry = await demos.insert(
+			{ title: 'embedded' },
+			{ demoKind: 'iframe', iframeUrl: 'https://example.org' }
+		);
+
+		await expect(service.load(entry.id, 'u1')).rejects.toBeInstanceOf(NotFoundError);
+		await expect(service.save(entry.id, 'u1', {})).rejects.toBeInstanceOf(NotFoundError);
+	});
+
 	it('keeps saved copies per entry when entries share the demo', async () => {
 		const { demos, service } = await setup();
 		const a = await demos.insert({ title: 'a' }, { demoKind: 'plugin' });

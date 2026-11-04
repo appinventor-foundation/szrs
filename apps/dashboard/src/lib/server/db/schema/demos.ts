@@ -11,10 +11,10 @@ import { check, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-cor
 // drizzle-kit reads the schema without alias support); demos.test.ts checks.
 export const STARTER_KINDS = ['empty', 'sample', 'custom'] as const;
 
-// Which bundled demo an entry runs: none, or the plugin demo (the semantic-zoom
-// plugin's playground). A new bundled demo is a new value here and in
-// schemas/demo.ts.
-export const DEMO_KINDS = ['none', 'plugin'] as const;
+// What an entry runs: nothing, the plugin demo (the semantic-zoom plugin's
+// playground), or an external page embedded in an iframe. A new kind is a new
+// value here and in schemas/demo.ts.
+export const DEMO_KINDS = ['none', 'plugin', 'iframe'] as const;
 
 export const demos = pgTable(
 	'demos',
@@ -26,6 +26,9 @@ export const demos = pgTable(
 		starterKind: text('starter_kind', { enum: STARTER_KINDS }).notNull().default('empty'),
 		sampleId: text('sample_id'),
 		starterWorkspace: jsonb('starter_workspace').$type<Record<string, unknown>>(),
+		// The page an 'iframe' demo embeds. Kept when the demo is switched to another
+		// kind, so switching back loses nothing.
+		iframeUrl: text('iframe_url'),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true })
 			.notNull()
@@ -34,6 +37,10 @@ export const demos = pgTable(
 	},
 	(table) => [
 		// The starter columns must agree with the kind.
+		check(
+			'demos_iframe_has_url',
+			sql`${table.demoKind} <> 'iframe' OR ${table.iframeUrl} IS NOT NULL`
+		),
 		check(
 			'demos_starter_matches_kind',
 			sql`(${table.starterKind} = 'sample') = (${table.sampleId} IS NOT NULL) AND (${table.starterKind} = 'custom') = (${table.starterWorkspace} IS NOT NULL)`

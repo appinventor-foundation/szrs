@@ -11,12 +11,14 @@ import { workspaceSchema } from './workspace.js';
 export const DEMO_TITLE_MAX = 120;
 export const DEMO_DESCRIPTION_MAX = 2000;
 export const STARTER_KINDS = ['empty', 'sample', 'custom'] as const;
-export const DEMO_KINDS = ['none', 'plugin'] as const;
+export const DEMO_KINDS = ['none', 'plugin', 'iframe'] as const;
+export const IFRAME_URL_MAX = 2048;
 
 // How each demo reads on a page.
 export const DEMO_LABELS: Record<(typeof DEMO_KINDS)[number], string> = {
 	none: 'No demo',
-	plugin: 'Plugin demo'
+	plugin: 'Plugin demo',
+	iframe: 'Embedded page'
 };
 
 export const demoSchema = z.object({
@@ -27,6 +29,7 @@ export const demoSchema = z.object({
 	starterKind: z.enum(STARTER_KINDS),
 	sampleId: z.string().nullable(),
 	starterWorkspace: workspaceSchema.nullable(),
+	iframeUrl: z.string().nullable(),
 	createdAt: z.date(),
 	updatedAt: z.date()
 });
@@ -62,6 +65,17 @@ export const starterChoiceSchema = z.discriminatedUnion('starterKind', [
 // The starting program only matters for the plugin demo.
 export const demoChoiceSchema = z.object({ demoKind: z.enum(DEMO_KINDS) });
 
+// The address an 'iframe' demo embeds: http or https only, so a page can never be
+// a javascript: or data: URL.
+export const iframeUrlSchema = z
+	.string()
+	.trim()
+	.min(1, 'Enter the address of the page to embed')
+	.max(IFRAME_URL_MAX, 'The address is too long')
+	.pipe(z.url({ protocol: /^https?$/, error: 'Enter a full address starting with https://' }));
+
+export const iframeChoiceSchema = z.object({ iframeUrl: iframeUrlSchema });
+
 export const demoIdSchema = z.uuid();
 
 // What pages get: a demo without its saved starter program, which can be large
@@ -78,6 +92,7 @@ export type Demo = z.infer<typeof demoSchema>;
 export type DemoInput = z.infer<typeof demoInputSchema>;
 export type DemoKind = (typeof DEMO_KINDS)[number];
 export type Starter = z.infer<typeof starterSchema>;
-// What an admin sets on an entry: its demo and, for the plugin demo, where it starts.
-export type DemoSetup = { demoKind: DemoKind; starter?: Starter };
+// What an admin sets on an entry: its demo, where the plugin demo starts, or the
+// page an iframe demo embeds.
+export type DemoSetup = { demoKind: DemoKind; starter?: Starter; iframeUrl?: string };
 export type StarterChoice = z.infer<typeof starterChoiceSchema>;

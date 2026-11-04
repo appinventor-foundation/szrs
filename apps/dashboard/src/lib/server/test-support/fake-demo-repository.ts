@@ -26,9 +26,11 @@ export function fakeDemoRepository(): DemoRepository {
 
 	const toDemo = (id: string, input: DemoInput, setup?: DemoSetup, before?: Demo): Demo => ({
 		demoKind: 'none',
+		iframeUrl: null,
 		...(before ?? starterFields()),
 		...(setup ? { demoKind: setup.demoKind } : {}),
 		...(setup?.starter ? starterFields(setup.starter) : {}),
+		...(setup?.iframeUrl !== undefined ? { iframeUrl: setup.iframeUrl } : {}),
 		id,
 		title: input.title,
 		description: input.description ?? null,

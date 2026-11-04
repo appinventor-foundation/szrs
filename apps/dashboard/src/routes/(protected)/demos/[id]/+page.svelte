@@ -55,9 +55,12 @@
 		<dd>{dateFormat.format(data.demo.createdAt)} UTC</dd>
 		<dt class="font-semibold">Demo</dt>
 		<dd>{DEMO_LABELS[data.demo.demoKind]}</dd>
-		{#if data.demo.demoKind !== 'none'}
+		{#if data.demo.demoKind === 'plugin'}
 			<dt class="font-semibold">Opens with</dt>
 			<dd>{starterLabel}</dd>
+		{:else if data.demo.demoKind === 'iframe'}
+			<dt class="font-semibold">Page</dt>
+			<dd class="break-all">{data.demo.iframeUrl}</dd>
 		{/if}
 		<dt class="font-semibold">Last updated</dt>
 		<dd>{dateFormat.format(data.demo.updatedAt)} UTC</dd>

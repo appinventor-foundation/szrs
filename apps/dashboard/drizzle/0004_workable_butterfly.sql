@@ -1,0 +1,2 @@
+ALTER TABLE "demos" ADD COLUMN "iframe_url" text;--> statement-breakpoint
+ALTER TABLE "demos" ADD CONSTRAINT "demos_iframe_has_url" CHECK ("demos"."demo_kind" <> 'iframe' OR "demos"."iframe_url" IS NOT NULL);

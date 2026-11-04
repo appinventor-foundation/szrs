@@ -5,6 +5,7 @@
 import {
 	demoChoiceSchema,
 	demoInputSchema,
+	iframeChoiceSchema,
 	starterChoiceSchema,
 	type DemoInput,
 	type DemoSetup,
@@ -40,9 +41,15 @@ export function parseDemoForm(formData: FormData, admin: boolean): ParsedForm<De
 	const { title, description, demoKind } = form.data;
 	const input = { title, description };
 
-	// Without a demo the starting program means nothing: keep whatever is stored,
-	// so switching the demo off and on again loses nothing.
+	// Only the chosen demo's fields are read. The others stay as stored, so
+	// switching a demo away and back again loses nothing.
 	if (demoKind === 'none') return { ok: true, data: { input, setup: { demoKind } } };
+
+	if (demoKind === 'iframe') {
+		const page = parseForm(iframeChoiceSchema, formData);
+		if (!page.ok) return page;
+		return { ok: true, data: { input, setup: { demoKind, iframeUrl: page.data.iframeUrl } } };
+	}
 
 	const starter = parseForm(starterChoiceSchema, formData);
 	if (!starter.ok) return starter;

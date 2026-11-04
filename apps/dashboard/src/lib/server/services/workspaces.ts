@@ -36,11 +36,11 @@ export function createWorkspaceService(
 	workspaces: WorkspaceRepository,
 	demos: DemoRepository
 ): WorkspaceService {
-	// Only an entry with a demo can be run, opened or saved to.
+	// Only an entry that runs the plugin demo has a workspace to open or save to.
 	async function requireDemo(demoId: string): Promise<Demo> {
 		const demo = await demos.find(demoId);
 		if (!demo) throw new NotFoundError('Demo', demoId);
-		if (demo.demoKind === 'none') throw new NotFoundError('Runnable demo', demoId);
+		if (demo.demoKind !== 'plugin') throw new NotFoundError('Runnable demo', demoId);
 		return demo;
 	}
 

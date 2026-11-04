@@ -37,7 +37,11 @@ function starterColumns(starter: Starter) {
 
 function setupColumns(setup: DemoSetup | undefined) {
 	if (!setup) return {};
-	return { demoKind: setup.demoKind, ...(setup.starter && starterColumns(setup.starter)) };
+	return {
+		demoKind: setup.demoKind,
+		...(setup.starter && starterColumns(setup.starter)),
+		...(setup.iframeUrl !== undefined && { iframeUrl: setup.iframeUrl })
+	};
 }
 
 export function createDemoRepository(db: Database): DemoRepository {

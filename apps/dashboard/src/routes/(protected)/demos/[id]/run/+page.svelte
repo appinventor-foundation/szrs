@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+	import EmbeddedPage from '#lib/components/EmbeddedPage.svelte';
 	import DemoRunner from '#lib/components/DemoRunner.svelte';
 	import type { PageProps } from './$types';
 
@@ -23,11 +24,15 @@
 <h1 class="h1 min-w-0 break-words">{data.demo.title}</h1>
 
 <div class="mt-6">
-	<DemoRunner
-		demoId={data.demo.id}
-		workspace={data.workspace}
-		source={data.source}
-		canSetStarter={data.canSetStarter}
-		model={data.model}
-	/>
+	{#if data.kind === 'iframe'}
+		<EmbeddedPage url={data.url} title={data.demo.title} />
+	{:else}
+		<DemoRunner
+			demoId={data.demo.id}
+			workspace={data.workspace}
+			source={data.source}
+			canSetStarter={data.canSetStarter}
+			model={data.model}
+		/>
+	{/if}
 </div>

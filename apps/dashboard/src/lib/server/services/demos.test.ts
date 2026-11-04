@@ -83,6 +83,19 @@ describe('demo service', () => {
 		expect(replaced).toMatchObject({ starterKind: 'empty', starterWorkspace: null });
 	});
 
+	it('stores the page of an embedded demo, and keeps it when the demo is switched away', async () => {
+		const service = createDemoService(fakeDemoRepository());
+
+		const created = await service.create(
+			{ title: 'a' },
+			{ demoKind: 'iframe', iframeUrl: 'https://example.org/x' }
+		);
+		const switched = await service.update(created.id, { title: 'a' }, { demoKind: 'none' });
+
+		expect(created).toMatchObject({ demoKind: 'iframe', iframeUrl: 'https://example.org/x' });
+		expect(switched).toMatchObject({ demoKind: 'none', iframeUrl: 'https://example.org/x' });
+	});
+
 	it('sets a starter on its own', async () => {
 		const service = createDemoService(fakeDemoRepository());
 		const created = await service.create({ title: 'a' });

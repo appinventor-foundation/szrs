@@ -3,7 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { expect, test, type Page } from '@playwright/test';
-import { adminCredentials, baseURL } from './support/auth.js';
+import { adminCredentials, baseURL, fakeProxyURL } from './support/auth.js';
 import { resetDatabase } from './support/database.js';
 import { newSession, signIn, visit } from './support/page.js';
 import { createUser } from './support/users.js';
@@ -137,6 +137,92 @@ test.describe('which demo an entry runs', () => {
 		await visit(page, `${second}/run`);
 		await expect(workspace(page)).toHaveAttribute('data-workspace-ready', 'true');
 		await expect(blocks(page)).toHaveCount(0);
+	});
+});
+
+test.describe('an embedded page as the demo', () => {
+	// Any page that answers works; the fake proxy's /healthz says "ok".
+	const embedded = `${fakeProxyURL}/healthz`;
+
+	async function createEmbedded(page: Page, title: string, address: string) {
+		await visit(page, '/demos/new');
+		await page.getByLabel('Title').fill(title);
+		await page.getByRole('radio', { name: 'Embedded page', exact: true }).check();
+		await page.getByLabel('Page to embed').fill(address);
+		await page.getByRole('button', { name: 'Create demo' }).click();
+	}
+
+	test('shows the page inside the dashboard', async ({ page }) => {
+		await createEmbedded(page, 'Outside', embedded);
+		await expect(page.getByRole('heading', { level: 1, name: 'Outside' })).toBeVisible();
+		await expect(page.getByText('Embedded page', { exact: true })).toBeVisible();
+		await expect(page.getByText(embedded)).toBeVisible();
+
+		await page.getByRole('link', { name: 'Start demo' }).click();
+
+		const frame = page.locator('iframe[title="Outside"]');
+		await expect(frame).toHaveAttribute('src', embedded);
+		await expect(page.frameLocator('iframe[title="Outside"]').locator('body')).toHaveText('ok');
+		await expect(page.getByRole('link', { name: 'Open it in a new tab' })).toHaveAttribute(
+			'href',
+			embedded
+		);
+		await expect(button(page, 'Save')).toHaveCount(0);
+		await expect(workspace(page)).toHaveCount(0);
+	});
+
+	test('asks for a usable address', async ({ page }) => {
+		for (const address of ['', 'javascript:alert(1)', 'ftp://example.org/file']) {
+			await createEmbedded(page, 'Broken', address);
+			await expect(page.getByRole('alert').first()).toBeVisible();
+			await expect(page.getByRole('heading', { level: 1, name: 'New demo' })).toBeVisible();
+		}
+	});
+
+	test('an admin can point an entry at another page, and a member cannot', async ({
+		page,
+		browser
+	}) => {
+		await createEmbedded(page, 'Movable', embedded);
+		await expect(page.getByRole('heading', { level: 1, name: 'Movable' })).toBeVisible();
+		const demoPath = new URL(page.url()).pathname;
+		const member = await createUser(page);
+
+		await page.getByRole('link', { name: 'Edit' }).click();
+		await page.getByLabel('Page to embed').fill(`${fakeProxyURL}/other`);
+		await page.getByRole('button', { name: 'Save changes' }).click();
+		await expect(page.getByText(`${fakeProxyURL}/other`)).toBeVisible();
+
+		const other = await newSession(browser);
+		await signIn(other.page, member);
+		await visit(other.page, `${demoPath}/edit`);
+		await expect(other.page.getByLabel('Title')).toBeVisible();
+		await expect(other.page.getByLabel('Page to embed')).toHaveCount(0);
+		await other.context.close();
+	});
+});
+
+test.describe('the demo form', () => {
+	test('shows only the choices that belong to the chosen demo', async ({ page }) => {
+		await visit(page, '/demos/new');
+		const example = page.getByLabel('Example', { exact: true });
+		const address = page.getByLabel('Page to embed');
+
+		await expect(page.getByRole('radio', { name: 'No demo', exact: true })).toBeChecked();
+		await expect(example).toBeHidden();
+		await expect(address).toBeHidden();
+
+		await page.getByRole('radio', { name: 'Plugin demo', exact: true }).check();
+		await expect(example).toBeVisible();
+		await expect(address).toBeHidden();
+
+		await page.getByRole('radio', { name: 'Embedded page', exact: true }).check();
+		await expect(example).toBeHidden();
+		await expect(address).toBeVisible();
+
+		await page.getByRole('radio', { name: 'No demo', exact: true }).check();
+		await expect(example).toBeHidden();
+		await expect(address).toBeHidden();
 	});
 });
 

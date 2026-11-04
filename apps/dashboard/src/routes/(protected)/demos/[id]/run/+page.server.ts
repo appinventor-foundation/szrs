@@ -15,12 +15,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) error(401, 'Sign in required');
 	const id = parseDemoId(params.id);
 	const demo = await mapDomainErrors(() => getDemoService().get(id));
+	if (demo.demoKind === 'iframe' && demo.iframeUrl) {
+		return {
+			kind: 'iframe' as const,
+			demo: { id: demo.id, title: demo.title },
+			url: demo.iframeUrl
+		};
+	}
 	// An entry without a demo cannot be run: a 404, like a missing one.
 	const { workspace, source } = await mapDomainErrors(() =>
 		getWorkspaceService().load(id, locals.user!.id)
 	);
 
 	return {
+		kind: 'plugin' as const,
 		demo: { id: demo.id, title: demo.title },
 		workspace,
 		source,

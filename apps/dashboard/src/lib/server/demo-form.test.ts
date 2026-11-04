@@ -97,6 +97,49 @@ describe('parseDemoForm', () => {
 		expect(parseDemoForm(formData({ title: 'T', demoKind: 'other' }), true).ok).toBe(false);
 	});
 
+	it('reads the page an embedded demo shows', () => {
+		const result = parseDemoForm(
+			formData({ title: 'T', demoKind: 'iframe', iframeUrl: ' https://example.org/demo ' }),
+			true
+		);
+
+		expect(result).toEqual({
+			ok: true,
+			data: {
+				input: { title: 'T' },
+				setup: { demoKind: 'iframe', iframeUrl: 'https://example.org/demo' }
+			}
+		});
+	});
+
+	it('ignores the page when another demo is chosen', () => {
+		const result = parseDemoForm(
+			formData({ title: 'T', demoKind: 'none', iframeUrl: 'not a url' }),
+			true
+		);
+
+		expect(result).toMatchObject({ ok: true, data: { setup: { demoKind: 'none' } } });
+		expect(result.ok && result.data.setup?.iframeUrl).toBeUndefined();
+	});
+
+	it('refuses an embedded demo without a usable address', () => {
+		for (const iframeUrl of ['', 'example.org', 'javascript:alert(1)', 'data:text/html,hi']) {
+			const result = parseDemoForm(formData({ title: 'T', demoKind: 'iframe', iframeUrl }), true);
+
+			expect(result.ok, iframeUrl).toBe(false);
+			expect(!result.ok && result.errors.iframeUrl, iframeUrl).toBeDefined();
+		}
+	});
+
+	it('does not let a member set the page', () => {
+		const result = parseDemoForm(
+			formData({ title: 'T', demoKind: 'iframe', iframeUrl: 'https://example.org' }),
+			false
+		);
+
+		expect(result).toEqual({ ok: true, data: { input: { title: 'T' } } });
+	});
+
 	it('still validates the title', () => {
 		expect(parseDemoForm(formData({ title: ' ', demoKind: 'none' }), true).ok).toBe(false);
 		expect(parseDemoForm(formData({ title: ' ' }), false).ok).toBe(false);
