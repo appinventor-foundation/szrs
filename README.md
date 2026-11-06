@@ -1,6 +1,6 @@
 # SZRS
 
-Semantic zoom for [Blockly](https://developers.google.com/blockly). A student's block program (the **Detail** level) can be zoomed out into higher-level views of the same program: a **semantic** level with one block per logical operation, and a **concept** level that is usually a single block for the whole program. An LLM writes the zoomed views, and the program itself always runs from the Detail blocks.
+Semantic zoom for [Blockly](https://developers.google.com/blockly). A student's block program (the **Detail** level) can be zoomed out into higher-level views of the same program: a **semantic** level with one block per logical operation, and a **concept** level with one block per feature or responsibility of the program (a single block for a small one). An LLM writes the zoomed views, and the program itself always runs from the Detail blocks.
 
 This repository holds the Blockly plugin, the proxy that keeps the LLM credentials off the browser, a dashboard, a documentation site, and the infrastructure that runs them.
 

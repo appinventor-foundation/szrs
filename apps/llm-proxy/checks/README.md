@@ -39,6 +39,15 @@ The page shows a table of what the check found, then one chart per measure, grou
 
 The viewer is built around rows, not around any one check: a row is a model, a prompt, an optional size tier and some numbers. Any number in a row gets a chart, and rows of different tiers get separate panels on one scale. A new kind of result needs only an adapter in `report/` that maps its JSON to rows (`report/spike.ts` is the example), registered in `report/cli.ts`. The baseline's records get one when the baseline exists.
 
+## Pitfalls when writing a check
+
+- **Browser-side code in Playwright's `page.evaluate`** must not contain named inner functions or `const f = () => ...`: `tsx` rewrites them with a helper that does not exist in the page ("__name is not defined"). Return raw pieces and tidy them in Node, or pass a string.
+- **A locked zoom block has no `blocklyDraggable` class** (the loader makes blocks immovable). Select `g.blocklyBlock` under `g.blocklyBlockCanvas`, and use `:scope > path.blocklyPath` for a block's own colour.
+- **Rendered text includes editable field values.** To judge what a model wrote into a label, read `g.blocklyLabelField` only; a value in an editable field is live and follows Detail.
+- **JavaScript's `String.replace` treats `$&` in the replacement as special.** When a script edits source with a replacement string, pass a function, or the code gets mangled.
+- **A background shell may not start in the directory you expect.** Run scripts with `pnpm --filter @szrs/<name> <script>` from the repository root.
+- **`loading="lazy"` images** are not loaded until scrolled into view, so a check for broken images must make them eager first.
+
 ## Conventions
 
 - **Scripts stay in the repo** next to their results, so a result can be reproduced. A script is type-checked (`pnpm check-types`) and linted like the rest of the app.

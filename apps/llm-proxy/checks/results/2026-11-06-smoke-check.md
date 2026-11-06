@@ -47,6 +47,7 @@ Two runs of small programs (the largest has 28 blocks) on two models, judged by 
 ## Outcome and open decisions
 
 - **Passed:** the smoke check on two models, with no failures. Together with the green tests and the spike, what is left before `v1` becomes the default and is frozen is below.
+- **Done afterwards, the same day:** `v1` was frozen and made the proxy's default (commit `af328ed`). The default block colour was left as it is for now.
 - **Open: the default block colour.** Blocks with no colour render black. The design (section 4.3 of the plan document) has the proxy give such blocks a neutral colour and leaves deriving colours from the host's blocks to phase 1. A neutral default is small and could come before `v1` is frozen; otherwise `v1` ships with black blocks.
 - **Open: the output cap against glm's outliers.** 32768 covered every run, but one run reached 93%. Options are a higher cap (both models accepted 131072 in the spike) or a limit on reasoning effort per model, which is per-model parameters, a later step.
 - **Open: whether the plugin should say more than "Zooming…"** while a model reasons for a minute or two.
