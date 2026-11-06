@@ -9,10 +9,18 @@ import type { FastifyBaseLogger, FastifyInstance } from 'fastify';
 
 import type { Config } from '../config.js';
 import { chatCompletion, chatCompletionStream } from '../lib/litellm.js';
+import {
+	classifyError,
+	logAttempt,
+	traceMetadata,
+	truncationMessage
+} from '../zoom/attempt-log.js';
 import { lookupZoom, type ZoomCache } from '../zoom/cache.js';
 import { zoomCacheKey } from '../zoom/cache-key.js';
 import { ZoomFlights } from '../zoom/flights.js';
 import { normalizeWorkspace, restoreIds } from '../zoom/normalize.js';
+import { buildOutline } from '../zoom/outline.js';
+import { getZoomPrompt, type ZoomPrompt } from '../zoom/prompts/index.js';
 import { buildZoomMessages, MAX_ATTEMPTS, parseZoomResponse } from '../zoom/zoom.js';
 
 export default async function zoomRoutes(fastify: FastifyInstance): Promise<void> {
@@ -24,18 +32,26 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 		// The model works on, and answers in, a canonical copy of the workspace.
 		const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
 		const canonical = { ...body, workspaceJson };
+		const prompt = getZoomPrompt();
 
-		const key = zoomCacheKey(canonical);
+		const key = zoomCacheKey({ ...canonical, promptId: prompt.id });
 		const cached = await lookupZoom(fastify.zoomCache, key, workspaceJson, request.log);
 		if (cached) return restoreIds(cached, originalIds);
 
+		const size = outlineSize(workspaceJson);
 		let lastError: string | undefined;
 
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-			const result = await chatCompletion(fastify.config, {
-				model: body.model,
-				messages: buildZoomMessages(canonical, lastError)
-			});
+			const started = performance.now();
+			const result = await chatCompletion(
+				fastify.config,
+				{
+					model: body.model,
+					messages: buildZoomMessages(canonical, lastError, prompt.id),
+					...prompt.params
+				},
+				{ metadata: traceMetadata(prompt.id) }
+			);
 			if (!result.ok) {
 				request.log.warn(
 					{ attempt, status: result.status, body: result.body },
@@ -44,17 +60,41 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 				return reply.code(result.status).send(result.body);
 			}
 
+			const { finishReason, usage } = result.response;
+			const record = {
+				promptId: prompt.id,
+				model: body.model,
+				outline: size,
+				attempt,
+				finishReason,
+				usage,
+				latencyMs: Math.round(performance.now() - started)
+			};
+
+			// Cut off by the output limit: a retry would be cut off in the same place.
+			if (finishReason === 'length') {
+				logAttempt(request.log, { ...record, outcome: 'truncated', repairs: [] });
+				return reply.code(502).send({
+					error: {
+						message: truncationMessage(usage.completionTokens),
+						code: 'invalid_model_output'
+					}
+				});
+			}
+
 			try {
-				const { result: zoom, repairs } = parseZoomResponse(
-					result.response.content,
-					canonical.workspaceJson
-				);
-				if (repairs.length > 0) request.log.info({ attempt, repairs }, 'repaired zoom output');
+				const {
+					result: zoom,
+					repairs,
+					plan
+				} = parseZoomResponse(result.response.content, canonical.workspaceJson);
+				logAttempt(request.log, { ...record, outcome: 'ok', repairs, plan });
 				// Stored in canonical ids, so anyone with the same program can use it.
 				void fastify.zoomCache?.set(key, zoom);
 				return restoreIds(zoom, originalIds);
 			} catch (error) {
 				lastError = errorMessage(error);
+				logAttempt(request.log, { ...record, outcome: classifyError(error), repairs: [] });
 				request.log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
 			}
 		}
@@ -70,7 +110,8 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 		const body = ZoomRequestSchema.parse(request.body);
 		const { workspaceJson, originalIds } = normalizeWorkspace(body.workspaceJson);
 		const canonical = { ...body, workspaceJson };
-		const key = zoomCacheKey(canonical);
+		const prompt = getZoomPrompt();
+		const key = zoomCacheKey({ ...canonical, promptId: prompt.id });
 
 		let events: AsyncGenerator<ZoomStreamEvent>;
 		const cached = await lookupZoom(fastify.zoomCache, key, workspaceJson, request.log);
@@ -78,7 +119,7 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			events = only({ type: 'done', result: restoreIds(cached, originalIds), cached: true });
 		} else {
 			const flight = flights.join(key, () =>
-				runZoom(fastify.config, fastify.zoomCache, canonical, key, request.log)
+				runZoom(fastify.config, fastify.zoomCache, canonical, key, prompt, request.log)
 			);
 			request.log.info({ flight: flight.joined ? 'joined' : 'started', key }, 'zoom flight');
 			// However the response ends, this request stops counting as a listener.
@@ -98,17 +139,25 @@ async function* runZoom(
 	cache: ZoomCache | null,
 	canonical: ZoomRequest,
 	key: string,
+	prompt: ZoomPrompt,
 	log: FastifyBaseLogger
 ): AsyncGenerator<ZoomStreamEvent> {
+	const size = outlineSize(canonical.workspaceJson);
 	let lastError: string | undefined;
 
 	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 		yield { type: 'attempt', attempt, maxAttempts: MAX_ATTEMPTS, previousError: lastError };
 
-		const result = await chatCompletionStream(config, {
-			model: canonical.model,
-			messages: buildZoomMessages(canonical, lastError)
-		});
+		const started = performance.now();
+		const result = await chatCompletionStream(
+			config,
+			{
+				model: canonical.model,
+				messages: buildZoomMessages(canonical, lastError, prompt.id),
+				...prompt.params
+			},
+			{ metadata: traceMetadata(prompt.id) }
+		);
 		if (!result.ok) {
 			log.warn({ attempt, status: result.status, body: result.body }, 'LiteLLM request failed');
 			yield {
@@ -126,9 +175,31 @@ async function* runZoom(
 			yield { type: 'token', text: token };
 		}
 
+		const { finishReason, usage } = result.summary;
+		const record = {
+			promptId: prompt.id,
+			model: canonical.model,
+			outline: size,
+			attempt,
+			finishReason,
+			usage,
+			latencyMs: Math.round(performance.now() - started)
+		};
+
+		// Cut off by the output limit: a retry would be cut off in the same place.
+		if (finishReason === 'length') {
+			logAttempt(log, { ...record, outcome: 'truncated', repairs: [] });
+			yield {
+				type: 'error',
+				code: 'invalid_model_output',
+				message: truncationMessage(usage?.completionTokens)
+			};
+			return;
+		}
+
 		try {
-			const { result: zoom, repairs } = parseZoomResponse(text, canonical.workspaceJson);
-			if (repairs.length > 0) log.info({ attempt, repairs }, 'repaired zoom output');
+			const { result: zoom, repairs, plan } = parseZoomResponse(text, canonical.workspaceJson);
+			logAttempt(log, { ...record, outcome: 'ok', repairs, plan });
 			yield { type: 'done', result: zoom };
 			// Everyone listening has the result by now. Keeping the run open until it
 			// is stored means a request arriving in between joins it instead of
@@ -137,6 +208,7 @@ async function* runZoom(
 			return;
 		} catch (error) {
 			lastError = errorMessage(error);
+			logAttempt(log, { ...record, outcome: classifyError(error), repairs: [] });
 			log.warn({ attempt, error: lastError }, 'invalid zoom output from model');
 		}
 	}
@@ -182,6 +254,12 @@ async function* toSse(
 function upstreamErrorMessage(body: unknown, status: number): string {
 	const message = (body as { error?: { message?: unknown } } | null)?.error?.message;
 	return typeof message === 'string' ? message : `LiteLLM returned ${status}`;
+}
+
+// For the attempt log: how big the program is.
+function outlineSize(workspaceJson: Record<string, unknown>): { blocks: number; stacks: number } {
+	const outline = buildOutline(workspaceJson);
+	return { blocks: outline.blocks, stacks: outline.stacks.length };
 }
 
 function errorMessage(error: unknown): string {

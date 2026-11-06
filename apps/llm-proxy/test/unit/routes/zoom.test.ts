@@ -2,6 +2,7 @@ import { ZoomStreamEventSchema } from '@szrs/llm-proxy-contracts';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildApp } from '../../../src/app.js';
+import { getZoomPrompt } from '../../../src/zoom/prompts/index.js';
 
 process.env.INTERNAL_API_KEY ||= 'test-secret';
 process.env.LITELLM_VIRTUAL_KEY ||= 'test-litellm-key';
@@ -146,6 +147,40 @@ describe('POST /v1/zoom', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 	});
 
+	it('sends the prompt’s sampling parameters and trace metadata', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(litellmReply(JSON.stringify(validZoom)));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await postZoom();
+
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+		expect(body).toMatchObject({
+			temperature: getZoomPrompt().params.temperature,
+			max_tokens: getZoomPrompt().params.maxTokens,
+			metadata: { prompt_id: getZoomPrompt().id }
+		});
+	});
+
+	it('fails without a retry when the output was cut off by the limit', async () => {
+		const cutOff = new Response(
+			JSON.stringify({
+				model: 'local-ollama',
+				choices: [{ message: { content: '{ "semantic": { "blockD' }, finish_reason: 'length' }],
+				usage: { prompt_tokens: 1, completion_tokens: 8192, total_tokens: 8193 }
+			}),
+			{ status: 200 }
+		);
+		const fetchMock = vi.fn().mockResolvedValue(cutOff);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const response = await postZoom();
+
+		expect(response.statusCode).toBe(502);
+		expect(response.json().error.code).toBe('invalid_model_output');
+		expect(response.json().error.message).toContain('cut off at 8192 tokens');
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
 	it('forwards a non-2xx LiteLLM response with its original status code', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -254,6 +289,42 @@ describe('POST /v1/zoom/stream', () => {
 
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 		expect(events.at(-1)).toMatchObject({ type: 'error', code: 'invalid_model_output' });
+	});
+
+	it('asks LiteLLM for usage and sends the prompt’s parameters', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(litellmStream(JSON.stringify(validZoom)));
+		vi.stubGlobal('fetch', fetchMock);
+
+		await postZoomStream();
+
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+		expect(body).toMatchObject({
+			stream: true,
+			stream_options: { include_usage: true },
+			temperature: getZoomPrompt().params.temperature,
+			max_tokens: getZoomPrompt().params.maxTokens,
+			metadata: { prompt_id: getZoomPrompt().id }
+		});
+	});
+
+	it('fails without a retry when the output was cut off by the limit', async () => {
+		const chunks = [
+			{ choices: [{ delta: { content: '{ "semantic": { "blockD' } }] },
+			{ choices: [{ delta: {}, finish_reason: 'length' }] },
+			{ choices: [], usage: { prompt_tokens: 1, completion_tokens: 4096, total_tokens: 4097 } }
+		];
+		const sse =
+			chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join('') + 'data: [DONE]\n\n';
+		const fetchMock = vi.fn().mockImplementation(async () => new Response(sse, { status: 200 }));
+		vi.stubGlobal('fetch', fetchMock);
+
+		const events = parseEvents((await postZoomStream()).body);
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(events.at(-1)).toMatchObject({ type: 'error', code: 'invalid_model_output' });
+		expect(events.at(-1)).toMatchObject({
+			message: expect.stringContaining('cut off at 4096 tokens')
+		});
 	});
 
 	it('reports a non-2xx LiteLLM response as an upstream_error event', async () => {
