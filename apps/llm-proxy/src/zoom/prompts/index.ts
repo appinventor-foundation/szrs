@@ -11,8 +11,13 @@ export { toSnakeSlug } from './slug.js';
 
 const PROMPTS: readonly ZoomPrompt[] = [v0, v1];
 
-/** The prompt used when a request does not name one. Switch only when its plugin changes are deployed. */
-export const DEFAULT_PROMPT_ID = 'v0';
+/**
+ * The prompt used when a request does not name one. v1 needs the plugin that
+ * lays zoomed blocks out (ZoomLevelLoader.arrange): the model no longer places
+ * them, so an older plugin would stack them on top of each other. Deploy the
+ * two together.
+ */
+export const DEFAULT_PROMPT_ID = 'v1';
 
 export function getZoomPrompt(id: string = DEFAULT_PROMPT_ID): ZoomPrompt {
 	const prompt = PROMPTS.find((candidate) => candidate.id === id);

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { promptFingerprint, stableStringify, zoomCacheKey } from '../../../src/zoom/cache-key.js';
-import { getZoomPrompt, type ZoomPrompt } from '../../../src/zoom/prompts/index.js';
+import {
+	DEFAULT_PROMPT_ID,
+	getZoomPrompt,
+	type ZoomPrompt
+} from '../../../src/zoom/prompts/index.js';
 
 const request = {
 	model: 'local-ollama',
@@ -100,7 +104,8 @@ describe('zoomCacheKey and prompts', () => {
 	});
 
 	it('uses the default prompt when none is named', () => {
-		expect(zoomCacheKey({ ...request, promptId: 'v0' })).toBe(zoomCacheKey(request));
+		expect(zoomCacheKey({ ...request, promptId: DEFAULT_PROMPT_ID })).toBe(zoomCacheKey(request));
+		expect(zoomCacheKey({ ...request, promptId: 'v0' })).not.toBe(zoomCacheKey(request));
 	});
 
 	it('rejects an unknown prompt id', () => {

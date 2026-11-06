@@ -27,7 +27,9 @@ describe('buildZoomPrompt', () => {
 		const prompt = buildZoomPrompt('fizz-buzz-n', { blocks: {} });
 		expect(prompt).toContain('Slug: fizz-buzz-n');
 		expect(prompt).toContain('fizz_buzz_n');
-		expect(prompt).toContain('"blocks": {}');
+		// The default prompt sends compact JSON, with an outline of the program before it.
+		expect(prompt).toContain('"blocks":{}');
+		expect(prompt).toContain('Program size: 0 blocks, 0 top-level stacks.');
 	});
 });
 

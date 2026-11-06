@@ -15,8 +15,12 @@ import type { ZoomPrompt } from './types.js';
 //  - there is no colour instruction and the model does not place blocks;
 //  - nothing implies an order between top-level stacks, which have none.
 // The block definition, binding and JSON encoding rules are v0's, word for
-// word. Immutable once it has produced recorded results or been deployed:
-// change it by adding v2.
+// word.
+//
+// FROZEN 2026-11-06, when it became the default (smoke check: checks/results/
+// 2026-11-06-smoke-check.md). Never edit the text or how the user message is
+// built: a test pins their hashes. Change the wording by adding v2.ts and
+// registering it beside this one.
 export const V1_SYSTEM = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (the Detail level) and a slug, and describe the same program at two higher levels of abstraction. Your output is only ever displayed: the program always runs from the Detail blocks, so you never write code.
 
 ## Output format

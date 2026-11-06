@@ -58,6 +58,36 @@ describe('v0 is frozen', () => {
 	});
 });
 
+// v1 became the default on 2026-11-06 and its results are what later prompts are
+// measured against. If one of these fails, someone edited it: put the change in
+// a new prompt id (v2) instead. Its sampling parameters are not pinned here: they
+// are shared with v0 and can change without changing what the prompt says.
+describe('v1 is frozen', () => {
+	const v1 = getZoomPrompt('v1');
+	const probe = {
+		slug: 'probe-slug',
+		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
+	};
+
+	it('has the system text it was frozen with', () => {
+		expect(sha256(v1.system)).toBe(
+			'4073fdc238e1ddda0486566e8b98a51c5f70976cabeba62fb4101b45f697aaeb'
+		);
+	});
+
+	it('builds the user message it was frozen with', () => {
+		expect(sha256(v1.buildUser(probe))).toBe(
+			'a6c7277661a7d5a1c88fdf008fa1bee0e16999fb330581c6d318b379dfa66289'
+		);
+	});
+
+	it('builds the retry message it was frozen with', () => {
+		expect(sha256(v1.buildUser(probe, 'concept: missing'))).toBe(
+			'43a4068cf0ad3c388b11f4c0440aede784b99c6142cdcf6d5f28ce0c89ca1df4'
+		);
+	});
+});
+
 describe('v1', () => {
 	const v0 = getZoomPrompt('v0');
 	const v1 = getZoomPrompt('v1');
@@ -74,9 +104,9 @@ describe('v1', () => {
 		}
 	};
 
-	it('is registered, and is not the default until the plugin change is deployed', () => {
+	it('is registered, and is the default', () => {
 		expect(zoomPromptIds()).toEqual(['v0', 'v1']);
-		expect(DEFAULT_PROMPT_ID).toBe('v0');
+		expect(DEFAULT_PROMPT_ID).toBe('v1');
 	});
 
 	it('keeps the block definition, binding and encoding rules word for word', () => {
