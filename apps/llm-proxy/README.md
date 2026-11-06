@@ -8,7 +8,7 @@ Local dev infra (LiteLLM, Langfuse, Jaeger, and their backing stores) lives in *
 
 ## Prerequisites
 
-- Node 24.20.0, pnpm 11.22.0 (see repo-root `mise.toml` — run `mise install`)
+- Node 24.20.0, pnpm 12.4.2 (see repo-root `mise.toml` — run `mise install`)
 - Docker, for the local LiteLLM/Langfuse/Jaeger stack
 
 ## Running locally (dev)
@@ -102,7 +102,7 @@ curl http://localhost:3000/v1/models -H "x-internal-api-key: $INTERNAL_API_KEY"
 
 ## Semantic zoom
 
-`POST /v1/zoom` takes a Blockly workspace (the Detail level) and returns two higher-level representations of it: `semantic` (one block per logical operation) and `concept` (usually a single block for the whole program). Each level contains block definitions (`blockDefs`), a workspace that uses them, and `bindings` that link editable fields on the zoomed blocks to fields in the Detail workspace. The model never writes code: programs always run from the Detail blocks. Generated block types use the `zoom_` prefix, and block definitions are limited to plain fields and inputs (no extensions, mutators, help URLs or images). Bindings are checked against the Detail workspace in the request, and any problems are sent back to the model as part of the retry. See `apps/blockly-szrs/DECISIONS.md` (#7–#10) for why.
+`POST /v1/zoom` takes a Blockly workspace (the Detail level) and returns two higher-level representations of it: `semantic` (one block per logical operation) and `concept` (usually a single block for the whole program). Each level contains block definitions (`blockDefs`), a workspace that uses them, and `bindings` that link editable fields on the zoomed blocks to fields in the Detail workspace. The model never writes code: programs always run from the Detail blocks. Generated block types use the `zoom_` prefix, and block definitions are limited to plain fields and inputs (no extensions, mutators, help URLs or images). Bindings are checked against the Detail workspace in the request, and any problems are sent back to the model as part of the retry.
 
 ```bash
 curl -X POST http://localhost:3000/v1/zoom \
@@ -112,6 +112,19 @@ curl -X POST http://localhost:3000/v1/zoom \
 ```
 
 The request and response shapes are `ZoomRequestSchema` and `ZoomResponseSchema` in `@szrs/llm-proxy-contracts`. If the model returns output that doesn't parse or validate, the proxy retries up to 3 times, sending the error back to the model each time. If all attempts fail it returns `502` with `code: "invalid_model_output"`.
+
+### Prompts
+
+The zoom prompt is versioned. Each prompt id is a frozen file in `src/zoom/prompts/` (`v0.ts`, `v1.ts`) holding the system text, how the user message is built and the sampling parameters; `index.ts` registers them and names the default (`DEFAULT_PROMPT_ID`, still `v0`). A prompt is never edited once it has produced recorded results or been deployed: a change is a new id, so results, traces and cache entries stay attributable.
+
+- **`v0`** is the original prompt, kept word for word (a test pins its hash). The Concept level is "usually one block".
+- **`v1`** adds an outline of the program to the user message (`src/zoom/outline.ts`: block count and top-level stacks, which have no order), compact JSON, a `plan` the model writes first (which stacks belong to which concept; the proxy reads it with `src/zoom/plan.ts`, logs it and does not return it), one Concept block per feature or responsibility, and no colour or position for the model to set. Switch to it only together with the plugin that lays the blocks out (`ZoomLevelLoader`).
+
+Every call sends the prompt's `params` (`temperature` 0.2 and `maxTokens` 32768, shared by all prompts in `src/zoom/prompts/params.ts`) and LiteLLM request metadata with the prompt id, so Langfuse traces can be filtered by prompt version. If a model stops because it reached its output limit (`finish_reason: length`), the zoom fails at once with `invalid_model_output` and a message saying so, with no retry, since a retry would be cut off in the same place. Each attempt is logged as one `zoom attempt` record: prompt id, model, outcome (`ok`, `parse`, `schema`, `validation`, `truncated`), finish reason, token usage, repairs, program size and, for valid results, the plan.
+
+The cap is that high because the models we run reason before they answer and the reasoning counts against it: the spike measured a 14-block program using about 72% of an 8192 cap. It overrides the alias's `max_tokens` in the LiteLLM config, and it was tested only on the two OpenRouter aliases, so a provider that allows less output than 32768 will reject zoom requests until that model gets a lower cap (LiteLLM's model info lists 16384 for `gpt-4o-mini`, so that alias would). A fixed `temperature` was accepted by both models, but reasoning models may ignore it.
+
+Measured model limits, parameter support and a `v0` / `v1` comparison on a sample program are in [`checks/`](checks/README.md) (latest: [2026-11-06 cap and temperature spike](checks/results/2026-11-06-cap-and-temperature-spike.md)).
 
 ### Streaming
 
@@ -165,7 +178,7 @@ The cache is only an optimisation. If Redis is down, slow or holds a bad entry, 
   docker compose exec zoom-cache redis-cli -a "$ZOOM_CACHE_AUTH" --no-auth-warning flushdb
   ```
 
-- **A new prompt starts a fresh set** automatically, since the key includes a hash of the system prompt. A change to the repair or validation rules doesn't: bump `KEY_VERSION` in `src/zoom/cache-key.ts`.
+- **A new prompt starts a fresh set** automatically, since the key includes the prompt id and a fingerprint: a hash of the system text, of the user message the prompt builds for a fixed probe request (with and without a retry error) and of its parameters. Editing either the wording or how the message is built changes it. A change to the repair or validation rules doesn't: bump `KEY_VERSION` in `src/zoom/cache-key.ts`.
 - **Joining running zooms works within one proxy process.** Several proxy instances behind a load balancer each make their own call for the first request.
 
 ## Tests
@@ -189,9 +202,9 @@ Two independent destinations, covering different things — this is intentional,
 
 - **Everything is a Fastify plugin.** `src/app.ts` decorates `config` on the root instance, then registers `plugins/auth.ts` and `plugins/error-handler.ts` (both wrapped in `fastify-plugin`'s `fp()` — required so their hook/error-handler apply app-wide rather than being scoped to their own plugin encapsulation) and the route plugins in `src/routes/*.ts`, which read `fastify.config` rather than taking it as a function parameter. Registration order matters for `@fastify/cors` → `@fastify/rate-limit` → `plugins/auth.ts`: CORS has to answer browser preflights (which never carry the API key) before auth can reject them, and rate limiting counts rejected requests too. `test/unit/app.test.ts` fails if the order is wrong.
 - **`src/routes/chat.ts`** validates the incoming request against `ChatCompletionRequestSchema` (from `@szrs/llm-proxy-contracts`), forwards it to LiteLLM as a bearer-authenticated OpenAI-shaped request (via `src/lib/litellm.ts`, shared by all routes), and — since `ChatCompletionResponseSchema` is this service's own normalized shape, not raw OpenAI's — maps LiteLLM's raw response into that shape before validating and returning it. A non-2xx from LiteLLM is forwarded with its original status code, not collapsed to a generic 500.
-- **`src/routes/zoom.ts`** builds the zoom prompt (`src/zoom/zoom.ts`), calls LiteLLM, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`. `/v1/zoom/stream` runs the same loop over LiteLLM's streaming API (`chatCompletionStream` in `src/lib/litellm.ts`) and sends each step as an SSE event; if the client disconnects, the stream stops and the upstream LiteLLM request is cancelled.
+- **`src/routes/zoom.ts`** builds the zoom prompt from the registry (`src/zoom/prompts/`, `src/zoom/zoom.ts`), calls LiteLLM with the prompt's parameters, and validates the output against `ZoomResponseSchema`. Invalid output is retried up to 3 times with the validation error appended to the prompt; LiteLLM errors are forwarded as-is, like `chat.ts`. `/v1/zoom/stream` runs the same loop over LiteLLM's streaming API (`chatCompletionStream` in `src/lib/litellm.ts`) and sends each step as an SSE event; if the client disconnects, the stream stops and the upstream LiteLLM request is cancelled.
 - **`src/zoom/normalize.ts`** rewrites the Detail workspace into a canonical form (blocks `b1`, `b2`, …, variables `v1`, `v2`, …, no positions) before prompting, and `restoreIds` maps the binding ids in a result back to the caller's own. The model, the repair step and the validation all work in canonical ids, so a result can be shared between users. Only ids of blocks that had one are numbered, so a block can be bound exactly when it could be before.
-- **`src/zoom/cache.ts`, `cache-key.ts` and `plugins/zoom-cache.ts`** are the optional cache. The `redis` client is loaded only when `CACHE_URL` is set. Reads and writes never reject: an error, a timeout or an entry that fails the usual checks is a miss. `zoomCacheKey` hashes the model, slug, prompt and canonical workspace with sorted keys, so key order doesn't matter.
+- **`src/zoom/cache.ts`, `cache-key.ts` and `plugins/zoom-cache.ts`** are the optional cache. The `redis` client is loaded only when `CACHE_URL` is set. Reads and writes never reject: an error, a timeout or an entry that fails the usual checks is a miss. `zoomCacheKey` hashes the model, slug, prompt id and fingerprint, and canonical workspace with sorted keys, so key order doesn't matter.
 - **`src/zoom/flights.ts`** lets streaming requests for the same key share one run. Subscribers are counted when they join, the run stops when the last one leaves, and it stays registered until its result has been stored, so a request arriving just after `done` joins it instead of starting another call.
 - **`src/routes/health.ts`**'s `/readyz` checks LiteLLM's `/health/liveliness` endpoint — any HTTP response counts as "reachable" (even a 401), only a network-level failure means not-ready, since readiness shouldn't depend on `LITELLM_VIRTUAL_KEY` being valid.
 - **No database and no provider abstraction.** LiteLLM model aliases (`model_name` in `infra/llm-proxy/docker/litellm/config.yaml`) are the providers. Callers pass an alias as `model`, and LiteLLM handles the vendor API, fallbacks and which models the virtual key may use. There are no usage-reporting endpoints either: LiteLLM's own spend tracking (`/spend/logs`, per virtual key) covers that, and `apps/dashboard` would query LiteLLM directly for it rather than going through here.

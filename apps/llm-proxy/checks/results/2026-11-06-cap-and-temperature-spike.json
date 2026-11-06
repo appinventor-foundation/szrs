@@ -1,0 +1,689 @@
+{
+	"ranAt": "2026-11-06T16:42:43.677Z",
+	"litellm": "http://localhost:4000",
+	"aliases": ["openrouter", "openrouter-2"],
+	"program": {
+		"blocks": 14,
+		"topLevelStacks": 3
+	},
+	"openrouter": {
+		"temperature": {
+			"accepted": {
+				"status": 200,
+				"ms": 1445,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 17,
+					"prompt_tokens": 11,
+					"total_tokens": 28,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 14,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00001023,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00001023,
+						"upstream_inference_prompt_cost": 8.8e-7,
+						"upstream_inference_completions_cost": 0.00000935
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"omitted": {
+				"status": 200,
+				"ms": 775,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 18,
+					"prompt_tokens": 11,
+					"total_tokens": 29,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 15,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00001078,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00001078,
+						"upstream_inference_prompt_cost": 8.8e-7,
+						"upstream_inference_completions_cost": 0.0000099
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			}
+		},
+		"capAcceptance": {
+			"8192": {
+				"status": 200,
+				"ms": 662,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 13,
+					"prompt_tokens": 11,
+					"total_tokens": 24,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 10,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00000803,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00000803,
+						"upstream_inference_prompt_cost": 8.8e-7,
+						"upstream_inference_completions_cost": 0.00000715
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"16384": {
+				"status": 200,
+				"ms": 437,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 13,
+					"prompt_tokens": 11,
+					"total_tokens": 24,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 10,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00000803,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00000803,
+						"upstream_inference_prompt_cost": 8.8e-7,
+						"upstream_inference_completions_cost": 0.00000715
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"32768": {
+				"status": 200,
+				"ms": 815,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 14,
+					"prompt_tokens": 11,
+					"total_tokens": 25,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 11,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00000858,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00000858,
+						"upstream_inference_prompt_cost": 8.8e-7,
+						"upstream_inference_completions_cost": 0.0000077
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"65536": {
+				"status": 200,
+				"ms": 667,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 13,
+					"prompt_tokens": 37,
+					"total_tokens": 50,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 11,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.000006722,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.000006722,
+						"upstream_inference_prompt_cost": 2.22e-7,
+						"upstream_inference_completions_cost": 0.0000065
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"131072": {
+				"status": 200,
+				"ms": 596,
+				"model": "openrouter",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 13,
+					"prompt_tokens": 37,
+					"total_tokens": 50,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 11,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.000006722,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.000006722,
+						"upstream_inference_prompt_cost": 2.22e-7,
+						"upstream_inference_completions_cost": 0.0000065
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			}
+		},
+		"capHonoured": {
+			"status": 200,
+			"ms": 4183,
+			"model": "openrouter",
+			"finishReason": "length",
+			"usage": {
+				"completion_tokens": 256,
+				"prompt_tokens": 43,
+				"total_tokens": 299,
+				"completion_tokens_details": {
+					"audio_tokens": 0,
+					"reasoning_tokens": 256,
+					"image_tokens": 0
+				},
+				"prompt_tokens_details": {
+					"audio_tokens": 0,
+					"cached_tokens": 0,
+					"video_tokens": 0,
+					"cache_write_tokens": 0,
+					"cache_creation_tokens": 0
+				},
+				"cost": 0.000103346,
+				"is_byok": false,
+				"cost_details": {
+					"upstream_inference_cost": 0.000103346,
+					"upstream_inference_prompt_cost": 9.46e-7,
+					"upstream_inference_completions_cost": 0.0001024
+				}
+			},
+			"hasReasoning": true,
+			"contentChars": 2
+		},
+		"zooms": {
+			"v1": {
+				"ok": true,
+				"totalMs": 11528,
+				"firstTokenMs": 6380,
+				"chars": 2312,
+				"finishReason": "stop",
+				"usage": {
+					"promptTokens": 1999,
+					"completionTokens": 1230,
+					"totalTokens": 3229
+				},
+				"maxTokens": 8192,
+				"outcome": "ok",
+				"repairs": [],
+				"semanticTopBlocks": 3,
+				"conceptTopBlocks": 3,
+				"bindings": 3,
+				"plan": {
+					"purpose": "A small dice game that rolls a die, shows the roll, adds it to a running score, and can reset that score.",
+					"concepts": [
+						{
+							"id": "c1",
+							"name": "roll the dice",
+							"stacks": ["b1"],
+							"operations": ["s1"]
+						},
+						{
+							"id": "c2",
+							"name": "add the roll to the score",
+							"stacks": ["b8"],
+							"operations": ["s2"]
+						},
+						{
+							"id": "c3",
+							"name": "reset the score",
+							"stacks": ["b12"],
+							"operations": ["s3"]
+						}
+					]
+				},
+				"rawText": "{\"plan\":{\"purpose\":\"A small dice game that rolls a die, shows the roll, adds it to a running score, and can reset that score.\",\"concepts\":[{\"id\":\"c1\",\"name\":\"roll the dice\",\"stacks\":[\"b1\"],\"operations\":[\"s1\"]},{\"id\":\"c2\",\"name\":\"add the roll to the score\",\"stacks\":[\"b8\"],\"operations\":[\"s2\"]},{\"id\":\"c3\",\"name\":\"reset the score\",\"stacks\":[\"b12\"],\"operations\":[\"s3\"]}]},\"semantic\":{\"blockDefs\":[{\"type\":\"zoom_dice_game_roll_dice\",\"message0\":\"roll a die with %1 sides and show the result\",\"args0\":[{\"type\":\"field_number\",\"name\":\"SIDES\",\"value\":6}],\"tooltip\":\"Roll a random number in the die's range and print it.\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_add_roll_to_score\",\"message0\":\"add the latest roll to the score\",\"tooltip\":\"Increase the running score by the value of the last roll.\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_reset_score\",\"message0\":\"reset the score to %1\",\"args0\":[{\"type\":\"field_number\",\"name\":\"START\",\"value\":0}],\"tooltip\":\"Set the running score back to its starting value.\",\"previousStatement\":null,\"nextStatement\":null}],\"workspaceJson\":{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"zoom_dice_game_roll_dice\",\"id\":\"s1\"},{\"type\":\"zoom_dice_game_add_roll_to_score\",\"id\":\"s2\"},{\"type\":\"zoom_dice_game_reset_score\",\"id\":\"s3\"}]}},\"bindings\":[{\"block\":\"s1\",\"field\":\"SIDES\",\"detail\":[{\"block\":\"b5\",\"field\":\"NUM\"}]},{\"block\":\"s3\",\"field\":\"START\",\"detail\":[{\"block\":\"b14\",\"field\":\"NUM\"}]}]},\"concept\":{\"blockDefs\":[{\"type\":\"zoom_dice_game_roll_dice_concept\",\"message0\":\"roll the dice and show the result\",\"tooltip\":\"Roll a random value within the die's range and display it.\"},{\"type\":\"zoom_dice_game_keep_score_concept\",\"message0\":\"add each roll to the running score\",\"tooltip\":\"Keep a running total of the rolls.\"},{\"type\":\"zoom_dice_game_reset_score_concept\",\"message0\":\"reset the score to %1\",\"args0\":[{\"type\":\"field_number\",\"name\":\"START\",\"value\":0}],\"tooltip\":\"Start the running score over at its initial value.\"}],\"workspaceJson\":{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"zoom_dice_game_roll_dice_concept\",\"id\":\"c1\"},{\"type\":\"zoom_dice_game_keep_score_concept\",\"id\":\"c2\"},{\"type\":\"zoom_dice_game_reset_score_concept\",\"id\":\"c3\"}]}},\"bindings\":[{\"block\":\"c3\",\"field\":\"START\",\"detail\":[{\"block\":\"b14\",\"field\":\"NUM\"}]}]}}"
+			},
+			"v0": {
+				"ok": true,
+				"totalMs": 17323,
+				"firstTokenMs": 5438,
+				"chars": 3219,
+				"finishReason": "stop",
+				"usage": {
+					"promptTokens": 1829,
+					"completionTokens": 1768,
+					"totalTokens": 3597
+				},
+				"maxTokens": 8192,
+				"outcome": "ok",
+				"repairs": [],
+				"semanticTopBlocks": 1,
+				"conceptTopBlocks": 1,
+				"bindings": 6,
+				"rawText": "{\n  \"semantic\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_dice\",\n        \"message0\": \"roll a die from %1 to %2 and print the result\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"Roll a random whole number in the given range and show it\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_add_roll_to_score\",\n        \"message0\": \"add the last roll to the score\",\n        \"args0\": [],\n        \"colour\": 30,\n        \"tooltip\": \"Increase the score by the value of the most recent roll\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_score\",\n        \"message0\": \"reset the score to %1\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"START\", \"value\": 0 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"Set the score back to its starting value\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          {\n            \"type\": \"zoom_dice_game_roll_dice\",\n            \"id\": \"s1\",\n            \"x\": 20,\n            \"y\": 20,\n            \"next\": {\n              \"block\": {\n                \"type\": \"zoom_dice_game_add_roll_to_score\",\n                \"id\": \"s2\",\n                \"next\": {\n                  \"block\": {\n                    \"type\": \"zoom_dice_game_reset_score\",\n                    \"id\": \"s3\"\n                  }\n                }\n              }\n            }\n          }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"s1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"s1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"s3\", \"field\": \"START\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  },\n  \"concept\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_concept\",\n        \"message0\": \"dice game: roll a die from %1 to %2, add each roll to the score, reset the score to %3\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 },\n          { \"type\": \"field_number\", \"name\": \"START\", \"value\": 0 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"A dice game that rolls a die, keeps a running score and can start over\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          {\n            \"type\": \"zoom_dice_game_concept\",\n            \"id\": \"c1\",\n            \"x\": 20,\n            \"y\": 20\n          }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"c1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"c1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"c1\", \"field\": \"START\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  }\n}"
+			}
+		}
+	},
+	"openrouter-2": {
+		"temperature": {
+			"accepted": {
+				"status": 200,
+				"ms": 757,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 47,
+					"prompt_tokens": 19,
+					"total_tokens": 66,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 48,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00002635,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00002635,
+						"upstream_inference_prompt_cost": 0.00000285,
+						"upstream_inference_completions_cost": 0.0000235
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"omitted": {
+				"status": 200,
+				"ms": 844,
+				"model": "openrouter-2",
+				"finishReason": "length",
+				"usage": {
+					"completion_tokens": 50,
+					"prompt_tokens": 19,
+					"total_tokens": 69,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 53,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.000019552,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.000019552,
+						"upstream_inference_prompt_cost": 0.000002052,
+						"upstream_inference_completions_cost": 0.0000175
+					}
+				},
+				"hasReasoning": true
+			}
+		},
+		"capAcceptance": {
+			"8192": {
+				"status": 200,
+				"ms": 572,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 17,
+					"prompt_tokens": 19,
+					"total_tokens": 36,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 15,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.000007895809306,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.000007895809306,
+						"upstream_inference_prompt_cost": 0.000001442503617,
+						"upstream_inference_completions_cost": 0.000006453305689
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"16384": {
+				"status": 200,
+				"ms": 727,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 30,
+					"prompt_tokens": 19,
+					"total_tokens": 49,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 28,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.000012552,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.000012552,
+						"upstream_inference_prompt_cost": 0.000002052,
+						"upstream_inference_completions_cost": 0.0000105
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"32768": {
+				"status": 200,
+				"ms": 711,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 48,
+					"prompt_tokens": 19,
+					"total_tokens": 67,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 51,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00002685,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00002685,
+						"upstream_inference_prompt_cost": 0.00000285,
+						"upstream_inference_completions_cost": 0.000024
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"65536": {
+				"status": 200,
+				"ms": 2073,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 16,
+					"prompt_tokens": 35,
+					"total_tokens": 51,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 13,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 16,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00000441,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00000441,
+						"upstream_inference_prompt_cost": 8.9e-7,
+						"upstream_inference_completions_cost": 0.00000352
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			},
+			"131072": {
+				"status": 200,
+				"ms": 5319,
+				"model": "openrouter-2",
+				"finishReason": "stop",
+				"usage": {
+					"completion_tokens": 51,
+					"prompt_tokens": 19,
+					"total_tokens": 70,
+					"completion_tokens_details": {
+						"audio_tokens": 0,
+						"reasoning_tokens": 56,
+						"image_tokens": 0
+					},
+					"prompt_tokens_details": {
+						"audio_tokens": 0,
+						"cached_tokens": 0,
+						"video_tokens": 0,
+						"cache_write_tokens": 0,
+						"cache_creation_tokens": 0
+					},
+					"cost": 0.00002835,
+					"is_byok": false,
+					"cost_details": {
+						"upstream_inference_cost": 0.00002835,
+						"upstream_inference_prompt_cost": 0.00000285,
+						"upstream_inference_completions_cost": 0.0000255
+					}
+				},
+				"hasReasoning": true,
+				"contentChars": 2
+			}
+		},
+		"capHonoured": {
+			"status": 200,
+			"ms": 3090,
+			"model": "openrouter-2",
+			"finishReason": "length",
+			"usage": {
+				"completion_tokens": 256,
+				"prompt_tokens": 25,
+				"total_tokens": 281,
+				"completion_tokens_details": {
+					"audio_tokens": 0,
+					"reasoning_tokens": 256,
+					"image_tokens": 0
+				},
+				"prompt_tokens_details": {
+					"audio_tokens": 0,
+					"cached_tokens": 0,
+					"video_tokens": 0,
+					"cache_write_tokens": 0,
+					"cache_creation_tokens": 0
+				},
+				"cost": 0.00006494,
+				"is_byok": false,
+				"cost_details": {
+					"upstream_inference_cost": 0.00006494,
+					"upstream_inference_prompt_cost": 0.0000035,
+					"upstream_inference_completions_cost": 0.00006144
+				}
+			},
+			"hasReasoning": true
+		},
+		"zooms": {
+			"v1": {
+				"ok": true,
+				"totalMs": 26760,
+				"firstTokenMs": 21744,
+				"chars": 4459,
+				"finishReason": "stop",
+				"usage": {
+					"promptTokens": 1927,
+					"completionTokens": 5890,
+					"totalTokens": 7817
+				},
+				"maxTokens": 8192,
+				"outcome": "ok",
+				"repairs": [],
+				"semanticTopBlocks": 3,
+				"conceptTopBlocks": 3,
+				"bindings": 5,
+				"plan": {
+					"purpose": "A dice game that rolls a die, shows each roll, adds rolls to a running score, and can reset the score for a new game.",
+					"concepts": [
+						{
+							"id": "c1",
+							"name": "Roll the dice",
+							"stacks": ["b1"],
+							"operations": ["s1", "s2"]
+						},
+						{
+							"id": "c2",
+							"name": "Track the score",
+							"stacks": ["b8"],
+							"operations": ["s3"]
+						},
+						{
+							"id": "c3",
+							"name": "Reset the game",
+							"stacks": ["b12"],
+							"operations": ["s4"]
+						}
+					]
+				},
+				"rawText": "{\n  \"plan\": {\n    \"purpose\": \"A dice game that rolls a die, shows each roll, adds rolls to a running score, and can reset the score for a new game.\",\n    \"concepts\": [\n      {\n        \"id\": \"c1\",\n        \"name\": \"Roll the dice\",\n        \"stacks\": [\"b1\"],\n        \"operations\": [\"s1\", \"s2\"]\n      },\n      {\n        \"id\": \"c2\",\n        \"name\": \"Track the score\",\n        \"stacks\": [\"b8\"],\n        \"operations\": [\"s3\"]\n      },\n      {\n        \"id\": \"c3\",\n        \"name\": \"Reset the game\",\n        \"stacks\": [\"b12\"],\n        \"operations\": [\"s4\"]\n      }\n    ]\n  },\n  \"semantic\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_die\",\n        \"message0\": \"roll a die from %1 to %2\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"MIN\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"MAX\", \"value\": 6 }\n        ],\n        \"tooltip\": \"Picks a random number between the two limits, like a die throw.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_show_roll\",\n        \"message0\": \"show the roll\",\n        \"tooltip\": \"Displays the number that was just rolled.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_add_roll_to_score\",\n        \"message0\": \"add the roll to the score\",\n        \"tooltip\": \"Increases the running score by the number last rolled.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_score\",\n        \"message0\": \"reset the score to %1\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"SCORE\", \"value\": 0 }\n        ],\n        \"tooltip\": \"Sets the score back to its starting value.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          {\n            \"type\": \"zoom_dice_game_roll_die\",\n            \"id\": \"s1\",\n            \"fields\": { \"MIN\": 1, \"MAX\": 6 },\n            \"next\": { \"block\": { \"type\": \"zoom_dice_game_show_roll\", \"id\": \"s2\" } }\n          },\n          {\n            \"type\": \"zoom_dice_game_add_roll_to_score\",\n            \"id\": \"s3\"\n          },\n          {\n            \"type\": \"zoom_dice_game_reset_score\",\n            \"id\": \"s4\",\n            \"fields\": { \"SCORE\": 0 }\n          }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"s1\", \"field\": \"MIN\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"s1\", \"field\": \"MAX\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"s4\", \"field\": \"SCORE\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  },\n  \"concept\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_dice_concept\",\n        \"message0\": \"roll a %1-sided die and show the result\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"SIDES\", \"value\": 6 }\n        ],\n        \"tooltip\": \"Throws a die and displays the number rolled.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_track_score_concept\",\n        \"message0\": \"keep a running score of the rolls\",\n        \"tooltip\": \"Adds every roll to the player's total score.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_game_concept\",\n        \"message0\": \"reset the score to %1\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"START\", \"value\": 0 }\n        ],\n        \"tooltip\": \"Starts a new game by setting the score back to its starting value.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          {\n            \"type\": \"zoom_dice_game_roll_dice_concept\",\n            \"id\": \"c1\",\n            \"fields\": { \"SIDES\": 6 }\n          },\n          {\n            \"type\": \"zoom_dice_game_track_score_concept\",\n            \"id\": \"c2\"\n          },\n          {\n            \"type\": \"zoom_dice_game_reset_game_concept\",\n            \"id\": \"c3\",\n            \"fields\": { \"START\": 0 }\n          }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"c1\", \"field\": \"SIDES\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"c3\", \"field\": \"START\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  }\n}"
+			},
+			"v0": {
+				"ok": true,
+				"totalMs": 43365,
+				"firstTokenMs": 39330,
+				"chars": 2974,
+				"finishReason": "stop",
+				"usage": {
+					"promptTokens": 1753,
+					"completionTokens": 5994,
+					"totalTokens": 7747
+				},
+				"maxTokens": 8192,
+				"outcome": "ok",
+				"repairs": [],
+				"semanticTopBlocks": 3,
+				"conceptTopBlocks": 1,
+				"bindings": 6,
+				"rawText": "{\n  \"semantic\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_die\",\n        \"message0\": \"roll a die from %1 to %2 and show the result\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"Picks a random number in the given range and displays it as the roll.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_add_roll_to_score\",\n        \"message0\": \"add the roll to the score\",\n        \"args0\": [],\n        \"colour\": 30,\n        \"tooltip\": \"Increases the score by the value of the last roll.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_score\",\n        \"message0\": \"reset the score to %1\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"RESET_TO\", \"value\": 0 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"Sets the score back to the given starting value.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          { \"type\": \"zoom_dice_game_roll_die\", \"id\": \"s1\", \"x\": 20, \"y\": 20 },\n          { \"type\": \"zoom_dice_game_add_roll_to_score\", \"id\": \"s2\", \"x\": 20, \"y\": 130 },\n          { \"type\": \"zoom_dice_game_reset_score\", \"id\": \"s3\", \"x\": 20, \"y\": 230 }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"s1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"s1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"s3\", \"field\": \"RESET_TO\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  },\n  \"concept\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_concept\",\n        \"message0\": \"dice game: roll a die from %1 to %2, add each roll to the score, reset the score to %3\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 },\n          { \"type\": \"field_number\", \"name\": \"RESET_TO\", \"value\": 0 }\n        ],\n        \"colour\": 30,\n        \"tooltip\": \"A dice game that rolls a die, accumulates the rolls into a running score, and can reset the score.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          { \"type\": \"zoom_dice_game_concept\", \"id\": \"c1\", \"x\": 20, \"y\": 20 }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"c1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"c1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"c1\", \"field\": \"RESET_TO\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  }\n}"
+			}
+		}
+	},
+	"langfuse": {
+		"tag": "zoom-prompt:v1",
+		"expected": 2,
+		"found": 2,
+		"sample": [
+			{
+				"name": "litellm-acompletion",
+				"tags": ["User-Agent: node", "zoom", "zoom-prompt:v1"],
+				"metadataKeys": []
+			},
+			{
+				"name": "litellm-acompletion",
+				"tags": ["User-Agent: node", "zoom", "zoom-prompt:v1"],
+				"metadataKeys": []
+			}
+		]
+	},
+	"models": {
+		"openrouter": {
+			"model": "deepseek-v4.1-flash-1017",
+			"provider": "openrouter",
+			"vendor": "deepseek",
+			"litellmModel": "openrouter/deepseek/deepseek-v4.1-flash-1017"
+		},
+		"openrouter-2": {
+			"model": "glm-5.3-flash",
+			"provider": "openrouter",
+			"vendor": "z-ai",
+			"litellmModel": "openrouter/z-ai/glm-5.3-flash"
+		}
+	},
+	"modelsRecordedAt": "2026-11-06T18:24:11.027Z"
+}

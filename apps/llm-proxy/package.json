@@ -8,10 +8,12 @@
     "dev": "tsx watch --env-file-if-exists=.env.local src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node --import ./dist/otel.js dist/index.js",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --noEmit -p checks/tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:unit": "vitest run test/unit"
+    "test:unit": "vitest run test/unit",
+    "spike:cap": "tsx --env-file-if-exists=.env.local checks/cap-and-temperature-spike.ts",
+    "report": "tsx checks/report/cli.ts"
   },
   "dependencies": {
     "@fastify/cors": "11.3.1",
