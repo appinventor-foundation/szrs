@@ -1,0 +1,1169 @@
+{
+	"kind": "smoke-check",
+	"ranAt": "2026-11-06T19:10:12.518Z",
+	"aliases": ["openrouter", "openrouter-2"],
+	"proxy": "http://localhost:3000",
+	"screenshots": "2026-11-06-smoke-check",
+	"pageErrors": [],
+	"programs": [
+		{
+			"id": "fizzbuzz",
+			"title": "FizzBuzz",
+			"tests": "One purpose in one stack: one concept is right.",
+			"expectedConcepts": "1",
+			"via": "demo runner"
+		},
+		{
+			"id": "countdown",
+			"title": "Countdown",
+			"tests": "A bound number (the 10) that can be edited at the zoomed level.",
+			"expectedConcepts": "1",
+			"via": "demo runner"
+		},
+		{
+			"id": "dice-game",
+			"title": "Dice game",
+			"tests": "Three separate stacks: three concepts, laid out without overlapping.",
+			"expectedConcepts": "3",
+			"via": "demo runner"
+		},
+		{
+			"id": "greeting-function",
+			"title": "Greeting function",
+			"tests": "A procedure defined in one stack and called from another.",
+			"expectedConcepts": "1 to 2",
+			"via": "demo runner"
+		},
+		{
+			"id": "repeated-value",
+			"title": "Repeated value",
+			"tests": "One value (7) in two blocks: an edit must change both.",
+			"expectedConcepts": "1 to 2",
+			"via": "demo runner"
+		},
+		{
+			"id": "custom-blocks",
+			"title": "Custom block set",
+			"tests": "Blocks the host defines itself: the outline and plan must not depend on core block names.",
+			"expectedConcepts": "3",
+			"via": "proxy only"
+		}
+	],
+	"runs": [
+		{
+			"program": "fizzbuzz",
+			"alias": "openrouter",
+			"via": "demo runner",
+			"seconds": 10.1,
+			"info": "Zoomed with openrouter in 10s (1 attempt)",
+			"semantic": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["label each number from 1 to 100 as Fizz, Buzz or FizzBuzz"],
+				"fields": ["1", "100"],
+				"leaks": [
+					{
+						"label": "label each number from to as Fizz, Buzz or FizzBuzz",
+						"value": "FizzBuzz"
+					},
+					{
+						"label": "label each number from to as Fizz, Buzz or FizzBuzz",
+						"value": "Fizz"
+					},
+					{
+						"label": "label each number from to as Fizz, Buzz or FizzBuzz",
+						"value": "Buzz"
+					}
+				],
+				"screenshot": "fizzbuzz__openrouter__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["play FizzBuzz up to 100"],
+				"fields": ["100"],
+				"leaks": [
+					{
+						"label": "play FizzBuzz up to",
+						"value": "FizzBuzz"
+					},
+					{
+						"label": "play FizzBuzz up to",
+						"value": "Fizz"
+					},
+					{
+						"label": "play FizzBuzz up to",
+						"value": "Buzz"
+					}
+				],
+				"screenshot": "fizzbuzz__openrouter__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991714145,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-12",
+					"trace_id": "29eb1f8f0e80c117b3e14329e006ecba",
+					"span_id": "42dde937aca862e8",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 28,
+						"stacks": 1
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 2297,
+						"completionTokens": 928,
+						"totalTokens": 3225
+					},
+					"latencyMs": 9966,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Print the numbers 1 to 100, replacing multiples of 3 with \"Fizz\", multiples of 5 with \"Buzz\" and multiples of both with \"FizzBuzz\".",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "FizzBuzz run",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "fizzbuzz",
+			"alias": "openrouter-2",
+			"via": "demo runner",
+			"seconds": 128.5,
+			"info": "Zoomed with openrouter-2 in 128s (1 attempt)",
+			"semantic": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"the current number is divisible by 15 print FizzBuzz the current number is divisible by 3 print Fizz the current number is divisible by 5 print Buzz print the current number if do else if do else if do else count from 1 to 100 by 1"
+				],
+				"fields": ["15", "FizzBuzz", "3", "Fizz", "5", "Buzz", "1", "100", "1"],
+				"leaks": [],
+				"screenshot": "fizzbuzz__openrouter-2__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["FizzBuzz from 1 to 100"],
+				"fields": ["1", "100"],
+				"leaks": [
+					{
+						"label": "FizzBuzz from to",
+						"value": "FizzBuzz"
+					},
+					{
+						"label": "FizzBuzz from to",
+						"value": "Fizz"
+					},
+					{
+						"label": "FizzBuzz from to",
+						"value": "Buzz"
+					}
+				],
+				"screenshot": "fizzbuzz__openrouter-2__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991844399,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-14",
+					"trace_id": "fff3857a89f762a8481d387c01436181",
+					"span_id": "9ef70e2a2234ddef",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 28,
+						"stacks": 1
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 2201,
+						"completionTokens": 30359,
+						"totalTokens": 32560
+					},
+					"latencyMs": 128321,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Print the FizzBuzz word for every number from 1 to 100: FizzBuzz for multiples of 15, Fizz for multiples of 3, Buzz for multiples of 5, and the number itself otherwise.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "FizzBuzz",
+								"stacks": ["b1"],
+								"operations": [
+									"s1",
+									"s2",
+									"s3",
+									"s4",
+									"s5",
+									"s6",
+									"s7",
+									"s8",
+									"s9",
+									"s10",
+									"s11",
+									"s12"
+								]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "countdown",
+			"alias": "openrouter",
+			"via": "demo runner",
+			"seconds": 9,
+			"info": "Zoomed with openrouter in 9s (1 attempt)",
+			"semantic": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"announce Liftoff! count down to 0 , printing each number start the countdown at 10"
+				],
+				"fields": ["Liftoff!", "0", "10"],
+				"leaks": [],
+				"screenshot": "countdown__openrouter__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["count down from 10 and announce Liftoff!"],
+				"fields": ["10", "Liftoff!"],
+				"leaks": [],
+				"screenshot": "countdown__openrouter__concept.png"
+			},
+			"edit": {
+				"from": "10",
+				"to": "25",
+				"bound": true,
+				"boundFields": ["Liftoff!", "0", "10"],
+				"before": [
+					"10",
+					"count ▾",
+					"count ▾",
+					"1",
+					"- ▾",
+					"count ▾",
+					"count ▾",
+					"0",
+					"‏> ▾",
+					"Liftoff!",
+					"while ▾",
+					"count ▾"
+				],
+				"after": [
+					"25",
+					"count ▾",
+					"count ▾",
+					"1",
+					"- ▾",
+					"count ▾",
+					"count ▾",
+					"0",
+					"‏> ▾",
+					"Liftoff!",
+					"while ▾",
+					"count ▾"
+				],
+				"screenshot": "countdown__openrouter__detail-after-edit.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991855359,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-16",
+					"trace_id": "af27b169ea6dbe2643bbbe0d98e39a62",
+					"span_id": "4d9c5f47567dad75",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 14,
+						"stacks": 1
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1984,
+						"completionTokens": 1111,
+						"totalTokens": 3095
+					},
+					"latencyMs": 8865,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Count down from 10 to 1, printing each number, then print \"Liftoff!\".",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "countdown",
+								"stacks": ["b1"],
+								"operations": ["s1", "s2", "s3"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "countdown",
+			"alias": "openrouter-2",
+			"via": "demo runner",
+			"seconds": 25.9,
+			"info": "Zoomed with openrouter-2 in 26s (1 attempt)",
+			"semantic": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"print Liftoff! count down to 0 , printing each number start the countdown at 10"
+				],
+				"fields": ["Liftoff!", "0", "10"],
+				"leaks": [],
+				"screenshot": "countdown__openrouter-2__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 1,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["run a countdown from 10 and print a launch message"],
+				"fields": ["10"],
+				"leaks": [],
+				"screenshot": "countdown__openrouter-2__concept.png"
+			},
+			"edit": {
+				"from": "10",
+				"to": "25",
+				"bound": true,
+				"boundFields": ["Liftoff!", "0", "10"],
+				"before": [
+					"10",
+					"count ▾",
+					"count ▾",
+					"1",
+					"- ▾",
+					"count ▾",
+					"count ▾",
+					"0",
+					"‏> ▾",
+					"Liftoff!",
+					"while ▾",
+					"count ▾"
+				],
+				"after": [
+					"25",
+					"count ▾",
+					"count ▾",
+					"1",
+					"- ▾",
+					"count ▾",
+					"count ▾",
+					"0",
+					"‏> ▾",
+					"Liftoff!",
+					"while ▾",
+					"count ▾"
+				],
+				"screenshot": "countdown__openrouter-2__detail-after-edit.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991884446,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-18",
+					"trace_id": "d3ee4805891ddeda6525647f343e31b0",
+					"span_id": "e6e0015c37fc82a1",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 14,
+						"stacks": 1
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1898,
+						"completionTokens": 5165,
+						"totalTokens": 7063
+					},
+					"latencyMs": 25782,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Prints a countdown from a starting number down to one, then announces liftoff.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "countdown launch",
+								"stacks": ["b1"],
+								"operations": ["s1", "s2", "s3"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "dice-game",
+			"alias": "openrouter",
+			"via": "demo runner",
+			"seconds": 7.5,
+			"info": "Zoomed with openrouter in 7s (1 attempt)",
+			"semantic": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"show the last roll roll a die from 1 to 6",
+					"add the last roll to the score",
+					"reset the score to 0"
+				],
+				"fields": ["1", "6", "0"],
+				"leaks": [],
+				"screenshot": "dice-game__openrouter__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"roll a die with 6 sides and show it",
+					"add the last roll to the score",
+					"reset the score to 0"
+				],
+				"fields": ["6", "0"],
+				"leaks": [],
+				"screenshot": "dice-game__openrouter__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991895317,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1a",
+					"trace_id": "8f1871ead2168e28ddc5ef01685026cf",
+					"span_id": "333323d04903a297",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 14,
+						"stacks": 3
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 2080,
+						"completionTokens": 1557,
+						"totalTokens": 3637
+					},
+					"latencyMs": 7394,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "A small dice game helper that rolls a die, shows the result, adds it to the score, and can reset the score.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "roll and show a die",
+								"stacks": ["b1"],
+								"operations": ["s1", "s2"]
+							},
+							{
+								"id": "c2",
+								"name": "add roll to score",
+								"stacks": ["b8"],
+								"operations": ["s3"]
+							},
+							{
+								"id": "c3",
+								"name": "reset the score",
+								"stacks": ["b12"],
+								"operations": ["s4"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "dice-game",
+			"alias": "openrouter-2",
+			"via": "demo runner",
+			"seconds": 10.5,
+			"info": "Zoomed with openrouter-2 in 10s (1 attempt)",
+			"semantic": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"roll a die from 1 to 6 and show the result",
+					"add the last roll to the score",
+					"reset the score to 0"
+				],
+				"fields": ["1", "6", "0"],
+				"leaks": [],
+				"screenshot": "dice-game__openrouter-2__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"roll a die from 1 to 6 and show the result",
+					"keep a running score that grows with each roll",
+					"reset the score to 0"
+				],
+				"fields": ["1", "6", "0"],
+				"leaks": [],
+				"screenshot": "dice-game__openrouter-2__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991907433,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1c",
+					"trace_id": "c7d739095d4f520f24fcf57c21db72b0",
+					"span_id": "e99116bd9d3eca03",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 14,
+						"stacks": 3
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1987,
+						"completionTokens": 3158,
+						"totalTokens": 5145
+					},
+					"latencyMs": 10338,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "A dice game that rolls a random die, adds each roll to a running score, and can reset the score to zero.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "Roll the die",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							},
+							{
+								"id": "c2",
+								"name": "Keep score",
+								"stacks": ["b8"],
+								"operations": ["s2"]
+							},
+							{
+								"id": "c3",
+								"name": "Reset the game",
+								"stacks": ["b12"],
+								"operations": ["s3"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "greeting-function",
+			"alias": "openrouter",
+			"via": "demo runner",
+			"seconds": 11.8,
+			"info": "Zoomed with openrouter in 12s (1 attempt)",
+			"semantic": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"define a greeting function that wraps the name in Hello, and !",
+					"print the greeting for World"
+				],
+				"fields": ["Hello,", "!", "World"],
+				"leaks": [
+					{
+						"label": "define a greeting function that wraps the name in and",
+						"value": "greet"
+					},
+					{
+						"label": "print the greeting for",
+						"value": "greet"
+					}
+				],
+				"screenshot": "greeting-function__openrouter__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["define a personalised greeting", "greet World"],
+				"fields": ["World"],
+				"leaks": [
+					{
+						"label": "define a personalised greeting",
+						"value": "greet"
+					},
+					{
+						"label": "greet",
+						"value": "greet"
+					}
+				],
+				"screenshot": "greeting-function__openrouter__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793991921138,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1e",
+					"trace_id": "df558e39d45546704da39a8d62b0ebf6",
+					"span_id": "f0bd9128337da4ce",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 8,
+						"stacks": 2
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1876,
+						"completionTokens": 1339,
+						"totalTokens": 3215
+					},
+					"latencyMs": 11692,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Define a function that builds a personalised greeting and print that greeting for a given name.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "greeting function definition",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							},
+							{
+								"id": "c2",
+								"name": "print a greeting",
+								"stacks": ["b6"],
+								"operations": ["s2"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "greeting-function",
+			"alias": "openrouter-2",
+			"via": "demo runner",
+			"seconds": 155.3,
+			"info": "Zoomed with openrouter-2 in 155s (1 attempt)",
+			"semantic": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": [
+					"build a greeting message for a person, starting Hello, and ending !",
+					"print a greeting for World"
+				],
+				"fields": ["Hello,", "!", "World"],
+				"leaks": [
+					{
+						"label": "build a greeting message for a person, starting and ending",
+						"value": "greet"
+					},
+					{
+						"label": "print a greeting for",
+						"value": "greet"
+					}
+				],
+				"screenshot": "greeting-function__openrouter-2__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["a greeting message for a person, starting Hello,", "show a greeting for World"],
+				"fields": ["Hello,", "World"],
+				"leaks": [
+					{
+						"label": "a greeting message for a person, starting",
+						"value": "greet"
+					},
+					{
+						"label": "show a greeting for",
+						"value": "greet"
+					}
+				],
+				"screenshot": "greeting-function__openrouter-2__concept.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793992078072,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1g",
+					"trace_id": "4266e048a613b625b31528ae7b9ca0dd",
+					"span_id": "90bbbae3f698181b",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 8,
+						"stacks": 2
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1812,
+						"completionTokens": 6480,
+						"totalTokens": 8292
+					},
+					"latencyMs": 155165,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Build a friendly greeting message for a person and print it on the screen.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "Greeting message",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							},
+							{
+								"id": "c2",
+								"name": "Show greeting",
+								"stacks": ["b6"],
+								"operations": ["s2"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "repeated-value",
+			"alias": "openrouter",
+			"via": "demo runner",
+			"seconds": 7.3,
+			"info": "Zoomed with openrouter in 7s (1 attempt)",
+			"semantic": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["print Hello up to 7 times", "count from 1 to 7 printing each number"],
+				"fields": ["Hello", "7", "1", "7"],
+				"leaks": [],
+				"screenshot": "repeated-value__openrouter__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["show a greeting repeatedly: Hello", "count through a range from 1 to 7"],
+				"fields": ["Hello", "1", "7"],
+				"leaks": [],
+				"screenshot": "repeated-value__openrouter__concept.png"
+			},
+			"edit": {
+				"from": "7",
+				"to": "3",
+				"bound": true,
+				"boundFields": ["Hello", "7", "1", "7"],
+				"before": ["Hello", "7", "1", "n ▾", "7", "1", "n ▾"],
+				"after": ["Hello", "3", "1", "n ▾", "7", "1", "n ▾"],
+				"screenshot": "repeated-value__openrouter__detail-after-edit.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793992087357,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1i",
+					"trace_id": "5a1a999585fb9ad14b4ad729fa2e1269",
+					"span_id": "27bf498eb75a40e9",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 10,
+						"stacks": 2
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1877,
+						"completionTokens": 1133,
+						"totalTokens": 3010
+					},
+					"latencyMs": 7160,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Print a fixed greeting several times and also print every number in a counting range.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "repeated greeting",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							},
+							{
+								"id": "c2",
+								"name": "count through a range",
+								"stacks": ["b5"],
+								"operations": ["s2"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "repeated-value",
+			"alias": "openrouter-2",
+			"via": "demo runner",
+			"seconds": 19.3,
+			"info": "Zoomed with openrouter-2 in 19s (1 attempt)",
+			"semantic": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["print Hello 7 times", "count from 1 to 7 by 1 , printing each number"],
+				"fields": ["Hello", "7", "1", "7", "1"],
+				"leaks": [],
+				"screenshot": "repeated-value__openrouter-2__semantic.png"
+			},
+			"concept": {
+				"topBlocks": 2,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": ["rgb(0, 0, 0)"],
+				"labels": ["greet repeatedly 7 times", "count up to 7"],
+				"fields": ["7", "7"],
+				"leaks": [],
+				"screenshot": "repeated-value__openrouter-2__concept.png"
+			},
+			"edit": {
+				"from": "7",
+				"to": "3",
+				"bound": true,
+				"boundFields": ["Hello", "7", "1", "7", "1"],
+				"before": ["Hello", "7", "1", "n ▾", "7", "1", "n ▾"],
+				"after": ["Hello", "3", "1", "n ▾", "7", "1", "n ▾"],
+				"screenshot": "repeated-value__openrouter-2__detail-after-edit.png"
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793992109797,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1k",
+					"trace_id": "2460f3ffe0239badbaca68fdc6126339",
+					"span_id": "608fd94212ede303",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 10,
+						"stacks": 2
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1792,
+						"completionTokens": 2909,
+						"totalTokens": 4701
+					},
+					"latencyMs": 19125,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "Print a greeting a fixed number of times and count from 1 to 7, printing each number.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "repeated greeting",
+								"stacks": ["b1"],
+								"operations": ["s1"]
+							},
+							{
+								"id": "c2",
+								"name": "counting printout",
+								"stacks": ["b5"],
+								"operations": ["s2"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "custom-blocks",
+			"alias": "openrouter",
+			"via": "proxy only",
+			"seconds": 27,
+			"semantic": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": [],
+				"labels": [
+					"when the %1 sensor is bumped",
+					"back away at %1 percent speed",
+					"turn %1 by %2 degrees",
+					"when the line is lost",
+					"stop moving",
+					"beep a %1 tone",
+					"every %1 seconds"
+				],
+				"fields": [],
+				"leaks": [],
+				"screenshot": ""
+			},
+			"concept": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": [],
+				"labels": [
+					"when bumped, back away at %1 percent speed and turn %2 degrees",
+					"when the line is lost, stop and beep a %1 tone",
+					"beep every %1 seconds"
+				],
+				"fields": [],
+				"leaks": [],
+				"screenshot": ""
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793992139451,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1l",
+					"trace_id": "d53995681d4e190a1226dbb46ed9a8c3",
+					"span_id": "2c7ec2f54d6386b3",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter",
+					"outline": {
+						"blocks": 9,
+						"stacks": 3
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1875,
+						"completionTokens": 4465,
+						"totalTokens": 6340
+					},
+					"latencyMs": 26899,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "A small robot behaviour program that reacts to a front bump, a lost line, and a repeating timer.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "bump response",
+								"stacks": ["b1"],
+								"operations": ["s1", "s2", "s3"]
+							},
+							{
+								"id": "c2",
+								"name": "line lost recovery",
+								"stacks": ["b5"],
+								"operations": ["s4", "s5", "s6"]
+							},
+							{
+								"id": "c3",
+								"name": "heartbeat beep",
+								"stacks": ["b8"],
+								"operations": ["s7", "s8"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		},
+		{
+			"program": "custom-blocks",
+			"alias": "openrouter-2",
+			"via": "proxy only",
+			"seconds": 72.8,
+			"semantic": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": [],
+				"labels": [
+					"drive backward at %1 percent speed",
+					"turn %1 by %2 degrees",
+					"stop the robot",
+					"beep with a %1 tone",
+					"every %1 seconds beep with a %2 tone"
+				],
+				"fields": [],
+				"leaks": [],
+				"screenshot": ""
+			},
+			"concept": {
+				"topBlocks": 3,
+				"overlaps": 0,
+				"offscreen": 0,
+				"colours": [],
+				"labels": [
+					"on a front bump: back away at %1 percent speed and turn away by %2 degrees",
+					"on line lost: stop and sound a %1 alarm beep",
+					"beep with a %1 tone every %2 seconds"
+				],
+				"fields": [],
+				"leaks": [],
+				"screenshot": ""
+			},
+			"attempts": [
+				{
+					"level": 30,
+					"time": 1793992212304,
+					"pid": 2785874,
+					"hostname": "aifdev",
+					"reqId": "req-1m",
+					"trace_id": "3e3ca14d1d927ebaa2c447025bf9b5c9",
+					"span_id": "e625dd8f7ec82353",
+					"trace_flags": "01",
+					"promptId": "v1",
+					"model": "openrouter-2",
+					"outline": {
+						"blocks": 9,
+						"stacks": 3
+					},
+					"attempt": 1,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1774,
+						"completionTokens": 8289,
+						"totalTokens": 10063
+					},
+					"latencyMs": 72823,
+					"outcome": "ok",
+					"repairs": [],
+					"plan": {
+						"purpose": "A robot behavior demo combining an obstacle-escape reaction to a front bump, a line-loss safety stop with an alarm beep, and a periodic keep-alive beep.",
+						"concepts": [
+							{
+								"id": "c1",
+								"name": "Bump escape reaction",
+								"stacks": ["b1"],
+								"operations": ["s1", "s2"]
+							},
+							{
+								"id": "c2",
+								"name": "Line-lost alarm",
+								"stacks": ["b5"],
+								"operations": ["s3", "s4"]
+							},
+							{
+								"id": "c3",
+								"name": "Periodic keep-alive beep",
+								"stacks": ["b8"],
+								"operations": ["s5"]
+							}
+						]
+					},
+					"msg": "zoom attempt"
+				}
+			]
+		}
+	],
+	"models": {
+		"openrouter": {
+			"model": "deepseek-v4.1-flash-1017",
+			"provider": "openrouter",
+			"vendor": "deepseek",
+			"litellmModel": "openrouter/deepseek/deepseek-v4.1-flash-1017"
+		},
+		"openrouter-2": {
+			"model": "glm-5.3-flash",
+			"provider": "openrouter",
+			"vendor": "z-ai",
+			"litellmModel": "openrouter/z-ai/glm-5.3-flash"
+		}
+	},
+	"modelsRecordedAt": "2026-11-06T19:10:24.620Z"
+}
