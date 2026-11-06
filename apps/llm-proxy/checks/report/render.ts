@@ -383,7 +383,22 @@ summary{cursor:pointer;color:var(--secondary)}
 .output summary{color:var(--primary)}
 pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:var(--page);border-radius:6px;padding:10px;max-height:360px;overflow:auto}
 .facts{color:var(--secondary);font-size:13px}
-.error{color:var(--critical)}
+.error,.bad-text{color:var(--critical)}
+.muted{color:var(--secondary);font-weight:400}
+h3{font-size:15px;margin:0 0 4px}
+.run{border-top:1px solid var(--grid);padding:16px 0 4px;margin-top:12px}
+.run:first-child{border-top:0;margin-top:0}
+/* One column: a zoomed level is a small group of blocks on a large canvas, and needs the width to be read. */
+.gallery{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 12px}
+.shot{margin:0}
+.shot img{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:6px;background:#fff}
+.shot figcaption{font-size:12px;color:var(--secondary);margin:4px 0 0}
+.notes{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0;font-size:13px}
+.notes dt{color:var(--secondary)}
+.notes dd{margin:0}
+.notes ul{margin:0;padding-left:18px}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--border);margin-right:6px;vertical-align:-1px}
+table.wide{min-width:880px}
 .meters{list-style:none;margin:0;padding:0}
 .meter-row{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:4px 16px;padding:8px 0;border-bottom:1px solid var(--grid)}
 .meter-name{font-weight:600}

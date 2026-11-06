@@ -6,11 +6,28 @@ Scripts that measure the real system, and the dated results they produced. They 
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
 | [`cap-and-temperature-spike.ts`](cap-and-temperature-spike.ts) | Per model alias: whether a fixed `temperature` is accepted, which output caps are accepted, whether reasoning tokens use up the cap, how `v0` and `v1` zoom a small program, and whether the prompt id reaches Langfuse. | `pnpm spike:cap <alias> [<alias> ...]` |
 
+The zoom smoke check lives in the dashboard, because it drives the real demo runner and uses the dashboard's Playwright, Postgres client and test-database helpers: [`apps/dashboard/scripts/smoke-zoom.ts`](../../dashboard/scripts/smoke-zoom.ts) with its programs in `smoke-programs.ts`. It writes its results here, next to the others.
+
 ## Running one
 
 1. Start the local stack (`docker compose up -d` in `infra/llm-proxy`) and make sure `LITELLM_VIRTUAL_KEY` is in `apps/llm-proxy/.env.local`.
 2. From `apps/llm-proxy`, run the script with the aliases to test. To also check Langfuse, load its keys first without printing them: `set -a && . ../../infra/llm-proxy/.env && set +a`.
 3. The script writes its raw results to `results/<date>-<name>.json`. Add a short `results/<date>-<name>.md` with what they mean and what was decided.
+
+## The smoke check
+
+It runs five programs (and a sixth, in a custom block set, straight against the proxy) on each model alias in the real demo runner, with real model calls, and records what appears: concept and Semantic block counts, overlaps, colours, the plugin's status line, what happens when a bound field is edited, the proxy's log of each attempt, and a screenshot of every level. It never touches the dev database: it empties and refills the demos table of `dashboard_test`, as the e2e tests do, and empties it again at the end.
+
+Steps, from the repository root:
+
+1. LiteLLM up (`docker compose up -d` in `infra/llm-proxy`), and the dashboard's Postgres container.
+2. The proxy, with its output kept: `cd apps/llm-proxy && pnpm dev > /tmp/proxy.log`. It zooms with its default prompt (`DEFAULT_PROMPT_ID`); to check another prompt, change that locally and do not commit it.
+3. Build the dashboard and its dependencies, with placeholder values for the variables the build requires: `DATABASE_URL=postgresql://build:build@localhost:5432/build BETTER_AUTH_SECRET=build-only-placeholder-not-a-secret-0000 DASHBOARD_URL=http://localhost:4173 PROXY_URL=http://localhost:3000 pnpm turbo run build --filter=@szrs/dashboard`.
+4. Start the dashboard against the **test** database and the real proxy, as the e2e config does (the credentials are the public ones in `apps/dashboard/tests/support/auth.ts`): from `apps/dashboard`, `PORT=4173 PROTOCOL_HEADER=x-forwarded-proto DASHBOARD_URL=http://localhost:4173 PROXY_URL=http://localhost:3000 DATABASE_URL=postgresql://dashboard:dashboard@localhost:5433/dashboard_test BETTER_AUTH_SECRET=e2e-secret-e2e-secret-e2e-secret-0123456789 INITIAL_ADMIN_NAME="E2E Admin" INITIAL_ADMIN_EMAIL=admin@example.com INITIAL_ADMIN_PASSWORD=e2e-admin-password node build`.
+5. Run it, from `apps/dashboard`: `pnpm smoke:zoom --models <alias>,<alias> --proxy-log /tmp/proxy.log`. `--only <program>[,<program>]` runs some of the programs.
+6. Add the model names and make the report, from `apps/llm-proxy`: `pnpm spike:cap --models-only checks/results/<date>-smoke-check.json`, then `pnpm report`.
+
+The screenshots are in `results/<date>-smoke-check/` and are kept, so they can be looked at by hand; the report embeds them. The custom block set cannot go through the runner, which registers only core blocks, so for that program there are no pictures, and the plan and counts come from the proxy.
 
 ## Viewing results
 
@@ -31,3 +48,4 @@ The viewer is built around rows, not around any one check: a row is a model, a p
 ## Results
 
 - [2026-11-06: cap and temperature spike](results/2026-11-06-cap-and-temperature-spike.md)
+- [2026-11-06: zoom smoke check](results/2026-11-06-smoke-check.md)

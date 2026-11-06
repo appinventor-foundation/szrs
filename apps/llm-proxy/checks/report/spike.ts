@@ -3,6 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import { asNumber, esc, fmt, isRecord } from './html.js';
+import { identityOf, type Identity } from './models.js';
 import { modelVia, type Report, type ResultRow } from './rows.js';
 
 /**
@@ -10,7 +11,8 @@ import { modelVia, type Report, type ResultRow } from './rows.js';
  * when the file is not that kind of result.
  */
 export function spikeReport(json: unknown): Report | undefined {
-	if (!isRecord(json) || !Array.isArray(json.aliases)) return undefined;
+	// Other kinds of result (the smoke check) also list their aliases.
+	if (!isRecord(json) || json.kind !== undefined || !Array.isArray(json.aliases)) return undefined;
 	const aliases = json.aliases.filter((alias): alias is string => typeof alias === 'string');
 
 	const rows: ResultRow[] = [];
@@ -18,7 +20,7 @@ export function spikeReport(json: unknown): Report | undefined {
 		const perAlias = json[alias];
 		const zooms = isRecord(perAlias) && isRecord(perAlias.zooms) ? perAlias.zooms : {};
 		for (const [prompt, zoom] of Object.entries(zooms)) {
-			if (isRecord(zoom)) rows.push(zoomRow(identity(json, alias), prompt, zoom));
+			if (isRecord(zoom)) rows.push(zoomRow(identityOf(json, alias), prompt, zoom));
 		}
 	}
 
@@ -43,22 +45,6 @@ export function spikeReport(json: unknown): Report | undefined {
 				html: acceptanceTable(json, aliases)
 			}
 		]
-	};
-}
-
-type Identity = Pick<ResultRow, 'model' | 'provider' | 'vendor' | 'alias'>;
-
-// The model an alias resolved to, as the run recorded it. A result without that
-// record can only show the alias.
-function identity(json: Record<string, unknown>, alias: string): Identity {
-	const models = isRecord(json.models) ? json.models : {};
-	const found = models[alias];
-	if (!isRecord(found) || typeof found.model !== 'string') return { model: alias, alias };
-	return {
-		model: found.model,
-		provider: typeof found.provider === 'string' ? found.provider : undefined,
-		vendor: typeof found.vendor === 'string' ? found.vendor : undefined,
-		alias
 	};
 }
 
@@ -139,7 +125,7 @@ function acceptanceTable(json: Record<string, unknown>, aliases: string[]): stri
 				? `${fmt(Math.min(100, Math.round((reasoning / completion) * 100)))}% of ${fmt(completion)} output tokens were reasoning (${stopped})`
 				: stopped;
 
-		const who = identity(json, alias);
+		const who = identityOf(json, alias);
 		const via = [modelVia(who), who.model === alias ? '' : `alias ${alias}`]
 			.filter(Boolean)
 			.join(' · ');
