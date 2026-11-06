@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { stableStringify, zoomCacheKey } from '../../../src/zoom/cache-key.js';
+import { promptFingerprint, stableStringify, zoomCacheKey } from '../../../src/zoom/cache-key.js';
+import { getZoomPrompt, type ZoomPrompt } from '../../../src/zoom/prompts/index.js';
 
 const request = {
 	model: 'local-ollama',
@@ -24,7 +25,7 @@ describe('zoomCacheKey', () => {
 	it('is prefixed, versioned and stable', () => {
 		const key = zoomCacheKey(request);
 
-		expect(key).toMatch(/^szrs:zoom:v1:[0-9a-f]{64}$/);
+		expect(key).toMatch(/^szrs:zoom:v2:[0-9a-f]{64}$/);
 		expect(zoomCacheKey({ ...request })).toBe(key);
 	});
 
@@ -52,5 +53,57 @@ describe('zoomCacheKey', () => {
 				}
 			})
 		).not.toBe(key);
+	});
+});
+
+describe('promptFingerprint', () => {
+	const base: ZoomPrompt = {
+		id: 'test',
+		system: 'system text',
+		buildUser: (req, error) => `slug ${req.slug}${error === undefined ? '' : ' retry ' + error}`,
+		params: { temperature: 0.2 }
+	};
+
+	it('is stable for the same prompt', () => {
+		expect(promptFingerprint({ ...base })).toBe(promptFingerprint({ ...base }));
+		expect(promptFingerprint(getZoomPrompt('v0'))).toMatch(/^[0-9a-f]{64}$/);
+	});
+
+	it('changes with the system text', () => {
+		expect(promptFingerprint({ ...base, system: 'other' })).not.toBe(promptFingerprint(base));
+	});
+
+	it('changes with how the user message is built, including the retry text', () => {
+		const first = { ...base, buildUser: (req: { slug: string }) => `slug ${req.slug}!` };
+		const retry = {
+			...base,
+			buildUser: (req: { slug: string }, error?: string) =>
+				`slug ${req.slug}${error === undefined ? '' : ' again ' + error}`
+		};
+
+		expect(promptFingerprint(first)).not.toBe(promptFingerprint(base));
+		expect(promptFingerprint(retry)).not.toBe(promptFingerprint(base));
+	});
+
+	it('changes with the sampling parameters', () => {
+		expect(promptFingerprint({ ...base, params: { temperature: 0.7 } })).not.toBe(
+			promptFingerprint(base)
+		);
+	});
+});
+
+describe('zoomCacheKey and prompts', () => {
+	it('gives each prompt its own entries', () => {
+		expect(zoomCacheKey({ ...request, promptId: 'v1' })).not.toBe(
+			zoomCacheKey({ ...request, promptId: 'v0' })
+		);
+	});
+
+	it('uses the default prompt when none is named', () => {
+		expect(zoomCacheKey({ ...request, promptId: 'v0' })).toBe(zoomCacheKey(request));
+	});
+
+	it('rejects an unknown prompt id', () => {
+		expect(() => zoomCacheKey({ ...request, promptId: 'nope' })).toThrow(/Unknown zoom prompt/);
 	});
 });
