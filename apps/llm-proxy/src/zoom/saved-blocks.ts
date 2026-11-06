@@ -5,6 +5,8 @@ export interface SavedBlock {
 	fields?: Record<string, unknown>;
 	inputs?: Record<string, unknown>;
 	next?: unknown;
+	/** Extra state a block saves beyond its fields (a mutation, for blocks that have one). */
+	extraState?: unknown;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
