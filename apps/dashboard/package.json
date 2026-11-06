@@ -19,7 +19,8 @@
     "db:studio": "drizzle-kit studio",
     "test:e2e": "playwright test",
     "auth:generate": "auth generate --config src/lib/server/auth/cli.ts --output src/lib/server/db/schema/auth.ts --yes && node scripts/format-generated-auth.mjs",
-    "auth:seed": "tsx --env-file-if-exists=.env.local scripts/ensure-admin.ts"
+    "auth:seed": "tsx --env-file-if-exists=.env.local scripts/ensure-admin.ts",
+    "smoke:zoom": "tsx scripts/smoke-zoom.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.14",
