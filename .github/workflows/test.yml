@@ -103,4 +103,6 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run dashboard e2e tests
-        run: pnpm --filter @szrs/dashboard test:e2e
+        # Through Turborepo, so the plugin and the other workspace packages the
+        # dashboard imports are built first (their entry points are in dist/).
+        run: pnpm test:e2e
