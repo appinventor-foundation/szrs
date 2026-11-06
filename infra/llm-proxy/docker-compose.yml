@@ -47,6 +47,7 @@ services:
       LMSTUDIO_API_KEY: ${LMSTUDIO_API_KEY:-not-needed}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/z-ai/glm-5.3-flash}
+      OPENROUTER_MODEL_2: ${OPENROUTER_MODEL_2:-openrouter/z-ai/glm-5.3-flash}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_HOST: http://langfuse-web:3000 # internal compose-network address
