@@ -43,6 +43,8 @@ export class ZoomLevelLoader {
 			if (field && value !== null && value !== undefined) field.setValue(value);
 		}
 
+		this.arrange(target);
+
 		// Only bound fields can be edited; nothing else in a zoomed level
 		// changes (DECISIONS.md #8).
 		const bound = new Map<string, Set<string>>();
@@ -58,6 +60,20 @@ export class ZoomLevelLoader {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Stacks the level's top-level blocks so none overlap, whatever coordinates
+	 * the level gave them (models are not asked for any). Blockly's `cleanUp`
+	 * only moves movable blocks and treats the rest as obstacles, so this must
+	 * run before `load` locks the blocks. Only a rendered workspace has
+	 * `cleanUp`; a headless one has nothing to arrange.
+	 */
+	private arrange(target: Blockly.Workspace): void {
+		// Block sizes are final only once the queued renders have run.
+		if (target instanceof Blockly.WorkspaceSvg)
+			Blockly.renderManagement.triggerQueuedRenders(target);
+		if ('cleanUp' in target && typeof target.cleanUp === 'function') target.cleanUp();
 	}
 
 	/**

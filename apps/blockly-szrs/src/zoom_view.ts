@@ -40,6 +40,9 @@ export class ZoomView {
 	 */
 	show(level: ZoomLevelResult): void {
 		const view = this.ensureWorkspace();
+		// Displayed before loading, so the loader lays the level out in a workspace
+		// that is on screen.
+		if (this.container) this.container.style.display = '';
 		try {
 			this.loader.load(level, view, this.mainWorkspace);
 			this.editor?.setBindings(level.bindings);
@@ -47,7 +50,6 @@ export class ZoomView {
 			this.hide();
 			throw error;
 		}
-		if (this.container) this.container.style.display = '';
 		Blockly.svgResize(view);
 		view.scrollCenter();
 	}

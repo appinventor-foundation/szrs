@@ -76,6 +76,46 @@ suite('ZoomLevelLoader', function () {
 		assert.strictEqual(block.getField('NOTE').isEnabled(), false);
 	});
 
+	/** Several independent concept blocks, as a multi-handler program gives, without coordinates. */
+	function severalConcepts(extra = {}) {
+		return {
+			blockDefs: [{ type: 'zoom_many_concept', message0: 'feature' }],
+			workspaceJson: workspaceJson(
+				...['c1', 'c2', 'c3'].map((id) => ({ type: 'zoom_many_concept', id, ...extra }))
+			),
+			bindings: []
+		};
+	}
+
+	test('loads several top-level blocks that have no coordinates', function () {
+		loader.load(severalConcepts(), target, detail);
+
+		assert.deepStrictEqual(
+			target.getTopBlocks(false).map((block) => block.id),
+			['c1', 'c2', 'c3']
+		);
+	});
+
+	test('still loads a level whose blocks have coordinates', function () {
+		loader.load(severalConcepts({ x: 20, y: 20 }), target, detail);
+
+		assert.strictEqual(target.getTopBlocks(false).length, 3);
+	});
+
+	// Blockly's cleanUp only moves movable blocks, so a layout that ran after the
+	// lock would leave every block where it was loaded, on top of each other.
+	test('arranges the level before locking it', function () {
+		const movableWhenArranged = [];
+		target.cleanUp = () => {
+			for (const block of target.getTopBlocks(false)) movableWhenArranged.push(block.isMovable());
+		};
+
+		loader.load(severalConcepts(), target, detail);
+
+		assert.deepStrictEqual(movableWhenArranged, [true, true, true]);
+		assert.ok(target.getTopBlocks(false).every((block) => !block.isMovable()));
+	});
+
 	test('removes the previous level’s block types when loading another', function () {
 		loader.load(level('zoom_greet_semantic'), target, detail);
 		loader.load(level('zoom_greet_concept'), target, detail);
