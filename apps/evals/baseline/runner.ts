@@ -113,14 +113,14 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 		};
 		attempts.push(attempt);
 
-		const judged = judgeAttempt(attempt, prepared.workspaceJson);
+		const judged = judgeAttempt(attempt, prepared.workspaceJson, promptId);
 		// Done, or cut off by the output limit (a retry would be cut off in the same place).
 		if (judged.outcome === 'ok' || judged.outcome === 'truncated') break;
 		lastError = judged.message;
 	}
 
 	const { program } = prepared;
-	const scored = scoreRecord({ attempts }, prepared, { headless: options.headless });
+	const scored = scoreRecord({ attempts }, prepared, { headless: options.headless, promptId });
 	return {
 		runId,
 		program: {

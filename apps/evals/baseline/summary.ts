@@ -50,7 +50,10 @@ export function rescore(
 				entry = prepareProgram(program);
 				prepared.set(program.id, entry);
 			}
-			return { record, metrics: scoreRecord(record, entry).metrics };
+			return {
+				record,
+				metrics: scoreRecord(record, entry, { promptId: record.prompt.id }).metrics
+			};
 		} catch (error) {
 			return { record, problem: String(error instanceof Error ? error.message : error) };
 		}

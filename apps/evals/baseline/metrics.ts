@@ -11,6 +11,8 @@
 import { ZoomResponseSchema, type ZoomLevel, type ZoomResponse } from '@szrs/llm-proxy-contracts';
 
 import { classifyError } from '@szrs/llm-proxy/zoom/attempt-log.js';
+import { expandPlaceholders } from '@szrs/llm-proxy/zoom/placeholders.js';
+import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
 import { repairZoomResult } from '@szrs/llm-proxy/zoom/repair.js';
 import { allBlocks, byId, isRecord } from '@szrs/llm-proxy/zoom/saved-blocks.js';
 import { checkZoomResult } from '@szrs/llm-proxy/zoom/validate.js';
@@ -25,7 +27,8 @@ type Json = Record<string, unknown>;
 /** How an attempt ends when its stored text is parsed and checked again today. */
 export function judgeAttempt(
 	attempt: Attempt,
-	detail: Json
+	detail: Json,
+	promptId?: string
 ): { outcome: AttemptOutcome; message?: string; parsed?: ReturnType<typeof parseZoomResponse> } {
 	if (attempt.upstreamError) {
 		const { status, message, timedOut } = attempt.upstreamError;
@@ -36,7 +39,7 @@ export function judgeAttempt(
 	}
 	if (attempt.finishReason === 'length') return { outcome: 'truncated' };
 	try {
-		return { outcome: 'ok', parsed: parseZoomResponse(attempt.rawText, detail) };
+		return { outcome: 'ok', parsed: parseZoomResponse(attempt.rawText, detail, promptId) };
 	} catch (error) {
 		return {
 			outcome: classifyError(error),
@@ -171,7 +174,8 @@ function jaccard(a: Set<string>, b: Set<string>): number {
 /** D6 and D8 over the bindings of a zoom that parses as a zoom shape, even if it is not otherwise valid. */
 function bindingMetrics(
 	rawText: string,
-	detail: Json
+	detail: Json,
+	promptId?: string
 ): Pick<Metrics, 'bindings' | 'bindingValidity' | 'bindingConsistency'> {
 	let raw: unknown;
 	try {
@@ -183,6 +187,8 @@ function bindingMetrics(
 		return { bindings: 0 };
 	}
 	repairZoomResult(raw, detail);
+	// v2 on writes placeholders: the bindings exist only after they are expanded.
+	if (getZoomPrompt(promptId).output === 'placeholders') expandPlaceholders(raw, detail);
 	const parsed = ZoomResponseSchema.safeParse(raw);
 	if (!parsed.success) return { bindings: 0 };
 	return bindingMetricsOf(parsed.data, detail);
@@ -249,6 +255,8 @@ function coverage(
 export interface ScoreOptions {
 	/** Load levels into a headless Blockly workspace (D5). On by default. */
 	headless?: boolean;
+	/** The prompt that made the attempts; decides how their output is read. Default: the proxy's default. */
+	promptId?: string;
 }
 
 /**
@@ -262,7 +270,7 @@ export function scoreRecord(
 ): { metrics: Metrics; result?: ZoomResponse; plan?: EvalRecord['plan']; repairs?: string[] } {
 	const detail = prepared.workspaceJson;
 	const headless = options.headless ?? true;
-	const judged = record.attempts.map((attempt) => judgeAttempt(attempt, detail));
+	const judged = record.attempts.map((attempt) => judgeAttempt(attempt, detail, options.promptId));
 	const winner = judged.findIndex((attempt) => attempt.outcome === 'ok');
 	const last = judged[judged.length - 1];
 
@@ -299,7 +307,7 @@ export function scoreRecord(
 				...base,
 				failure: last?.outcome,
 				...(last?.message && { failureMessage: last.message }),
-				...(lastAttempt && bindingMetrics(lastAttempt.rawText, detail))
+				...(lastAttempt && bindingMetrics(lastAttempt.rawText, detail, options.promptId))
 			}
 		};
 	}

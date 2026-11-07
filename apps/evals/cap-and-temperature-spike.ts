@@ -228,7 +228,7 @@ async function zoom(alias: string, promptId: string, workspaceJson: Record<strin
 
 	let parsed: Record<string, unknown>;
 	try {
-		const { result, repairs, plan } = parseZoomResponse(text, workspaceJson);
+		const { result, repairs, plan } = parseZoomResponse(text, workspaceJson, promptId);
 		const topBlocks = (level: { workspaceJson: Record<string, unknown> }): number => {
 			const blocks = isRecord(level.workspaceJson.blocks) ? level.workspaceJson.blocks.blocks : [];
 			return Array.isArray(blocks) ? blocks.length : 0;
