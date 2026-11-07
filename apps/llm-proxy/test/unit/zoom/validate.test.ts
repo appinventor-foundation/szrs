@@ -247,3 +247,100 @@ describe('checkZoomResult', () => {
 		]);
 	});
 });
+
+describe('checkZoomResult: connections Blockly would refuse', () => {
+	const parentDef = {
+		type: 'zoom_x_parent',
+		message0: 'when %1 do %2',
+		args0: [
+			{ type: 'input_value', name: 'COND' },
+			{ type: 'input_statement', name: 'DO' }
+		],
+		previousStatement: null,
+		nextStatement: null
+	};
+	const valueDef = { type: 'zoom_x_value', message0: 'a value', output: null };
+	const stepDef = {
+		type: 'zoom_x_step',
+		message0: 'a step',
+		previousStatement: null,
+		nextStatement: null
+	};
+	const level = (blockDefs: unknown[], ...blocks: unknown[]) =>
+		result({ blockDefs: blockDefs as ZoomLevel['blockDefs'], workspaceJson: workspace(...blocks) });
+	const parent = (inputs: Record<string, unknown>, next?: unknown) => ({
+		type: 'zoom_x_parent',
+		id: 's1',
+		inputs,
+		...(next === undefined ? {} : { next: { block: next } })
+	});
+
+	it('accepts blocks that fit where they are put', () => {
+		const ok = level(
+			[parentDef, valueDef, stepDef],
+			parent(
+				{
+					COND: { block: { type: 'zoom_x_value', id: 's2' } },
+					DO: {
+						block: {
+							type: 'zoom_x_step',
+							id: 's3',
+							next: { block: { type: 'zoom_x_step', id: 's4' } }
+						}
+					}
+				},
+				{ type: 'zoom_x_step', id: 's5' }
+			)
+		);
+		expect(checkZoomResult(ok, detailWorkspace)).toEqual([]);
+	});
+
+	it('reports a block with no output in a value input', () => {
+		const errors = checkZoomResult(
+			level([parentDef, stepDef], parent({ COND: { block: { type: 'zoom_x_step', id: 's2' } } })),
+			detailWorkspace
+		);
+		expect(
+			errors.some((e) => e.includes('is in a value input ("COND")') && e.includes('"output": null'))
+		).toBe(true);
+	});
+
+	it('reports a block with no previousStatement in a statement input', () => {
+		const errors = checkZoomResult(
+			level([parentDef, valueDef], parent({ DO: { block: { type: 'zoom_x_value', id: 's2' } } })),
+			detailWorkspace
+		);
+		expect(
+			errors.some(
+				(e) => e.includes('statement input ("DO")') && e.includes('"previousStatement": null')
+			)
+		).toBe(true);
+	});
+
+	it('reports a block after another that cannot follow', () => {
+		const errors = checkZoomResult(
+			level([parentDef, valueDef], parent({}, { type: 'zoom_x_value', id: 's2' })),
+			detailWorkspace
+		);
+		expect(errors.some((e) => e.includes('cannot follow a block'))).toBe(true);
+	});
+
+	it('reports a child with no type, and a top-level block with no type', () => {
+		const nested = checkZoomResult(
+			level([parentDef], parent({ DO: { block: { id: 's2' } } })),
+			detailWorkspace
+		);
+		expect(nested.some((e) => e.includes('the block in input "DO" has no "type"'))).toBe(true);
+
+		const topLevel = checkZoomResult(level([parentDef], { id: 's1' }), detailWorkspace);
+		expect(topLevel.some((e) => e.includes('top-level block 0 has no "type"'))).toBe(true);
+	});
+
+	it('leaves built-in blocks alone, as their shapes are not known here', () => {
+		const builtIn = level(
+			[parentDef],
+			parent({ COND: { block: { type: 'logic_boolean', id: 's2' } } })
+		);
+		expect(checkZoomResult(builtIn, detailWorkspace)).toEqual([]);
+	});
+});

@@ -50,3 +50,41 @@ export function nestedHolders(block: SavedBlock, field: string): SavedBlock[] {
 		(nested) => nested !== withoutNext && nested.fields?.[field] !== undefined
 	);
 }
+
+/** A child that sits in an input or after another block, and the block holding it. */
+export interface BlockLink {
+	parent: SavedBlock;
+	via: { kind: 'input'; name: string } | { kind: 'next' };
+	/** What the saved state holds there: a block, or something that is not one. */
+	child: unknown;
+}
+
+/**
+ * Every child of every block in a saved workspace, with the block holding it
+ * and how (in which input, or as the next block). Unlike `allBlocks` it also
+ * returns children that are not blocks (no `type`), so they can be reported.
+ */
+export function blockLinks(workspaceJson: Record<string, unknown>): BlockLink[] {
+	const links: BlockLink[] = [];
+	const visit = (block: unknown): void => {
+		if (!isRecord(block) || typeof block.type !== 'string') return;
+		const parent = block as unknown as SavedBlock;
+		if (isRecord(parent.inputs)) {
+			for (const [name, input] of Object.entries(parent.inputs)) {
+				if (!isRecord(input)) continue;
+				for (const child of [input.block, input.shadow]) {
+					if (child === undefined) continue;
+					links.push({ parent, via: { kind: 'input', name }, child });
+					visit(child);
+				}
+			}
+		}
+		if (isRecord(block.next) && block.next.block !== undefined) {
+			links.push({ parent, via: { kind: 'next' }, child: block.next.block });
+			visit(block.next.block);
+		}
+	};
+	const top = isRecord(workspaceJson.blocks) ? workspaceJson.blocks.blocks : undefined;
+	if (Array.isArray(top)) top.forEach(visit);
+	return links;
+}

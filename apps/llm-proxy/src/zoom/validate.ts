@@ -6,7 +6,14 @@ import {
 	type ZoomResponse
 } from '@szrs/llm-proxy-contracts';
 
-import { allBlocks, byId, nestedHolders, type SavedBlock } from './saved-blocks.js';
+import {
+	allBlocks,
+	blockLinks,
+	byId,
+	isRecord,
+	nestedHolders,
+	type SavedBlock
+} from './saved-blocks.js';
 
 /**
  * Checks a zoom result against the Detail workspace it was made from: each
@@ -59,6 +66,8 @@ function checkLevel(name: string, level: ZoomLevel, detail: Map<string, SavedBlo
 		}
 	}
 
+	errors.push(...checkConnections(name, level, defs));
+
 	const zoomed = byId(blocks);
 	level.bindings.forEach((binding, i) => {
 		const where = `${name}.bindings[${i}]`;
@@ -101,6 +110,63 @@ function checkLevel(name: string, level: ZoomLevel, detail: Map<string, SavedBlo
 		}
 	});
 
+	return errors;
+}
+
+/**
+ * Blockly refuses a workspace whose blocks cannot connect as saved: a block
+ * with no `type`, a block in a value input that has no `output`, or one in a
+ * statement input or after another block that has no `previousStatement`.
+ * Only blocks this level defines are checked; a built-in block's shape isn't
+ * known here, so a mistake about one still reaches the plugin.
+ */
+function checkConnections(
+	name: string,
+	level: ZoomLevel,
+	defs: Map<string, ZoomBlockDef>
+): string[] {
+	const errors: string[] = [];
+	const top = isRecord(level.workspaceJson.blocks) ? level.workspaceJson.blocks.blocks : undefined;
+	if (Array.isArray(top)) {
+		top.forEach((block, i) => {
+			if (!isRecord(block) || typeof block.type !== 'string') {
+				errors.push(`${name}.workspaceJson: top-level block ${i} has no "type"`);
+			}
+		});
+	}
+
+	for (const { parent, via, child } of blockLinks(level.workspaceJson)) {
+		const where = `${name}.workspaceJson: in block "${parent.id ?? '?'}" (${parent.type}), the block ${
+			via.kind === 'input' ? `in input "${via.name}"` : 'after it'
+		}`;
+		if (!isRecord(child) || typeof child.type !== 'string') {
+			errors.push(`${where} has no "type". Every block needs a "type", or remove it`);
+			continue;
+		}
+		const childDef = defs.get(child.type);
+		if (!childDef) continue;
+		const at = `${where} ("${String(child.id ?? '?')}", ${child.type})`;
+
+		if (via.kind === 'next') {
+			if (!('previousStatement' in childDef)) {
+				errors.push(
+					`${at} cannot follow a block, because its definition has no "previousStatement". Add "previousStatement": null to its definition, or do not put it after another block`
+				);
+			}
+			continue;
+		}
+		const parentArg = findArg(defs.get(parent.type), via.name);
+		if (parentArg?.type === 'input_value' && !('output' in childDef)) {
+			errors.push(
+				`${at} is in a value input ("${via.name}"), so its definition needs "output": null. Add it, or put the block in a statement input`
+			);
+		}
+		if (parentArg?.type === 'input_statement' && !('previousStatement' in childDef)) {
+			errors.push(
+				`${at} is in a statement input ("${via.name}"), so its definition needs "previousStatement": null. Add it, or put the block in a value input`
+			);
+		}
+	}
 	return errors;
 }
 
