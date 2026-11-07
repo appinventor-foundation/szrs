@@ -11,12 +11,9 @@
 import { ZoomResponseSchema, type ZoomLevel, type ZoomResponse } from '@szrs/llm-proxy-contracts';
 
 import { classifyError } from '@szrs/llm-proxy/zoom/attempt-log.js';
-import { expandPlaceholders } from '@szrs/llm-proxy/zoom/placeholders.js';
-import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
-import { repairZoomResult } from '@szrs/llm-proxy/zoom/repair.js';
 import { allBlocks, byId, isRecord } from '@szrs/llm-proxy/zoom/saved-blocks.js';
 import { checkZoomResult } from '@szrs/llm-proxy/zoom/validate.js';
-import { parseZoomResponse } from '@szrs/llm-proxy/zoom/zoom.js';
+import { parseZoomResponse, prepareOutput } from '@szrs/llm-proxy/zoom/zoom.js';
 import type { CorpusProgram } from './corpus/index.js';
 import { loadsInBlockly } from './headless.js';
 import type { Attempt, AttemptOutcome, EvalRecord, LevelMetrics, Metrics } from './record.js';
@@ -186,9 +183,8 @@ function bindingMetrics(
 	} catch {
 		return { bindings: 0 };
 	}
-	repairZoomResult(raw, detail);
-	// v2 on writes placeholders: the bindings exist only after they are expanded.
-	if (getZoomPrompt(promptId).output === 'placeholders') expandPlaceholders(raw, detail);
+	// The same steps the proxy takes (stacks, repairs, placeholders), so the bindings exist as it would see them.
+	prepareOutput(raw, detail, promptId);
 	const parsed = ZoomResponseSchema.safeParse(raw);
 	if (!parsed.success) return { bindings: 0 };
 	return bindingMetricsOf(parsed.data, detail);

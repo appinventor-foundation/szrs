@@ -17,6 +17,10 @@ import type { ZoomPrompt } from './types.js';
 //  - a reference can name only numbers and text, so a choice in a dropdown is
 //    described in words;
 //  - the binding rules become the "Editable values" rules;
+//  - a level's blocks are written as `stacks` (each stack a flat list, each
+//    statement input a list), and the proxy builds the nested `next` chains and
+//    inputs (stacks.ts): the first smoke run of v2 failed because two models
+//    miscounted the braces of nested `next` when asked to chain blocks;
 //  - rules on connecting the blocks of one stack, and on blocks that run others
 //    inside them (the screenshots of 2026-11-07 showed a stack split into
 //    separate blocks in about one zoom in five, for both v0 and v1: metric D28);
@@ -53,14 +57,20 @@ Respond with ONLY a valid JSON object — no prose, no markdown fences, no text 
       { "type": "zoom_slug_op", "message0": "do something up to {b12.NUM}", "tooltip": "...", "previousStatement": null, "nextStatement": null },
       ...
     ],
-    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [{ "type": "zoom_slug_op", "id": "s1" }, ...] } }
+    "stacks": [
+      [{ "type": "zoom_slug_op", "id": "s1" }, { "type": "zoom_slug_next_op", "id": "s2" }],
+      [{ "type": "zoom_slug_other_op", "id": "s3" }]
+    ]
   },
   "concept": {
     "blockDefs": [
       { "type": "zoom_slug_keep_score_concept", "message0": "keep a running score", "tooltip": "...", "previousStatement": null, "nextStatement": null },
       ...
     ],
-    "workspaceJson": { "blocks": { "languageVersion": 0, "blocks": [{ "type": "zoom_slug_keep_score_concept", "id": "c1" }, ...] } }
+    "stacks": [
+      [{ "type": "zoom_slug_keep_score_concept", "id": "c1" }],
+      ...
+    ]
   }
 }
 
@@ -77,8 +87,8 @@ Blocks inside one stack run in the stack's own order. Top-level stacks have no o
 
 - One zoom block per logical operation (hiding implementation detail)
 - Keep the operations of one Detail stack together, as one stack of zoom blocks, in the order of that stack's own blocks. A program with several top-level stacks gives several stacks.
-- Connect the blocks of one stack: each block after the first goes in the "next" of the one before it, for example { "type": "zoom_slug_a", "id": "s1", "next": { "block": { "type": "zoom_slug_b", "id": "s2" } } }. Never leave the blocks of one stack as separate top-level blocks. A program with N top-level stacks gives at most N top-level blocks at this level
-- A block that runs other blocks inside it (a loop, a condition) has an "input_statement" arg, with its %N in message0, and the blocks that run inside it go in its "inputs", for example "inputs": { "DO": { "block": { ... } } }. Do not end a label in "do", "then" or "repeat" without such an input
+- Write each stack as one list in "stacks", its blocks one after another in the order of that stack's own blocks: [{ "type": "zoom_slug_a", "id": "s1" }, { "type": "zoom_slug_b", "id": "s2" }]. Do not nest a block inside another to make it follow, and never put the blocks of one stack in separate lists. A program with N top-level stacks gives at most N lists at this level
+- A block that runs other blocks inside it (a loop, a condition) has an "input_statement" arg declared in "args0", with its %N in message0, for example "message0": "repeat while {b6.NUM} %1", "args0": [{ "type": "input_statement", "name": "DO" }]. The blocks that run inside it go in its "inputs", as a list: { "type": "zoom_slug_loop", "id": "s2", "inputs": { "DO": [{ "type": "zoom_slug_a", "id": "s3" }, { "type": "zoom_slug_b", "id": "s4" }] } }. A block that stands for a value goes in an input as one object, not in a list. Do not end a label in "do", "then" or "repeat" without such an input
 - Block types: zoom_<snake_slug>_<operation_in_snake_case>
   (convert slug hyphens to underscores: fizz-buzz-n → fizz_buzz_n)
 - The workspace may keep structural Blockly primitives (controls_for, controls_if, text_print) where semantically meaningful
@@ -90,7 +100,7 @@ Blocks inside one stack run in the stack's own order. Top-level stacks have no o
 - The user message gives the number of blocks and the top-level stacks. Use them to decide how many concept blocks there are:
   - A single-purpose program, or one with a single top-level stack: one concept block.
   - Several top-level stacks: group them by responsibility, usually 2 to 7 concept blocks. Stacks that serve one feature belong to one concept. Never merge unrelated responsibilities only to reduce the count, and never split one stack into several concepts.
-- Concept blocks are independent top-level blocks. They do not need to connect to each other.
+- Each concept block is a stack of its own: a list with one block. Concept blocks do not need to connect to each other.
 - Block types: zoom_<snake_slug>_<concept_name_in_snake_case>_concept
 - Show only the most essential value(s) of each concept, as references (see Editable values)
 - Each concept block is a statement block; the workspace uses ONLY zoom blocks
@@ -102,9 +112,9 @@ Blocks inside one stack run in the stack's own order. Top-level stacks have no o
 - args may only use: field_label, input_value, input_statement, input_dummy, input_end_row. Do not write field_number, field_input or field_dropdown: editable values are written as references (see Editable values)
 - NEVER use extensions, mutator, helpUrl or field_image
 - Labels (message0, tooltip) describe what the block does, never current values: "repeat up to {b7.NUM}", not "repeat up to 10"
-- Every zoom_ block type used in a level's workspaceJson must be defined in that level's blockDefs
+- Every zoom_ block type used in a level's stacks must be defined in that level's blockDefs
 - A zoom block can sit inside a built-in Blockly block only where it fits. A block with "previousStatement" and "nextStatement" goes in a statement input (DO0 of controls_if, DO of controls_for) or after another block, never in a value input (TEXT of text_print, IF0 of controls_if). A block that stands for a value has "output": null instead, and goes only in a value input. Use the input names Blockly gives the built-in block, as the Detail workspace JSON shows them: controls_if has IF0, DO0, IF1, DO1 and ELSE, not IF or DO
-- Give every block in workspaceJson a short unique "id" ("s1", "s2", … for semantic; "c1", … for concept)
+- Give every block in stacks a short unique "id" ("s1", "s2", … for semantic; "c1", … for concept)
 
 ## Editable values
 
@@ -148,5 +158,6 @@ export const v2: ZoomPrompt = {
 	system: V2_SYSTEM,
 	buildUser,
 	params: SHARED_ZOOM_PARAMS,
-	output: 'placeholders'
+	output: 'placeholders',
+	workspace: 'stacks'
 };

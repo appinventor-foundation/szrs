@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { getZoomPrompt } from './prompts/index.js';
 import { readPlan, type ZoomPlan } from './plan.js';
 import { expandPlaceholders } from './placeholders.js';
+import { buildStacks } from './stacks.js';
 import { repairZoomResult } from './repair.js';
 import { checkZoomResult } from './validate.js';
 
@@ -52,6 +53,53 @@ export function buildZoomMessages(
 	];
 }
 
+/**
+ * What a prompt's output format needs done to the parsed JSON before the
+ * schema sees it: build the workspaces from `stacks` (v2 on), repair the
+ * mistakes that have one fix, and turn value placeholders into fields and
+ * bindings. Works in place. `failure` says what the model got wrong, in its own
+ * words; the proxy and the evals scorer both read output through this, so they
+ * cannot disagree.
+ */
+export function prepareOutput(
+	raw: unknown,
+	detailWorkspace: Record<string, unknown>,
+	promptId?: string
+): { repairs: string[]; failure?: ZoomOutputError } {
+	const prompt = getZoomPrompt(promptId);
+	if (prompt.workspace === 'stacks') {
+		const problems = buildStacks(raw);
+		if (problems.length > 0) {
+			return {
+				repairs: [],
+				failure: new ZoomOutputError('schema', inPromptWords(problems.join('\n'), promptId))
+			};
+		}
+	}
+	const repairs = repairZoomResult(raw, detailWorkspace);
+	if (prompt.output === 'placeholders') {
+		const expanded = expandPlaceholders(raw, detailWorkspace);
+		repairs.push(...expanded.repairs);
+		if (expanded.problems.length > 0) {
+			return {
+				repairs,
+				failure: new ZoomOutputError(
+					'validation',
+					inPromptWords(expanded.problems.join('\n'), promptId)
+				)
+			};
+		}
+	}
+	return { repairs };
+}
+
+/** A prompt whose output has `stacks` never wrote a `workspaceJson`, so its errors should not name one. */
+function inPromptWords(message: string, promptId?: string): string {
+	return getZoomPrompt(promptId).workspace === 'stacks'
+		? message.replaceAll('workspaceJson', 'stacks')
+		: message;
+}
+
 // Models often wrap JSON in fences or lead with prose despite being told not
 // to, so both are stripped before parsing. Mistakes with exactly one correct
 // fix are then repaired, and the result is checked against the schema and
@@ -71,21 +119,16 @@ export function parseZoomResponse(
 	const raw: unknown = JSON.parse(cleaned);
 	// Only v1 and later ask for one. Read before the schema drops it.
 	const plan = readPlan(raw);
-	const repairs = repairZoomResult(raw, detailWorkspace);
-	if (getZoomPrompt(promptId).output === 'placeholders') {
-		const expanded = expandPlaceholders(raw, detailWorkspace);
-		repairs.push(...expanded.repairs);
-		if (expanded.problems.length > 0) {
-			throw new ZoomOutputError('validation', expanded.problems.join('\n'));
-		}
-	}
+	const prepared = prepareOutput(raw, detailWorkspace, promptId);
+	if (prepared.failure) throw prepared.failure;
+	const { repairs } = prepared;
 	const result = ZoomResponseSchema.safeParse(raw);
 	if (!result.success) {
-		throw new ZoomOutputError('schema', z.prettifyError(result.error));
+		throw new ZoomOutputError('schema', inPromptWords(z.prettifyError(result.error), promptId));
 	}
 	const problems = checkZoomResult(result.data, detailWorkspace);
 	if (problems.length > 0) {
-		throw new ZoomOutputError('validation', problems.join('\n'));
+		throw new ZoomOutputError('validation', inPromptWords(problems.join('\n'), promptId));
 	}
 	return { result: result.data, repairs, ...(plan && { plan }) };
 }

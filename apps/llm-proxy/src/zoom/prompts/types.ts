@@ -28,4 +28,11 @@ export interface ZoomPrompt {
 	 * into fields and bindings by the proxy). Absent means `bindings`.
 	 */
 	output?: 'bindings' | 'placeholders';
+	/**
+	 * How the model writes a level's blocks: `saved` (v0, v1: a `workspaceJson` in
+	 * Blockly's saved form, with nested `next` and `inputs`) or `stacks` (v2 on:
+	 * a list of stacks, each a flat list of blocks, which the proxy chains, see
+	 * stacks.ts). Absent means `saved`.
+	 */
+	workspace?: 'saved' | 'stacks';
 }

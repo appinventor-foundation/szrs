@@ -49,6 +49,82 @@ describe('repairZoomResult', () => {
 		]);
 	});
 
+	it('adds the missing input arg without repeating a %N the message already has', () => {
+		const raw = zoom({
+			blockDefs: [
+				{ type: 'zoom_x_loop', message0: 'repeat while it holds %1' },
+				{ type: 'zoom_x_op', message0: 'do it', previousStatement: null, nextStatement: null }
+			],
+			workspaceJson: workspace({
+				type: 'zoom_x_loop',
+				id: 's1',
+				inputs: { DO: { block: { type: 'zoom_x_op', id: 's2' } } }
+			})
+		});
+
+		const repairs = repairZoomResult(raw, detail);
+
+		const [def] = raw.semantic.blockDefs as Record<string, unknown>[];
+		expect(def.message0).toBe('repeat while it holds %1');
+		expect(def.args0).toEqual([{ type: 'input_statement', name: 'DO' }]);
+		expect(repairs).toHaveLength(1);
+	});
+
+	it('still appends the %N when the message has no reference to it', () => {
+		const raw = zoom({
+			blockDefs: [
+				{ type: 'zoom_x_loop', message0: 'repeat while it holds' },
+				{ type: 'zoom_x_op', message0: 'do it', previousStatement: null, nextStatement: null }
+			],
+			workspaceJson: workspace({
+				type: 'zoom_x_loop',
+				id: 's1',
+				inputs: { DO: { block: { type: 'zoom_x_op', id: 's2' } } }
+			})
+		});
+		repairZoomResult(raw, detail);
+		expect((raw.semantic.blockDefs as Record<string, unknown>[])[0].message0).toBe(
+			'repeat while it holds %1'
+		);
+	});
+
+	it('does not mistake %10 for %1', () => {
+		const raw = zoom({
+			blockDefs: [
+				{ type: 'zoom_x_loop', message0: 'wait %10 times' },
+				{ type: 'zoom_x_op', message0: 'do it', previousStatement: null, nextStatement: null }
+			],
+			workspaceJson: workspace({
+				type: 'zoom_x_loop',
+				id: 's1',
+				inputs: { DO: { block: { type: 'zoom_x_op', id: 's2' } } }
+			})
+		});
+		repairZoomResult(raw, detail);
+		expect((raw.semantic.blockDefs as Record<string, unknown>[])[0].message0).toBe(
+			'wait %10 times %1'
+		);
+	});
+
+	it('wraps a workspace saved without its outer "blocks" key, which has one meaning', () => {
+		const raw = zoom({
+			workspaceJson: { languageVersion: 0, blocks: [{ type: 'zoom_x_op', id: 'p1' }] }
+		});
+
+		const repairs = repairZoomResult(raw, detail);
+
+		expect(raw.semantic.workspaceJson).toEqual({
+			blocks: { languageVersion: 0, blocks: [{ type: 'zoom_x_op', id: 'p1' }] }
+		});
+		expect(repairs).toEqual(['semantic: wrapped workspaceJson in "blocks", which it was missing']);
+	});
+
+	it('leaves a workspace that already has its wrapper alone', () => {
+		const raw = zoom({});
+		expect(repairZoomResult(raw, detail)).toEqual([]);
+		expect(raw.semantic.workspaceJson).toEqual(workspace({ type: 'zoom_x_op', id: 'p1' }));
+	});
+
 	it('leaves a binding alone when several nested blocks hold the field', () => {
 		const twoNumbers = workspace({
 			type: 'math_arithmetic',

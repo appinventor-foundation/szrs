@@ -21,6 +21,13 @@ export function repairZoomResult(raw: unknown, detailWorkspace: Record<string, u
 			)
 		);
 
+		// A workspace saved as { "languageVersion": 0, "blocks": [...] }, without the outer
+		// "blocks" key, has exactly one meaning: wrap it.
+		if (isRecord(level.workspaceJson) && Array.isArray(level.workspaceJson.blocks)) {
+			level.workspaceJson = { blocks: level.workspaceJson };
+			repairs.push(`${name}: wrapped workspaceJson in "blocks", which it was missing`);
+		}
+
 		const blocks = isRecord(level.workspaceJson) ? allBlocks(level.workspaceJson) : [];
 		for (const block of blocks) {
 			const def = defsByType.get(block.type);
@@ -95,13 +102,21 @@ function inputKind(
 	return null;
 }
 
-/** Adds an arg to args0 and its placeholder to message0. Returns false if message0 isn't a string. */
+/**
+ * Adds an arg to args0, and its placeholder to message0 unless the message
+ * already refers to that number: a model that wrote "run %1" and forgot the
+ * arg has said where it goes, and a second "%1" would repeat it. Returns false
+ * if message0 isn't a string.
+ */
 function addArg(def: Record<string, unknown>, arg: { type: string; name: string }): boolean {
 	if (typeof def.message0 !== 'string') return false;
 	const args = Array.isArray(def.args0) ? def.args0 : [];
 	args.push(arg);
 	def.args0 = args;
-	def.message0 = `${def.message0} %${args.length}`;
+	const placeholder = `%${args.length}`;
+	if (!new RegExp(`${placeholder}(?!\\d)`).test(def.message0)) {
+		def.message0 = `${def.message0} ${placeholder}`;
+	}
 	return true;
 }
 

@@ -186,9 +186,18 @@ describe('v2', () => {
 		expect(v2.system).toContain('Do not write field_number, field_input or field_dropdown');
 	});
 
+	it('asks for stacks, as flat lists, and not for a workspaceJson', () => {
+		expect(v2.workspace).toBe('stacks');
+		expect(getZoomPrompt('v1').workspace).toBeUndefined();
+		expect(v2.system).toContain('"stacks": [');
+		expect(v2.system).not.toContain('"workspaceJson"');
+		expect(v2.system).toContain('Write each stack as one list in "stacks"');
+		expect(v2.system).toContain('Do not nest a block inside another to make it follow');
+	});
+
 	it('says how to connect the blocks of a stack and to put blocks inside a "do" block', () => {
-		expect(v2.system).toContain('goes in the "next" of the one before it');
-		expect(v2.system).toContain('gives at most N top-level blocks at this level');
+		expect(v2.system).toContain('gives at most N lists at this level');
+		expect(v2.system).toContain('"inputs": { "DO": [');
 		expect(v2.system).toContain('Do not end a label in "do", "then" or "repeat"');
 	});
 
