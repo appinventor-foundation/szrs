@@ -6,6 +6,7 @@ import type { ZoomResponse } from '@szrs/llm-proxy-contracts';
 
 import type { ZoomPlan } from '@szrs/llm-proxy/zoom/plan.js';
 import type { Tier } from './corpus/index.js';
+import type { RequestExtras } from './model-registry.js';
 
 /** How one call to the model ended (the same vocabulary as the proxy's attempt log). */
 export type AttemptOutcome = 'ok' | 'parse' | 'schema' | 'validation' | 'truncated' | 'other';
@@ -18,6 +19,14 @@ export interface Attempt {
 	usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 	latencyMs: number;
 	firstTokenMs?: number;
+	/** The provider that served the call, as OpenRouter reported it. */
+	provider?: string;
+	/** Reasoning tokens, when the provider reported them (they count against the output cap). */
+	reasoningTokens?: number;
+	/** Dollars for the call, as OpenRouter reports it (`usage.cost`). */
+	cost?: number;
+	/** Calls repeated after a busy or unavailable answer (429, 502, 503), not counted as attempts. */
+	retries?: number;
 	/** Set when the call itself failed (LiteLLM answered with an error status). */
 	upstreamError?: { status: number; message: string };
 }
@@ -27,7 +36,15 @@ export interface EvalRecord {
 	runId: string;
 	program: { id: string; tier: Tier; blocks: number; topLevelStacks: number; hash: string };
 	prompt: { id: string; fingerprint: string };
-	model: { alias: string; params: { temperature?: number; maxTokens?: number } };
+	model: {
+		/** The registry id (see model-registry.ts). */
+		id: string;
+		/** What was sent as `model` to LiteLLM. */
+		sentAs: string;
+		params: { temperature?: number; maxTokens?: number };
+		/** The extra request fields the run was made under (provider pin, reasoning). */
+		request?: RequestExtras;
+	};
 	sample: number;
 	startedAt: string;
 	/** Every call, in order; the last one made the result, or the run gave up after it. */
@@ -90,6 +107,12 @@ export interface Metrics {
 	/** D21, D27 */
 	promptTokens?: number;
 	completionTokens: number;
+	/** Reasoning tokens over all attempts, when the provider reported them. */
+	reasoningTokens?: number;
+	/** Dollars over all attempts, when the provider reported them. */
+	costUsd?: number;
+	/** Which providers served the attempts, when the answers said (a LiteLLM stream does not). */
+	providers: string[];
 	totalSeconds: number;
 	firstTokenSeconds?: number;
 }

@@ -227,7 +227,7 @@ describe('summary', () => {
 		return {
 			kind: 'baseline',
 			runId: 'test-run',
-			aliases: ['a'],
+			modelIds: ['a'],
 			models: { a: { model: 'glm-test', provider: 'openrouter', vendor: 'z-ai' } },
 			records: [good, bad]
 		};

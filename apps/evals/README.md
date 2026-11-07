@@ -10,13 +10,13 @@ Scripts that measure the real system, and the dated results they produced. They 
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
 | [`cap-and-temperature-spike.ts`](cap-and-temperature-spike.ts) | Per model alias: whether a fixed `temperature` is accepted, which output caps are accepted, whether reasoning tokens use up the cap, how `v0` and `v1` zoom a small program, and whether the prompt id reaches Langfuse. | `pnpm spike:cap <alias> [<alias> ...]` |
 
-| [`baseline/`](baseline/) | The phase 0b baseline: every corpus program (20, written by hand in `baseline/corpus/`) zoomed with each chosen prompt on each chosen model, k times, with the proxy's retry loop and no cache. Stores the raw text of every attempt, scores it with the deterministic metrics (`baseline/metrics.ts`) and can score it again later. | `pnpm baseline:run --models <alias,...> --prompts v0,v1 [--samples k] [--dry-run]`, `pnpm baseline:score <results.json>` |
+| [`baseline/`](baseline/) | The phase 0b baseline: every corpus program (20, written by hand in `baseline/corpus/`) zoomed with each chosen prompt on each chosen model, k times, with the proxy's retry loop and no cache. Stores the raw text of every attempt, scores it with the deterministic metrics (`baseline/metrics.ts`) and can score it again later. | `pnpm baseline:run --models <id,...> --prompts v0,v1 [--samples k] [--dry-run]`, `pnpm baseline:score <results.json>` |
 
 The zoom smoke check lives in the dashboard, because it drives the real demo runner and uses the dashboard's Playwright, Postgres client and test-database helpers: [`apps/dashboard/scripts/smoke-zoom.ts`](../../dashboard/scripts/smoke-zoom.ts) with its programs in `smoke-programs.ts`. It writes its results here, next to the others.
 
 ## Running one
 
-1. Start the local stack (`docker compose up -d` in `infra/llm-proxy`) and make sure `LITELLM_VIRTUAL_KEY` is in `apps/llm-proxy/.env.local` (or `apps/evals/.env.local`).
+1. Start the local stack (`docker compose up -d` in `infra/llm-proxy`; for the baseline, with the wildcard route, see "The baseline") and make sure `LITELLM_VIRTUAL_KEY` is in `apps/llm-proxy/.env.local` (or `apps/evals/.env.local`).
 2. From `apps/evals`, run the script with the aliases to test. To also check Langfuse, load its keys first without printing them: `set -a && . ../../infra/llm-proxy/.env && set +a`.
 3. The script writes its raw results to `results/<date>-<name>.json`. Add a short `results/<date>-<name>.md` with what they mean and what was decided.
 
@@ -36,6 +36,10 @@ Steps, from the repository root:
 The screenshots are in `results/<date>-smoke-check/` and are kept, so they can be looked at by hand; the report embeds them. The custom block set cannot go through the runner, which registers only core blocks, so for that program there are no pictures, and the plan and counts come from the proxy.
 
 ## The baseline
+
+**Models and their conditions.** `--models` takes ids from [`baseline/model-registry.ts`](baseline/model-registry.ts). An entry names the model in full (`openrouter/z-ai/glm-5.3-flash`), which is sent as `model` to LiteLLM, and the extra request fields it runs under: a provider pin (`provider: { order: [...], allow_fallbacks: false }`, so a model is not served by a different host, with a different quantization, from one call to the next) and optionally `reasoning`. These are OpenRouter's own fields, which LiteLLM passes on. Each result records the conditions, the cost in dollars and the reasoning tokens of every call. To benchmark another model, add an entry: nothing is added to LiteLLM's config, and the model does not appear in the dashboard's list.
+
+**The wildcard route (local only).** LiteLLM must be started with a wildcard route for OpenRouter, so that it sends any `openrouter/...` name on: `docker compose -f infra/llm-proxy/docker-compose.yml -f infra/llm-proxy/docker-compose.benchmark.yml up -d litellm`. That layers [`docker/litellm/config.benchmark.yaml`](../../infra/llm-proxy/docker/litellm/config.benchmark.yaml) on the shared config; it is not part of the Dokploy image, and the shared virtual key needs no change. `baseline:run` stops before any call if LiteLLM has no route for a model, and says how to start it. A registry entry can also name an LiteLLM alias (then set `expect`, so a repointed alias is caught).
 
 `pnpm baseline:run ... --dry-run` prints how many runs it would make and an estimate of the input size, and calls nothing. A real run needs LiteLLM up and `LITELLM_VIRTUAL_KEY` (found the way the spike finds it, see the top of this file), costs money, and writes `results/<date>-baseline.json` after every finished run, so a stopped run keeps its work (`--resume` continues it). Ask before running it.
 

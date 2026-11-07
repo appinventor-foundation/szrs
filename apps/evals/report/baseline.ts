@@ -38,6 +38,8 @@ function rowMetrics(m: Metrics): ResultRow['metrics'] {
 		planCoversStacks: m.coverage?.stacksCovered,
 		promptTokens: m.promptTokens,
 		completionTokens: m.completionTokens,
+		reasoningTokens: m.reasoningTokens,
+		costUsd: m.costUsd === undefined ? undefined : Math.round(m.costUsd * 1e6) / 1e6,
 		totalSeconds: seconds(m.totalSeconds)
 	};
 }
@@ -53,13 +55,13 @@ export function baselineReport(json: unknown): Report | undefined {
 
 	const rows: ResultRow[] = scored.flatMap(({ record, metrics }) => {
 		if (!metrics) return [];
-		const found = json.models?.[record.model.alias];
+		const found = json.models?.[record.model.id];
 		return [
 			{
-				model: found?.model ?? record.model.alias,
+				model: found?.model ?? record.model.id,
 				provider: found?.provider,
 				vendor: found?.vendor,
-				alias: record.model.alias,
+				alias: record.model.sentAs,
 				prompt: record.prompt.id,
 				tier: record.program.tier,
 				program: record.program.id,
@@ -67,7 +69,8 @@ export function baselineReport(json: unknown): Report | undefined {
 				metrics: rowMetrics(metrics),
 				facts: {
 					outcome: metrics.valid ? 'valid' : `failed (${metrics.failure ?? 'unknown'})`,
-					attempts: String(metrics.attempts)
+					attempts: String(metrics.attempts),
+					...(metrics.providers.length > 0 && { servedBy: metrics.providers.join(', ') })
 				},
 				detail: {
 					plan: record.plan,
@@ -83,8 +86,10 @@ export function baselineReport(json: unknown): Report | undefined {
 		title: `Zoom baseline: ${json.runId}`,
 		subtitle: [
 			json.ranAt && `Run ${json.ranAt}`,
+			json.code &&
+				`commit ${json.code.commit}${json.code.dirty ? ' (with uncommitted changes)' : ''}`,
 			`${programs.size} programs`,
-			`${json.aliases.length} model${json.aliases.length === 1 ? '' : 's'}`,
+			`${json.modelIds.length} model${json.modelIds.length === 1 ? '' : 's'}`,
 			`${json.records.length} runs`
 		]
 			.filter(Boolean)
@@ -107,7 +112,7 @@ export function baselineReport(json: unknown): Report | undefined {
 
 function programTable(file: BaselineFile, scored: ReturnType<typeof rescore>): string {
 	const columns = [
-		...new Set(scored.map((s) => `${s.record.model.alias}\u0000${s.record.prompt.id}`))
+		...new Set(scored.map((s) => `${s.record.model.id}\u0000${s.record.prompt.id}`))
 	];
 	const programIds = [...new Set(scored.map((s) => s.record.program.id))];
 	const head = columns
@@ -132,7 +137,7 @@ function programTable(file: BaselineFile, scored: ReturnType<typeof rescore>): s
 					const runs = scored.filter(
 						(s) =>
 							s.record.program.id === id &&
-							s.record.model.alias === alias &&
+							s.record.model.id === alias &&
 							s.record.prompt.id === prompt
 					);
 					if (runs.length === 0) return '<td>—</td>';

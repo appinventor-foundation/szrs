@@ -5,6 +5,7 @@
 // Shared by the baseline tests: a fake model that answers from a script, and a valid zoom of `countdown`.
 import { findProgram } from '../../../baseline/corpus/index.js';
 import { prepareProgram } from '../../../baseline/prepare.js';
+import type { BenchmarkModel } from '../../../baseline/model-registry.js';
 import { runOne, type CompleteFn, type Completion } from '../../../baseline/runner.js';
 import { allBlocks } from '@szrs/llm-proxy/zoom/saved-blocks.js';
 
@@ -75,12 +76,17 @@ export function script(...answers: Completion[]): { complete: CompleteFn; reques
 	};
 }
 
-export const run = (complete: CompleteFn, promptId = 'v1') =>
+export const testModel: BenchmarkModel = { id: 'a', model: 'a-alias' };
+
+export const runWith = (model: BenchmarkModel, complete: CompleteFn, promptId = 'v1') =>
 	runOne({
 		runId: 'test-run',
 		prepared: prepareProgram(findProgram('countdown')),
 		promptId,
-		alias: 'a',
+		model,
 		sample: 1,
 		complete
 	});
+
+export const run = (complete: CompleteFn, promptId = 'v1') =>
+	runWith(testModel, complete, promptId);

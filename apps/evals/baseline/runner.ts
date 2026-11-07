@@ -7,6 +7,7 @@ import type { ChatMessage } from '@szrs/llm-proxy-contracts';
 import { promptFingerprint } from '@szrs/llm-proxy/zoom/cache-key.js';
 import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
 import { buildZoomMessages, MAX_ATTEMPTS } from '@szrs/llm-proxy/zoom/zoom.js';
+import type { BenchmarkModel } from './model-registry.js';
 import { programHash, type PreparedProgram } from './prepare.js';
 import type { Attempt, EvalRecord } from './record.js';
 import { judgeAttempt, scoreRecord } from './metrics.js';
@@ -19,11 +20,19 @@ export type Completion =
 			finishReason?: string;
 			usage?: Attempt['usage'];
 			firstTokenMs?: number;
+			provider?: string;
+			reasoningTokens?: number;
+			/** Dollars, as OpenRouter reports it. */
+			cost?: number;
+			retries?: number;
 	  }
 	| { ok: false; status: number; message: string };
 
 export interface CompleteRequest {
-	alias: string;
+	/** Sent as `model`. */
+	model: string;
+	/** Extra fields for the request body (the model's provider pin and reasoning setting). */
+	extra?: Record<string, unknown>;
 	messages: ChatMessage[];
 	temperature?: number;
 	maxTokens?: number;
@@ -37,7 +46,7 @@ export interface RunOneOptions {
 	runId: string;
 	prepared: PreparedProgram;
 	promptId: string;
-	alias: string;
+	model: BenchmarkModel;
 	sample: number;
 	complete: CompleteFn;
 	now?: () => number;
@@ -52,7 +61,7 @@ export interface RunOneOptions {
  * attempt. Never throws for a model failure: the record says what happened.
  */
 export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
-	const { prepared, promptId, alias, runId, sample, complete } = options;
+	const { prepared, promptId, model, runId, sample, complete } = options;
 	const now = options.now ?? Date.now;
 	const prompt = getZoomPrompt(promptId);
 	const attempts: Attempt[] = [];
@@ -61,13 +70,14 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 
 	for (let n = 1; n <= MAX_ATTEMPTS; n++) {
 		const messages = buildZoomMessages(
-			{ model: alias, slug: prepared.slug, workspaceJson: prepared.workspaceJson },
+			{ model: model.id, slug: prepared.slug, workspaceJson: prepared.workspaceJson },
 			lastError,
 			promptId
 		);
 		const started = now();
 		const call = await complete({
-			alias,
+			model: model.model,
+			...(model.request && { extra: { ...model.request } }),
 			messages,
 			...prompt.params,
 			tags: ['zoom', `zoom-prompt:${promptId}`, `baseline:${runId}`],
@@ -89,7 +99,11 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 			latencyMs,
 			...(call.finishReason && { finishReason: call.finishReason }),
 			...(call.usage && { usage: call.usage }),
-			...(call.firstTokenMs !== undefined && { firstTokenMs: call.firstTokenMs })
+			...(call.firstTokenMs !== undefined && { firstTokenMs: call.firstTokenMs }),
+			...(call.provider && { provider: call.provider }),
+			...(call.reasoningTokens !== undefined && { reasoningTokens: call.reasoningTokens }),
+			...(call.cost !== undefined && { cost: call.cost }),
+			...(call.retries && { retries: call.retries })
 		};
 		attempts.push(attempt);
 
@@ -111,7 +125,12 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 			hash: programHash(program)
 		},
 		prompt: { id: promptId, fingerprint: promptFingerprint(prompt) },
-		model: { alias, params: prompt.params },
+		model: {
+			id: model.id,
+			sentAs: model.model,
+			params: prompt.params,
+			...(model.request && { request: model.request })
+		},
 		sample,
 		startedAt,
 		attempts,

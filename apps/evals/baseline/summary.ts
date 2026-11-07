@@ -12,8 +12,14 @@ export interface BaselineFile {
 	kind: 'baseline';
 	runId: string;
 	ranAt?: string;
-	aliases: string[];
-	models?: Record<string, { model: string; provider?: string; vendor?: string }>;
+	/** The commit the run was made on, and whether tracked files differed from it. */
+	code?: { commit: string; dirty: boolean };
+	modelIds: string[];
+	/** By registry id: what the model is, what it was sent as and the conditions it ran under. */
+	models?: Record<
+		string,
+		{ model: string; provider?: string; vendor?: string; sentAs?: string; request?: unknown }
+	>;
 	prompts?: { id: string; fingerprint: string; params: unknown }[];
 	records: EvalRecord[];
 }
@@ -73,9 +79,7 @@ export function cells(scored: ReturnType<typeof rescore>): Cell[] {
 	const groups = new Map<string, typeof scored>();
 	for (const item of scored) {
 		if (!item.metrics) continue;
-		const key = [item.record.model.alias, item.record.prompt.id, item.record.program.tier].join(
-			'|'
-		);
+		const key = [item.record.model.id, item.record.prompt.id, item.record.program.tier].join('|');
 		groups.set(key, [...(groups.get(key) ?? []), item]);
 	}
 	return [...groups.entries()].map(([key, items]) => {

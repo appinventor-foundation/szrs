@@ -14,6 +14,17 @@ export interface ModelIdentity {
 	litellmModel: string;
 }
 
+/** The model a full LiteLLM model string names ("openrouter/z-ai/glm-5.3-flash"), for models that are not aliases. */
+export function identityFromModelString(litellmModel: string): ModelIdentity {
+	const parts = litellmModel.split('/');
+	return {
+		model: parts[parts.length - 1] ?? litellmModel,
+		...(parts.length > 1 && { provider: parts[0] }),
+		...(parts.length > 2 && { vendor: parts[1] }),
+		litellmModel
+	};
+}
+
 /** Reads, from LiteLLM, the model each alias is configured with. Read-only; the same shape the spike records. */
 export async function fetchModels(
 	config: { baseUrl: string; key: string },
@@ -45,4 +56,23 @@ export async function fetchModels(
 		};
 	}
 	return found;
+}
+
+/** The names LiteLLM serves, aliases and wildcard routes ("openrouter/*") alike. Read-only. */
+export async function fetchRouteNames(config: { baseUrl: string; key: string }): Promise<string[]> {
+	const res = await fetch(`${config.baseUrl}/v1/model/info`, {
+		headers: { authorization: `Bearer ${config.key}` }
+	});
+	const body: unknown = await res.json();
+	const entries = isRecord(body) && Array.isArray(body.data) ? body.data : [];
+	return entries.flatMap((entry) =>
+		isRecord(entry) && typeof entry.model_name === 'string' ? [entry.model_name] : []
+	);
+}
+
+/** Whether a route is named exactly, or a wildcard route ("openrouter/*") covers the model. */
+export function isServed(model: string, routes: string[]): boolean {
+	return routes.some(
+		(route) => route === model || (route.endsWith('/*') && model.startsWith(route.slice(0, -1)))
+	);
 }

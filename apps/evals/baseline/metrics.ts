@@ -274,6 +274,13 @@ export function scoreRecord(
 		truncated: record.attempts.some((attempt) => attempt.finishReason === 'length'),
 		bindings: 0,
 		completionTokens,
+		...(record.attempts.some((a) => a.reasoningTokens !== undefined) && {
+			reasoningTokens: record.attempts.reduce((sum, a) => sum + (a.reasoningTokens ?? 0), 0)
+		}),
+		...(record.attempts.some((a) => a.cost !== undefined) && {
+			costUsd: record.attempts.reduce((sum, a) => sum + (a.cost ?? 0), 0)
+		}),
+		providers: [...new Set(record.attempts.flatMap((a) => (a.provider ? [a.provider] : [])))],
 		totalSeconds,
 		...(first?.usage && { promptTokens: first.usage.promptTokens }),
 		...(first?.firstTokenMs !== undefined && { firstTokenSeconds: first.firstTokenMs / 1000 })

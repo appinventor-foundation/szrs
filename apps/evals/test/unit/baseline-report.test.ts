@@ -16,7 +16,7 @@ describe('baseline report', () => {
 		return {
 			kind: 'baseline',
 			runId: 'test-run',
-			aliases: ['a'],
+			modelIds: ['a'],
 			models: { a: { model: 'glm-test', provider: 'openrouter', vendor: 'z-ai' } },
 			records: [good, bad]
 		};
@@ -33,8 +33,19 @@ describe('baseline report', () => {
 		expect(html).not.toContain('<script>alert(1)</script>');
 	});
 
+	it('says which commit the run was made on, and whether the tree was clean', async () => {
+		const base = await file();
+		expect(baselineReport(base)?.subtitle).not.toContain('commit');
+		expect(
+			baselineReport({ ...base, code: { commit: 'abc1234', dirty: false } })?.subtitle
+		).toContain('commit abc1234');
+		expect(
+			baselineReport({ ...base, code: { commit: 'abc1234', dirty: true } })?.subtitle
+		).toContain('abc1234 (with uncommitted changes)');
+	});
+
 	it('leaves other kinds of file to their own adapters', () => {
 		expect(baselineReport({ kind: 'smoke-check' })).toBeUndefined();
-		expect(baselineReport({ aliases: ['a'] })).toBeUndefined();
+		expect(baselineReport({ modelIds: ['a'] })).toBeUndefined();
 	});
 });
