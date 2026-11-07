@@ -13,7 +13,7 @@ Status: written 2026-11-07 on branch `feat/promptphase1`, after phases 0a and 0b
 - 6 of 324 valid zooms (1.9%) do not load in Blockly.
 - `v1` puts more Detail values into labels (5.3 per zoom against 3.0).
 
-**What this session added (2026-11-07, after the baseline):** a diagnosis of the failures (section 3), a change of output format to remove the failing part (section 4), a prompt `v2` that uses it, and stricter structural checks (section 5). `v2` has not been run on a model. Section 6 fixes what its run must show **before** it is run.
+**What this session added (2026-11-07, after the baseline):** a diagnosis of the failures (section 3), a change of output format to remove the failing part (section 4), a prompt `v2` that uses it, stricter structural checks and a rule against split stacks (section 5). `v2` has not been run on a model. Section 6 fixes what its run must show **before** it is run.
 
 **Decisions made in this session** (the user's, with the reasoning kept so they can be reopened):
 
@@ -21,6 +21,7 @@ Status: written 2026-11-07 on branch `feat/promptphase1`, after phases 0a and 0b
 2. The replacement is **value placeholders** (section 4), not a flatter binding shape.
 3. A `v2` zoom has **no bound dropdowns**, and a block type that shows a Detail value must be used by exactly one block. Both are checked against data in section 6.
 4. Before the `v2` run, the user wants to look at screenshots of a small subset of the stored zooms (section 7, step 2), and this document written (done).
+5. After looking at the screenshots, split Semantic stacks are measured (D28) and `v2` carries a rule against them (section 5, split stacks, and criterion C8).
 
 ## 2. How to read this document and v2
 
@@ -36,7 +37,7 @@ v3 does not copy v2. Use v2 for:
 | Hypotheses H0 to H15 and their decision rules                               | Section 10  |
 | The earlier open questions 1 to 10                                          | 12.3        |
 
-Metric ids (D1 to D27) and hypothesis ids (H0 to H15) are the ones the code and the results cite, so they are not renumbered. New ones in this document start at **H16**.
+Metric ids (D1 to D27) and hypothesis ids (H0 to H15) are the ones the code and the results cite, so they are not renumbered. New ones in this document: **D28** (split Semantic stacks) and **H16 to H18**.
 
 ## 3. Why the baseline's runs failed
 
@@ -81,6 +82,14 @@ Open: how the plugin looks and behaves with generated field names, and what a us
 
 The other 5 have a **built-in parent**, whose input kinds the proxy cannot know without Blockly (and the proxy must not depend on Blockly): 3 put a zoom statement block in a value input of `text_print` or `controls_if`, and 2 give `controls_if` input names it does not have (`DO`, `IF1`). `v2`'s prompt carries a rule about it (statement blocks in statement inputs, `"output": null` for a value, the built-in block's own input names), which rests on those 5 cases and is unproven. The plugin already drops a level that fails to load (decision #10, reconstructed in `AGENTS.md`). Whether the plugin should report a load failure back so the proxy retries is not decided and changes the contract.
 
+### Split stacks (found by looking)
+
+The user looked at the gallery of stored zooms (`apps/evals/results/2026-11-07-baseline-screenshots.md`) and saw Semantic blocks that end in "do" or "then" followed by separate blocks that look as if they belong in one stack. The pictures confirm it: `claude-haiku-5.5`'s FizzBuzz `v1` Semantic level has "count from 1 to 100 and do", with no statement input, and a second top-level block, "say Fizz, Buzz…", beside it, neither chained nor nested. `v1`'s prompt already says to keep the operations of one Detail stack together as one stack.
+
+Measured on the stored baseline with no model call, as **D28** (`stackSplit`: the Semantic level has more top-level blocks than the program has top-level stacks; `stackExcess` says by how many): `v0` 32 of 168 valid zooms (19%) and `v1` 35 of 155 re-scored (23%; 36 of 156 before the new validator made one run invalid). On programs with a single Detail stack: `v0` 18 of 58 and `v1` 19 of 53. In the gallery, 10 of the 23 valid `v1` runs. So `v1` did not introduce it and its rule does not stop it. D28 is a proxy: more top-level blocks than Detail stacks is consistent with a split, not proof of one. Few labels end in a dangling do, then or repeat with no statement input (5 in `v1`, 4 in `v0`, by a regex, so approximate), and only 2 of 324 zooms have an empty statement input: the cause is mostly operations not chained with `next`, not empty slots.
+
+`v2`'s prompt now says how to connect the blocks of a stack (`next`, with an example), that a program with N top-level stacks gives at most N top-level blocks at the Semantic level, and that a block whose label ends in "do", "then" or "repeat" needs an `input_statement` holding what runs inside it. This is H18, with criterion C8 in section 6. D28 is a metric first; whether it becomes a blocking check (a retry saying which blocks to connect) is decided from the `v2` run, as section 7, step 5 does for the other checks.
+
 ## 6. What the `v2` run must show (fixed before it runs)
 
 **Run:** `v2` on the same 20 programs and ten models, one sample each, under the baseline's parameters (200 runs; about $1.50 and over an hour, `qwen3.8-27b` the slowest). Before it, a smoke run of the ten models on one small program (about $0.05). Both need the user's explicit go. `v0` and `v1` are not re-run: their stored text is re-scored with the same validators as `v2`, because the new checks already change one `v1` number.
@@ -91,6 +100,7 @@ Hypotheses:
 
 - **H16.** Value placeholders cut schema and binding failures without lowering validity elsewhere.
 - **H17.** Labels of `v2` zooms hold fewer Detail values than `v1`'s, because the references replace the literals.
+- **H18.** The rules on connecting the blocks of a stack, and on a statement input for a "do" block, lower the share of split Semantic stacks (D28) without lowering validity or the multi-concept gains.
 
 Criteria, with the reasons they are these:
 
@@ -103,18 +113,19 @@ Criteria, with the reasons they are these:
 | C5  | What `v1` got right holds: concept count in range in at least 95% of valid zooms, plan coverage 100%, at least 14 of 16 valid compositions at the minimum. | `v2` must not lose the multi-concept gains. The 14 of 16 allows for the sample's noise.                                       |
 | C6  | Bindings per valid zoom are at least 80% of `v1`'s.                                                                                                        | Dropping dropdowns and the one-block rule will cost some bindings; a large drop would be a regression in what users can edit. |
 | C7  | Output tokens per run are within 20% of `v1`'s.                                                                                                            | A format that makes models write much more would cost more than it saves.                                                     |
+| C8  | D28: the share of valid `v2` zooms with a split Semantic level is not above `v1`'s re-scored 23% (35 of 155). The aim, not a pass mark, is half of it.     | H18. The rule is the only change that targets it, and the metric was added after the screenshots, so this is a first measure. |
 
-**Decision rule.** C1 to C3 met and C4 to C7 holding: `v2` is a candidate default, to be decided after a human has looked at its output (section 7, step 2). C1 failing: keep `v1`, and read the new failures by kind before changing anything. A single failed criterion among C4 to C7 is a finding to read, not an automatic verdict.
+**Decision rule.** C1 to C3 met and C4 to C8 holding: `v2` is a candidate default, to be decided after a human has looked at its output (section 7, step 2). C1 failing: keep `v1`, and read the new failures by kind before changing anything. A single failed criterion among C4 to C8 is a finding to read, not an automatic verdict.
 
 **Limits to state in the write-up.** One sample per cell, small L and XL cells (4 and 1 programs), and a difference of one or two runs is not a finding, so C1 to C3 are judged on totals and on whole models. Passing says the format is more reliable, not that the abstractions are better; nothing here measures whether a label is true, whether a behaviour was left out, or whether the concept count is what a reader wants.
 
 ## 7. Phase 1 work, in order
 
 1. **Done in code, committed with this document:** the placeholder format, `v2`, the connection checks, and the evals scorer reading `v2` (sections 4 and 5). Proxy and evals unit tests pass; no model was called.
-2. **Look before measuring more.** Render a small subset of the stored baseline zooms in a browser (no model calls; the stored `result` of each valid run has everything needed) and look: about 4 programs across a few models and both prompts, not all 648 levels. What it can show that no metric here does: label quality, whether Concept levels read sensibly, overlap after `v1`'s layout step (D25, never measured), the all-black blocks, and how the 5 non-loading zooms fail. The script and its dated results go in `apps/evals/`. The same views, for `v2`, are made after step 3 for comparison.
+2. **Looked** (done 2026-11-07; `apps/evals/results/2026-11-07-baseline-screenshots.md`). `pnpm baseline:screenshots` drew 5 programs (FizzBuzz, Dice game, Bank account, Three unrelated programs, Tic-tac-toe) on 5 models (`claude-haiku-5.5`, `gemini-3.5-flash-lite`, `glm-5.3-flash`, `gemma-4-26b-a4b-it`, `qwen3-coder-next`) under `v0` and `v1`: no overlaps in 92 drawn levels (D25), 2 levels the plugin cannot load, `v1` blocks all black and `v0` brown. The user's review: the Semantic levels look sensible; the colours are not fixed yet (step 7); some stacks are split apart (section 5, split stacks). The same views are made for `v2` after step 3 (`--prompts v0,v1,v2`).
 3. **Smoke, then the `v2` run** (section 6). Ask for the go with the command, the cost and the time.
 4. **Ablations (v2 section 7.1), on the better format.** If `v2` passes, ablate `v2` (`v2-noplan`, `v2-nooutline`, `v2-pretty`), not `v1`: H1a, H2 and H10. Each is a new frozen prompt id; costs about as much as one run per variant.
-5. **Promote checks to blocking, by data (v2 section 7.2).** Candidates from this session: a label that shows a Detail value as plain text (D17), and plan coverage. Each becomes blocking when its failure rate says a retry is cheaper than shipping the zoom.
+5. **Promote checks to blocking, by data (v2 section 7.2).** Candidates from this session: a label that shows a Detail value as plain text (D17), plan coverage, and a split Semantic stack (D28). Each becomes blocking when its failure rate says a retry is cheaper than shipping the zoom.
 6. **The invalid-JSON failures** (`gpt-oss-20b`, `deepseek-v4.1-flash-1017`): structured output or a JSON mode where LiteLLM and the provider support it (H7). It needs a probe per model, as `2026-11-07-openrouter-params.md` did for reasoning, before a run.
 7. **The remaining hypotheses** (v2 section 7.3: few-shot H3, retry with the failed output H12, two calls H4, trimming H11, per-model prompts, colour from the host's blocks H1b, bindable field types H13, using the plan in the UI H14, lazy per-level requests H15). Not started, not reordered; most are meaningful only on the format that wins in steps 3 and 4.
 8. **Judge calibration and the human study (v2 sections 7.4 and 9.6 to 9.8).** The only way to answer "is it better". Phase 2 does not start before this has shown what a good Concept level looks like (v2 section 11).

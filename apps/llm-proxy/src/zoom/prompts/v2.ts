@@ -17,6 +17,9 @@ import type { ZoomPrompt } from './types.js';
 //  - a reference can name only numbers and text, so a choice in a dropdown is
 //    described in words;
 //  - the binding rules become the "Editable values" rules;
+//  - rules on connecting the blocks of one stack, and on blocks that run others
+//    inside them (the screenshots of 2026-11-07 showed a stack split into
+//    separate blocks in about one zoom in five, for both v0 and v1: metric D28);
 //  - a block definition rule on where a zoom block may sit inside a built-in
 //    block (5 of the baseline's 6 zooms that passed the checks but did not
 //    load put one in the wrong kind of input, or used a wrong input name).
@@ -74,6 +77,8 @@ Blocks inside one stack run in the stack's own order. Top-level stacks have no o
 
 - One zoom block per logical operation (hiding implementation detail)
 - Keep the operations of one Detail stack together, as one stack of zoom blocks, in the order of that stack's own blocks. A program with several top-level stacks gives several stacks.
+- Connect the blocks of one stack: each block after the first goes in the "next" of the one before it, for example { "type": "zoom_slug_a", "id": "s1", "next": { "block": { "type": "zoom_slug_b", "id": "s2" } } }. Never leave the blocks of one stack as separate top-level blocks. A program with N top-level stacks gives at most N top-level blocks at this level
+- A block that runs other blocks inside it (a loop, a condition) has an "input_statement" arg, with its %N in message0, and the blocks that run inside it go in its "inputs", for example "inputs": { "DO": { "block": { ... } } }. Do not end a label in "do", "then" or "repeat" without such an input
 - Block types: zoom_<snake_slug>_<operation_in_snake_case>
   (convert slug hyphens to underscores: fizz-buzz-n → fizz_buzz_n)
 - The workspace may keep structural Blockly primitives (controls_for, controls_if, text_print) where semantically meaningful
