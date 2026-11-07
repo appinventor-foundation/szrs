@@ -86,6 +86,14 @@ export const BASELINE_METRICS: Record<string, MetricInfo> = {
 		about:
 			'Of the valid zooms, the share whose number of Concept blocks is in the range the corpus author guessed for that program. The ranges are provisional, not golden annotations.'
 	},
+	stackSplit: {
+		label: 'Semantic stacks split apart',
+		code: 'D28',
+		kind: 'rate',
+		better: 'lower',
+		about:
+			'Of the valid zooms, the share whose Semantic level has more top-level blocks than the program has top-level stacks. It means operations of one stack were left as separate blocks instead of being connected. A proxy: more blocks than stacks is consistent with a split, not proof of one.'
+	},
 	compositionRecall: {
 		label: 'Compositions that got at least one concept per program',
 		code: 'D15',
@@ -206,6 +214,7 @@ export const BASELINE_CHART_GROUPS: MetricGroup[] = [
 			'conceptCountInRange',
 			'compositionRecall',
 			'conceptCount',
+			'stackSplit',
 			'planCoversStacks',
 			'semanticCompression',
 			'conceptCompression',

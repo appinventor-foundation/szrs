@@ -343,6 +343,8 @@ export function scoreRecord(
 				conceptCount <= semantic.topLevelBlocks,
 			conceptCount,
 			conceptCountInRange: conceptCount >= min && conceptCount <= max,
+			stackSplit: semantic.topLevelBlocks > program.topLevelStacks,
+			stackExcess: Math.max(0, semantic.topLevelBlocks - program.topLevelStacks),
 			...(program.composedOf !== undefined && {
 				compositionRecall: conceptCount >= program.composedOf
 			}),

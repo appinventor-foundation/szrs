@@ -32,6 +32,7 @@ function rowMetrics(m: Metrics): ResultRow['metrics'] {
 		loads: levels.length > 0 ? rate(levels.every((level) => level.loads)) : undefined,
 		monotonic: rate(m.monotonic),
 		conceptCountInRange: rate(m.conceptCountInRange),
+		stackSplit: rate(m.stackSplit),
 		compositionRecall: rate(m.compositionRecall),
 		conceptCount: m.conceptCount,
 		semanticCompression: m.semantic && Math.round(m.semantic.compression * 100) / 100,

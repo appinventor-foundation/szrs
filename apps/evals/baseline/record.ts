@@ -101,6 +101,13 @@ export interface Metrics {
 	/** D14 */
 	conceptCount?: number;
 	conceptCountInRange?: boolean;
+	/**
+	 * D28: the Semantic level has more top-level blocks than Detail has top-level stacks, which
+	 * means operations of one stack were left as separate blocks instead of being connected.
+	 * `stackExcess` is by how many.
+	 */
+	stackSplit?: boolean;
+	stackExcess?: number;
 	/** D15, for compositions of k independent programs. */
 	compositionRecall?: boolean;
 	/** D18: how alike the two levels' labels are, 0 to 1. */

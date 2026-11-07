@@ -228,6 +228,22 @@ describe('metrics', () => {
 		expect(score(JSON.stringify(json)).metrics.coverage?.stacksCovered).toBe(0);
 	});
 
+	it('flags a Semantic level that leaves the blocks of one stack apart (D28)', () => {
+		// countdown is one Detail stack, so one Semantic top-level block is a stack kept together.
+		expect(prepared.program.topLevelStacks).toBe(1);
+		const together = score(validZoom()).metrics;
+		expect(together).toMatchObject({ stackSplit: false, stackExcess: 0 });
+
+		const zoom = JSON.parse(validZoom()) as ZoomJson;
+		(zoom.semantic.workspaceJson as { blocks: { blocks: unknown[] } }).blocks.blocks.push({
+			type: 'zoom_countdown_count_down',
+			id: 's2'
+		});
+		const apart = score(JSON.stringify(zoom)).metrics;
+		expect(apart.valid).toBe(true);
+		expect(apart).toMatchObject({ stackSplit: true, stackExcess: 1 });
+	});
+
 	it('finds the composition recall and the redundancy of the levels (D15, D18)', () => {
 		const metrics = score(validZoom()).metrics;
 		expect(metrics.compositionRecall).toBeUndefined();
