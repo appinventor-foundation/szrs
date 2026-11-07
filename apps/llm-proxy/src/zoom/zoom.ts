@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { getZoomPrompt } from './prompts/index.js';
 import { readPlan, type ZoomPlan } from './plan.js';
+import { expandPlaceholders } from './placeholders.js';
 import { repairZoomResult } from './repair.js';
 import { checkZoomResult } from './validate.js';
 
@@ -58,7 +59,8 @@ export function buildZoomMessages(
 // suitable for feeding back to the model on retry.
 export function parseZoomResponse(
 	text: string,
-	detailWorkspace: Record<string, unknown>
+	detailWorkspace: Record<string, unknown>,
+	promptId?: string
 ): { result: ZoomResponse; repairs: string[]; plan?: ZoomPlan } {
 	let cleaned = text.trim();
 	const fenceMatch = /```(?:json)?\s*\n([\s\S]*)\n\s*```/.exec(cleaned);
@@ -70,6 +72,13 @@ export function parseZoomResponse(
 	// Only v1 and later ask for one. Read before the schema drops it.
 	const plan = readPlan(raw);
 	const repairs = repairZoomResult(raw, detailWorkspace);
+	if (getZoomPrompt(promptId).output === 'placeholders') {
+		const expanded = expandPlaceholders(raw, detailWorkspace);
+		repairs.push(...expanded.repairs);
+		if (expanded.problems.length > 0) {
+			throw new ZoomOutputError('validation', expanded.problems.join('\n'));
+		}
+	}
 	const result = ZoomResponseSchema.safeParse(raw);
 	if (!result.success) {
 		throw new ZoomOutputError('schema', z.prettifyError(result.error));

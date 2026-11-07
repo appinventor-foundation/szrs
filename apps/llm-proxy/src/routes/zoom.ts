@@ -87,7 +87,7 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 					result: zoom,
 					repairs,
 					plan
-				} = parseZoomResponse(result.response.content, canonical.workspaceJson);
+				} = parseZoomResponse(result.response.content, canonical.workspaceJson, prompt.id);
 				logAttempt(request.log, { ...record, outcome: 'ok', repairs, plan });
 				// Stored in canonical ids, so anyone with the same program can use it.
 				void fastify.zoomCache?.set(key, zoom);
@@ -198,7 +198,11 @@ async function* runZoom(
 		}
 
 		try {
-			const { result: zoom, repairs, plan } = parseZoomResponse(text, canonical.workspaceJson);
+			const {
+				result: zoom,
+				repairs,
+				plan
+			} = parseZoomResponse(text, canonical.workspaceJson, prompt.id);
 			logAttempt(log, { ...record, outcome: 'ok', repairs, plan });
 			yield { type: 'done', result: zoom };
 			// Everyone listening has the result by now. Keeping the run open until it

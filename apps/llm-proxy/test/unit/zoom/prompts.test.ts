@@ -105,7 +105,7 @@ describe('v1', () => {
 	};
 
 	it('is registered, and is the default', () => {
-		expect(zoomPromptIds()).toEqual(['v0', 'v1']);
+		expect(zoomPromptIds()).toEqual(['v0', 'v1', 'v2']);
 		expect(DEFAULT_PROMPT_ID).toBe('v1');
 	});
 
@@ -158,5 +158,49 @@ describe('v1', () => {
 	it('runs under the shared sampling parameters, like v0', () => {
 		expect(v1.params).toEqual(SHARED_ZOOM_PARAMS);
 		expect(v0.params).toEqual(SHARED_ZOOM_PARAMS);
+	});
+});
+
+// v2 is not frozen yet (it has not been baselined), so no hashes are pinned.
+// Freeze it, with the hashes, once it has produced results we rely on.
+describe('v2', () => {
+	const v1 = getZoomPrompt('v1');
+	const v2 = getZoomPrompt('v2');
+
+	it('is registered but is not the default', () => {
+		expect(zoomPromptIds()).toContain('v2');
+		expect(DEFAULT_PROMPT_ID).not.toBe('v2');
+	});
+
+	it('asks for placeholders, which the proxy expands; v0 and v1 ask for bindings', () => {
+		expect(v2.output).toBe('placeholders');
+		expect(getZoomPrompt('v0').output).toBeUndefined();
+		expect(v1.output).toBeUndefined();
+	});
+
+	it('no longer asks the model for bindings or editable args', () => {
+		expect(v2.system).not.toContain('"bindings":');
+		expect(v2.system).not.toContain('## Binding rules');
+		expect(v2.system).toContain('## Editable values');
+		expect(v2.system).toContain('{b12.NUM}');
+		expect(v2.system).toContain('Do not write field_number, field_input or field_dropdown');
+	});
+
+	it('says where a zoom block may sit inside a built-in block', () => {
+		expect(v2.system).toContain('goes in a statement input');
+		expect(v2.system).toContain('"output": null');
+	});
+
+	it('builds the same user message as v1, so the outline and canonical ids carry over', () => {
+		const request = {
+			slug: 'dice-app',
+			workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
+		};
+		expect(v2.buildUser(request)).toBe(v1.buildUser(request));
+		expect(v2.buildUser(request, 'e')).toBe(v1.buildUser(request, 'e'));
+	});
+
+	it('runs under the shared sampling parameters', () => {
+		expect(v2.params).toEqual(SHARED_ZOOM_PARAMS);
 	});
 });

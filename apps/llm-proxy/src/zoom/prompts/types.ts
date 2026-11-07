@@ -22,4 +22,10 @@ export interface ZoomPrompt {
 		previousError?: string
 	): string;
 	params: ZoomPromptParams;
+	/**
+	 * How the model writes editable values: `bindings` (v0, v1: args and a
+	 * `bindings` list) or `placeholders` (v2 on: `{b12.NUM}` in a label, turned
+	 * into fields and bindings by the proxy). Absent means `bindings`.
+	 */
+	output?: 'bindings' | 'placeholders';
 }
