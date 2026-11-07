@@ -10,7 +10,7 @@ import type { ZoomPromptParams } from './types.js';
  * program similar; the cap must fit a plan plus two levels for a large program.
  *
  * `maxTokens` is 32768, decided 2026-11-06 from the spike in
- * apps/llm-proxy/checks/results/2026-11-06-cap-and-temperature-spike.md. The
+ * apps/evals/results/2026-11-06-cap-and-temperature-spike.md. The
  * models we run reason before they answer, and the reasoning counts against
  * the cap: a 14-block program used about 5900 tokens, 72% of the earlier 8192,
  * so a larger program would have been cut off (and a cut-off zoom fails

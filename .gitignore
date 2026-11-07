@@ -52,4 +52,4 @@ vite.config.ts.timestamp-*
 *.iws
 
 # generated HTML reports of check results (pnpm report in apps/llm-proxy)
-apps/llm-proxy/checks/results/*.html
+apps/evals/results/*.html

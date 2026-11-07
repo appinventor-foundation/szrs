@@ -4,9 +4,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { niceTicks, renderReport } from '../../../checks/report/render.js';
-import type { Report, ResultRow } from '../../../checks/report/rows.js';
-import { spikeReport } from '../../../checks/report/spike.js';
+import { niceTicks, renderReport } from '../../report/render.js';
+import type { Report, ResultRow } from '../../report/rows.js';
+import { spikeReport } from '../../report/spike.js';
 
 const row = (overrides: Partial<ResultRow> = {}): ResultRow => ({
 	model: 'alias-a',

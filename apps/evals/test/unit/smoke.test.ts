@@ -4,10 +4,10 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { renderReport } from '../../../checks/report/render.js';
-import type { Report } from '../../../checks/report/rows.js';
-import { smokeReport } from '../../../checks/report/smoke.js';
-import { spikeReport } from '../../../checks/report/spike.js';
+import { renderReport } from '../../report/render.js';
+import type { Report } from '../../report/rows.js';
+import { smokeReport } from '../../report/smoke.js';
+import { spikeReport } from '../../report/spike.js';
 
 const level = (extra: Record<string, unknown> = {}) => ({
 	topBlocks: 3,

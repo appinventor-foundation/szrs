@@ -1,6 +1,6 @@
 # Semantic zoom prompts: a phase-0 fix set, then evidence-driven improvement (v2)
 
-Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset`); this document is now the plan for phase 0b and later.** Third version, written 2026-11-05 against branch `feat/plugindemo` and updated in place after phase 0a. It supersedes `prompt_evaluation_and_improvements.md` and `prompt_evaluation_and_improvements_v1.md`, which are left untouched. Section 3 describes the code as it was before phase 0a, sections 4 to 8 and the appendices are the design as proposed, and section 1 and 6.0 say what the implementation changed; the code and `apps/llm-proxy/checks/results/` are the source of truth. Statements about the code were checked against the files named beside them. Anything about App Inventor internals, provider behaviour, thresholds or literature that was not checked is marked **(to verify)**.
+Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset`); this document is now the plan for phase 0b and later.** Third version, written 2026-11-05 against branch `feat/plugindemo` and updated in place after phase 0a. It supersedes `prompt_evaluation_and_improvements.md` and `prompt_evaluation_and_improvements_v1.md`, which are left untouched. Section 3 describes the code as it was before phase 0a, sections 4 to 8 and the appendices are the design as proposed, and section 1 and 6.0 say what the implementation changed; the code and `apps/evals/results/` are the source of truth. Statements about the code were checked against the files named beside them. Anything about App Inventor internals, provider behaviour, thresholds or literature that was not checked is marked **(to verify)**.
 
 ## 1. Summary
 
@@ -21,7 +21,7 @@ Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset
 - **Prompt id:** the name of a frozen, versioned prompt, such as `v0`, `v1` or `v1-noplan` (P0-1).
 - **Tier:** a size band of programs in the evaluation corpus (S, M, L, XL, XXL; section 9.2).
 
-**Where we are, and where to start (phase 0b).** Phase 0a is done: items P0-1 to P0-10 are implemented, tested and committed (branch `feat/fixset`), `v1` is frozen and is the default prompt, and the spike and the smoke check have run. Section 6.0 says what each item became, and the measurements are in `apps/llm-proxy/checks/results/` (`2026-11-06-cap-and-temperature-spike.md` and `2026-11-06-smoke-check.md`, with 29 screenshots). Where this document and the code disagree, the code is right.
+**Where we are, and where to start (phase 0b).** Phase 0a is done: items P0-1 to P0-10 are implemented, tested and committed (branch `feat/fixset`), `v1` is frozen and is the default prompt, and the spike and the smoke check have run. Section 6.0 says what each item became, and the measurements are in `apps/evals/results/` (`2026-11-06-cap-and-temperature-spike.md` and `2026-11-06-smoke-check.md`, with 29 screenshots). Where this document and the code disagree, the code is right.
 
 **What the implementation changed from the plan** (it matters for what comes next):
 
@@ -36,7 +36,7 @@ Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset
 **Where to start phase 0b.**
 
 1. **Decide first** (these change the baseline's conditions): the output cap against glm's outliers, or limits on reasoning per model; whether `temperature` stays in the shared parameters (both models accepted it, but reasoning models may ignore it); and which models the baseline covers. The spike and the smoke check used two OpenRouter models (`deepseek-v4.1-flash-1017` and `glm-5.3-flash`); the weakest supported model is still undecided, and local models were not tried.
-2. **Build the harness in `apps/llm-proxy/checks/`.** It already holds scripts, dated results and a viewer (`pnpm report`) built around rows of model, prompt, size tier and numbers, so the baseline needs a script and an adapter that maps its records (Appendix D) to rows. `zoom()` in `cap-and-temperature-spike.ts` is a working example of what the runner does: it imports the registry, calls `buildZoomMessages` and `parseZoomResponse` directly, bypasses the cache, and the spike also records which model each alias resolves to (`/v1/model/info`).
+2. **Build the harness in `apps/evals/`** (its own package; phase 0a's `apps/llm-proxy/checks/` moved there). It already holds scripts, dated results and a viewer (`pnpm report`) built around rows of model, prompt, size tier and numbers, so the baseline needs a script and an adapter that maps its records (Appendix D) to rows. `zoom()` in `cap-and-temperature-spike.ts` is a working example of what the runner does: it imports the registry, calls `buildZoomMessages` and `parseZoomResponse` directly, bypasses the cache, and the spike also records which model each alias resolves to (`/v1/model/info`).
 3. **Corpus.** Start with about 20 programs. The five programs in `apps/dashboard/scripts/smoke-programs.ts` are a first few. Headless Blockly (without a browser, `new Blockly.Workspace()` under `tsx`) loads all five, so the loadability metric D5 can run without one; D7 (the binding round trip) needs fields edited programmatically and is still **(to verify)**. How the plugin could replay a stored result for human rating is also still **(to verify)**.
 4. **Use the proxy's log.** Each attempt is logged as one record (prompt id, outcome, finish reason, usage, repairs, program size and the plan), which is enough to compute plan coverage and attempt counts. Plan coverage and label values are measured, not blocking.
 5. **Repository rules** (`AGENTS.md`): ask before creating branches or committing; license header on source files; tests next to the code; `pnpm format` before finishing; the plugin and proxy ship together; checks that call models are never in `pnpm test`.
@@ -471,7 +471,7 @@ A small by-eye check, not an evaluation: six programs run in the dashboard's dem
 
 Checks: every level loads in Blockly; concept count is sensible; blocks do not overlap; record what colours the zoom blocks get on each model (the flat constraint is gone, so models may invent their own); bindings edit the right Detail values; the token count of the input before and after (P0-2, P0-3); the plan appears first and is plausible.
 
-**Outcome (2026-11-06).** The smoke check ran twice on two models through the real demo runner, with the programs in `apps/dashboard/scripts/smoke-programs.ts`: 12 of 12 zooms succeeded on the first attempt, no blocks overlapped, and the plan covered every stack. Two of the six programs above differ: program 4 is the dashboard's greeting-function sample, and program 6 (the custom block set) went straight to the proxy, because the runner registers only core Blockly blocks and cannot load it. Results, findings and 29 screenshots: `apps/llm-proxy/checks/results/2026-11-06-smoke-check.md`.
+**Outcome (2026-11-06).** The smoke check ran twice on two models through the real demo runner, with the programs in `apps/dashboard/scripts/smoke-programs.ts`: 12 of 12 zooms succeeded on the first attempt, no blocks overlapped, and the plan covered every stack. Two of the six programs above differ: program 4 is the dashboard's greeting-function sample, and program 6 (the custom block set) went straight to the proxy, because the runner registers only core Blockly blocks and cannot load it. Results, findings and 29 screenshots: `apps/evals/results/2026-11-06-smoke-check.md`.
 
 **Exit criteria for 0a:** unit and mocha tests green (`pnpm test` equivalent in CI, including `pnpm format:check`); the smoke check passes on two models; the cap and parameter spike is written down per alias; `v1` is frozen (any later change is `v2`); `DEFAULT_PROMPT_ID` is switched to `v1` only when the plugin change is deployed with it.
 
@@ -746,7 +746,7 @@ Once deployed, the plugin knows several useful events without a rating form: a z
 
 The replay gate fits the repository's CI (`.github/workflows/test.yml`; keep `pnpm test` and CI equivalent) because it needs no secrets and no network. Live and judged runs need keys and money, so they stay outside the default `pnpm test`.
 
-**Where the harness lives.** `apps/llm-proxy/checks/`, which has existed since phase 0a (scripts, dated results and the viewer `pnpm report`, built around rows of model, prompt, tier and numbers, so the baseline needs an adapter from its records to rows; `evals/` was the original proposal), or a new `apps/evals` package if it grows (it needs Blockly and datasets):
+**Where the harness lives.** `apps/evals/`, its own package (decided at the start of phase 0b). Phase 0a began it as `apps/llm-proxy/checks/` (scripts, dated results and the viewer `pnpm report`, built around rows of model, prompt, tier and numbers); it moved out because it needs Blockly and datasets, and the proxy must not depend on Blockly. It imports the proxy's prompt registry and parsing through the proxy's `exports` map:
 
 - `corpus/`: programs (JSON), tier, provenance and optional golden annotations.
 - The prompt registry itself (P0-1), imported, so evals test exactly what runs in production.
@@ -1052,7 +1052,7 @@ The core stays host-neutral (section 4.6). A **host profile** collects what is t
 
 ## Appendix F: Phase 0 implementation checklist by file
 
-**Done in phase 0a.** This list was a starting point; the files as built are in 6.0 and in the Architecture notes of `apps/llm-proxy/README.md`. Beyond it, phase 0a added `prompts/params.ts`, `prompts/slug.ts`, `attempt-log.ts`, `outline.ts` (its own file), `apps/llm-proxy/checks/` and `apps/dashboard/scripts/smoke-*.ts`. The list below is kept as proposed.
+**Done in phase 0a.** This list was a starting point; the files as built are in 6.0 and in the Architecture notes of `apps/llm-proxy/README.md`. Beyond it, phase 0a added `prompts/params.ts`, `prompts/slug.ts`, `attempt-log.ts`, `outline.ts` (its own file), `apps/evals/` and `apps/dashboard/scripts/smoke-*.ts`. The list below is kept as proposed.
 
 | Path                                                      | Change                                                                                                           | Item          |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------- |

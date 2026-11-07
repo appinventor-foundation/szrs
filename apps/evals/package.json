@@ -1,0 +1,29 @@
+{
+  "name": "@szrs/evals",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Measurements of the semantic-zoom system on real models: the baseline harness, the cap spike, their dated results and a results viewer. Not part of any deployed service.",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test:unit": "vitest run test/unit",
+    "spike:cap": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local cap-and-temperature-spike.ts",
+    "report": "tsx report/cli.ts"
+  },
+  "dependencies": {
+    "@szrs/llm-proxy": "workspace:*",
+    "@szrs/llm-proxy-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@szrs/eslint-config": "workspace:*",
+    "@szrs/typescript-config": "workspace:*",
+    "@types/node": "26.2.0",
+    "eslint": "10.8.1",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}

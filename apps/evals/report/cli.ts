@@ -5,7 +5,7 @@
 /**
  * Turns results JSON into a self-contained HTML report beside each file:
  *
- *   pnpm report                      every checks/results/*.json
+ *   pnpm report                      every results/*.json
  *   pnpm report path/to/results.json one file
  *
  * The HTML is generated, so it is not committed (see .gitignore).
@@ -37,9 +37,7 @@ for (const file of files) {
 	const json: unknown = JSON.parse(readFileSync(file, 'utf8'));
 	const report = ADAPTERS.map((adapt) => adapt(json)).find((found) => found !== undefined);
 	if (!report) {
-		console.error(
-			`${file}: not a results file this viewer knows (add an adapter in checks/report)`
-		);
+		console.error(`${file}: not a results file this viewer knows (add an adapter in report)`);
 		failed = true;
 		continue;
 	}

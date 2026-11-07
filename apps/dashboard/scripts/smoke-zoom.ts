@@ -5,7 +5,7 @@
 // The zoom smoke check: runs the programs in smoke-programs.ts through the real
 // demo runner on each model alias, with real model calls, and records what
 // appears. It needs a running LLM proxy and a dashboard server pointed at the
-// TEST database and at that proxy; see apps/llm-proxy/checks/README.md for the
+// TEST database and at that proxy; see apps/evals/README.md for the
 // exact commands. Never touches the dev database: it empties and refills the
 // demos table of `dashboard_test`, like the e2e tests do.
 //
@@ -37,7 +37,7 @@ const aliases = (option('models') ?? '').split(',').filter(Boolean);
 const proxyLog = option('proxy-log');
 const proxyUrl = option('proxy') ?? 'http://localhost:3000';
 const only = option('only')?.split(',');
-const resultsDir = resolve(here, '../../llm-proxy/checks/results');
+const resultsDir = resolve(here, '../../evals/results');
 const shotsName = `${date}-smoke-check`;
 const shotsDir = resolve(option('out') ?? resultsDir, shotsName);
 const jsonFile = resolve(option('out') ?? resultsDir, `${shotsName}.json`);

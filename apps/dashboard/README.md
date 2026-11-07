@@ -49,7 +49,7 @@ Run these in `apps/dashboard`. The repo root has Turborepo equivalents that cove
 | `pnpm check-types`   | `svelte-check`, failing on warnings                                       |
 | `pnpm test:unit`     | Vitest: server tests in Node, component tests in a browser                |
 | `pnpm test:e2e`      | Playwright against a production build and the `dashboard_test` database   |
-| `pnpm smoke:zoom`    | Zoom smoke check on real models (see `apps/llm-proxy/checks/README.md`)   |
+| `pnpm smoke:zoom`    | Zoom smoke check on real models (see `apps/evals/README.md`)              |
 | `pnpm db:generate`   | Generate a migration from schema changes                                  |
 | `pnpm db:migrate`    | Apply migrations to the database in `DATABASE_URL`                        |
 | `pnpm db:studio`     | Browse the database in Drizzle Studio                                     |

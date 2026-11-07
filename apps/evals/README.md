@@ -1,4 +1,8 @@
-# Checks
+# Evals
+
+`apps/evals` is its own package, not part of the proxy or any deployed service: it imports the proxy's prompt registry, parsing and validation through the proxy's `exports` map, and uses headless Blockly (`blockly` is a dependency here, and must stay out of the proxy). It started in phase 0a as `apps/llm-proxy/checks/`; the dated results written then keep their original text, which still says `checks/` and `apps/llm-proxy`.
+
+Run everything from `apps/evals`. Scripts read `LITELLM_VIRTUAL_KEY` from `apps/llm-proxy/.env.local` (so there is one copy of the key), then from `apps/evals/.env.local` if that exists.
 
 Scripts that measure the real system, and the dated results they produced. They call real models, so they cost money and are not part of `pnpm test`: nothing here runs in CI.
 
@@ -10,8 +14,8 @@ The zoom smoke check lives in the dashboard, because it drives the real demo run
 
 ## Running one
 
-1. Start the local stack (`docker compose up -d` in `infra/llm-proxy`) and make sure `LITELLM_VIRTUAL_KEY` is in `apps/llm-proxy/.env.local`.
-2. From `apps/llm-proxy`, run the script with the aliases to test. To also check Langfuse, load its keys first without printing them: `set -a && . ../../infra/llm-proxy/.env && set +a`.
+1. Start the local stack (`docker compose up -d` in `infra/llm-proxy`) and make sure `LITELLM_VIRTUAL_KEY` is in `apps/llm-proxy/.env.local` (or `apps/evals/.env.local`).
+2. From `apps/evals`, run the script with the aliases to test. To also check Langfuse, load its keys first without printing them: `set -a && . ../../infra/llm-proxy/.env && set +a`.
 3. The script writes its raw results to `results/<date>-<name>.json`. Add a short `results/<date>-<name>.md` with what they mean and what was decided.
 
 ## The smoke check
@@ -25,13 +29,13 @@ Steps, from the repository root:
 3. Build the dashboard and its dependencies, with placeholder values for the variables the build requires: `DATABASE_URL=postgresql://build:build@localhost:5432/build BETTER_AUTH_SECRET=build-only-placeholder-not-a-secret-0000 DASHBOARD_URL=http://localhost:4173 PROXY_URL=http://localhost:3000 pnpm turbo run build --filter=@szrs/dashboard`.
 4. Start the dashboard against the **test** database and the real proxy, as the e2e config does (the credentials are the public ones in `apps/dashboard/tests/support/auth.ts`): from `apps/dashboard`, `PORT=4173 PROTOCOL_HEADER=x-forwarded-proto DASHBOARD_URL=http://localhost:4173 PROXY_URL=http://localhost:3000 DATABASE_URL=postgresql://dashboard:dashboard@localhost:5433/dashboard_test BETTER_AUTH_SECRET=e2e-secret-e2e-secret-e2e-secret-0123456789 INITIAL_ADMIN_NAME="E2E Admin" INITIAL_ADMIN_EMAIL=admin@example.com INITIAL_ADMIN_PASSWORD=e2e-admin-password node build`.
 5. Run it, from `apps/dashboard`: `pnpm smoke:zoom --models <alias>,<alias> --proxy-log /tmp/proxy.log`. `--only <program>[,<program>]` runs some of the programs.
-6. Add the model names and make the report, from `apps/llm-proxy`: `pnpm spike:cap --models-only checks/results/<date>-smoke-check.json`, then `pnpm report`.
+6. Add the model names and make the report, from `apps/evals`: `pnpm spike:cap --models-only results/<date>-smoke-check.json`, then `pnpm report`.
 
 The screenshots are in `results/<date>-smoke-check/` and are kept, so they can be looked at by hand; the report embeds them. The custom block set cannot go through the runner, which registers only core blocks, so for that program there are no pictures, and the plan and counts come from the proxy.
 
 ## Viewing results
 
-`pnpm report` (from `apps/llm-proxy`) turns every `results/*.json` into a self-contained `.html` page beside it, and `pnpm report path/to/file.json` does one. Open the file in a browser: it needs no server and loads nothing from the network. The HTML is generated, so it is gitignored.
+`pnpm report` (from `apps/evals`) turns every `results/*.json` into a self-contained `.html` page beside it, and `pnpm report path/to/file.json` does one. Open the file in a browser: it needs no server and loads nothing from the network. The HTML is generated, so it is gitignored.
 
 The page leads with each model's own name (`glm-5.3-flash`), with its provider beside it and the config alias only as a hint, because the alias says nothing about what was measured. The spike records what each alias resolves to in its `models` block (from LiteLLM's `/v1/model/info`). To add it to a result written without one, run `pnpm spike:cap --models-only <results.json>`; that makes no model calls.
 

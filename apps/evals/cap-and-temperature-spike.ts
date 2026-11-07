@@ -14,27 +14,27 @@
  * reaches Langfuse. It makes real model calls (a few dozen small ones and four
  * zooms per alias), so it costs a little money. It never prints keys.
  *
- * Run from apps/llm-proxy, with LiteLLM up (see checks/README.md):
+ * Run from apps/evals, with LiteLLM up (see README.md):
  *
  *   pnpm spike:cap openrouter openrouter-2
  *
  * To add the model each alias resolves to into an existing results file, without
  * making any model call:
  *
- *   pnpm spike:cap --models-only checks/results/<file>.json
+ *   pnpm spike:cap --models-only results/<file>.json
  *
- * Results go to checks/results/<date>-cap-and-temperature-spike.json.
+ * Results go to results/<date>-cap-and-temperature-spike.json.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { chatCompletionStream } from '../src/lib/litellm.js';
-import { traceMetadata } from '../src/zoom/attempt-log.js';
-import { normalizeWorkspace } from '../src/zoom/normalize.js';
-import { buildOutline } from '../src/zoom/outline.js';
-import { getZoomPrompt } from '../src/zoom/prompts/index.js';
-import { buildZoomMessages, parseZoomResponse } from '../src/zoom/zoom.js';
+import { chatCompletionStream } from '@szrs/llm-proxy/lib/litellm.js';
+import { traceMetadata } from '@szrs/llm-proxy/zoom/attempt-log.js';
+import { normalizeWorkspace } from '@szrs/llm-proxy/zoom/normalize.js';
+import { buildOutline } from '@szrs/llm-proxy/zoom/outline.js';
+import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
+import { buildZoomMessages, parseZoomResponse } from '@szrs/llm-proxy/zoom/zoom.js';
 
 const BASE = process.env.LITELLM_BASE_URL ?? 'http://localhost:4000';
 const KEY = process.env.LITELLM_VIRTUAL_KEY ?? '';
