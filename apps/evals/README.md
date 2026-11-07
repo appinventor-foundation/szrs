@@ -10,6 +10,8 @@ Scripts that measure the real system, and the dated results they produced. They 
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
 | [`cap-and-temperature-spike.ts`](cap-and-temperature-spike.ts) | Per model alias: whether a fixed `temperature` is accepted, which output caps are accepted, whether reasoning tokens use up the cap, how `v0` and `v1` zoom a small program, and whether the prompt id reaches Langfuse. | `pnpm spike:cap <alias> [<alias> ...]` |
 
+| [`baseline/`](baseline/) | The phase 0b baseline: every corpus program (20, written by hand in `baseline/corpus/`) zoomed with each chosen prompt on each chosen model, k times, with the proxy's retry loop and no cache. Stores the raw text of every attempt, scores it with the deterministic metrics (`baseline/metrics.ts`) and can score it again later. | `pnpm baseline:run --models <alias,...> --prompts v0,v1 [--samples k] [--dry-run]`, `pnpm baseline:score <results.json>` |
+
 The zoom smoke check lives in the dashboard, because it drives the real demo runner and uses the dashboard's Playwright, Postgres client and test-database helpers: [`apps/dashboard/scripts/smoke-zoom.ts`](../../dashboard/scripts/smoke-zoom.ts) with its programs in `smoke-programs.ts`. It writes its results here, next to the others.
 
 ## Running one
@@ -33,6 +35,12 @@ Steps, from the repository root:
 
 The screenshots are in `results/<date>-smoke-check/` and are kept, so they can be looked at by hand; the report embeds them. The custom block set cannot go through the runner, which registers only core blocks, so for that program there are no pictures, and the plan and counts come from the proxy.
 
+## The baseline
+
+`pnpm baseline:run ... --dry-run` prints how many runs it would make and an estimate of the input size, and calls nothing. A real run needs LiteLLM up and `LITELLM_VIRTUAL_KEY` (found the way the spike finds it, see the top of this file), costs money, and writes `results/<date>-baseline.json` after every finished run, so a stopped run keeps its work (`--resume` continues it). Ask before running it.
+
+Each program is loaded into a headless Blockly workspace and saved first, as the plugin does, so its blocks have ids; the proxy then canonicalises it. A run follows the proxy's zoom route: up to three attempts, a retry carries the last error, a truncated answer stops the run. `pnpm baseline:score` and the report score every record again from its stored text with the validators as they are today, so a fixed validator needs no new model calls. D5 (does it load) runs in headless Blockly; what a headless workspace cannot show (layout, rendering, D25) and the binding round trip (D7) are not measured yet. The expected concept counts in the corpus are the author's provisional guesses, not golden annotations.
+
 ## Viewing results
 
 `pnpm report` (from `apps/evals`) turns every `results/*.json` into a self-contained `.html` page beside it, and `pnpm report path/to/file.json` does one. Open the file in a browser: it needs no server and loads nothing from the network. The HTML is generated, so it is gitignored.
@@ -41,7 +49,7 @@ The page leads with each model's own name (`glm-5.3-flash`), with its provider b
 
 The page shows a table of what the check found, then one chart per measure, grouped by model with one colour per prompt (the same colour in every chart), and the raw outputs. Hover or focus a bar for its value and the number of runs behind it. Every chart has a table view, and light and dark mode follow the system setting.
 
-The viewer is built around rows, not around any one check: a row is a model, a prompt, an optional size tier and some numbers. Any number in a row gets a chart, and rows of different tiers get separate panels on one scale. A new kind of result needs only an adapter in `report/` that maps its JSON to rows (`report/spike.ts` is the example), registered in `report/cli.ts`. The baseline's records get one when the baseline exists.
+The viewer is built around rows, not around any one check: a row is a model, a prompt, an optional size tier and some numbers. Any number in a row gets a chart, and rows of different tiers get separate panels on one scale. A new kind of result needs only an adapter in `report/` that maps its JSON to rows (`report/spike.ts` is the example), registered in `report/cli.ts`. `report/baseline.ts` is the baseline's.
 
 ## Pitfalls when writing a check
 

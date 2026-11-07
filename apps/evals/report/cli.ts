@@ -14,14 +14,19 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { baselineReport } from './baseline.js';
 import { renderReport } from './render.js';
 import type { Report } from './rows.js';
 import { smokeReport } from './smoke.js';
 import { spikeReport } from './spike.js';
 
 // One adapter per kind of result: it returns a Report, or undefined for a file
-// that is not its kind. The baseline's records get an adapter here when it exists.
-const ADAPTERS: ((json: unknown) => Report | undefined)[] = [spikeReport, smokeReport];
+// that is not its kind. The baseline's adapter reads baseline/ records.
+const ADAPTERS: ((json: unknown) => Report | undefined)[] = [
+	spikeReport,
+	smokeReport,
+	baselineReport
+];
 
 const resultsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'results');
 const requested = process.argv.slice(2);
