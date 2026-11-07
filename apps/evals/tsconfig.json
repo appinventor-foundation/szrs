@@ -4,5 +4,5 @@
 		"noEmit": true
 	},
 	"include": ["."],
-	"exclude": ["node_modules", "dist", "results"]
+	"exclude": ["node_modules", "dist", "results", "screenshots/page"]
 }

@@ -6,7 +6,7 @@
   "type": "module",
   "description": "Measurements of the semantic-zoom system on real models: the baseline harness, the cap spike, their dated results and a results viewer. Not part of any deployed service.",
   "scripts": {
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --noEmit -p screenshots/page",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:unit": "vitest run test/unit",
@@ -14,6 +14,7 @@
     "probe:openrouter": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local openrouter-params-probe.ts",
     "baseline:run": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local baseline/run-baseline.ts",
     "baseline:score": "tsx baseline/score.ts",
+    "baseline:screenshots": "tsx screenshots/render.ts",
     "report": "tsx report/cli.ts"
   },
   "dependencies": {
@@ -22,12 +23,14 @@
     "blockly": "13.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@szrs/eslint-config": "workspace:*",
     "@szrs/typescript-config": "workspace:*",
     "@types/node": "26.2.0",
     "eslint": "10.8.1",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
+    "vite": "8.3.5",
     "vitest": "4.1.12"
   }
 }

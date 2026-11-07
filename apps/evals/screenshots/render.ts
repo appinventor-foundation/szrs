@@ -1,0 +1,194 @@
+// Copyright 2026 appinventor.org
+// Released under the Apache License, Version 2.0
+// http://www.apache.org/licenses/LICENSE-2.0
+
+/**
+ * Draws the zooms the baseline stored, in a real browser, and keeps the
+ * pictures: no model is called, so it costs nothing. Run from apps/evals:
+ *
+ *   pnpm baseline:screenshots [--results results/2026-11-07-baseline.json]
+ *                             [--programs a,b] [--models a,b] [--prompts v0,v1]
+ *
+ * For each program it draws the Detail program, then for each model and prompt
+ * the run's Semantic and Concept levels, through the plugin's own
+ * `ZoomLevelLoader` (see page/main.ts). A run that never produced a zoom has
+ * no pictures and is recorded as invalid; a level the plugin cannot load is
+ * recorded with the plugin's error.
+ *
+ * Writes results/<date>-baseline-screenshots.json and, beside it, a folder of
+ * the same name with the PNGs. An existing result is never overwritten (a
+ * second run is `-2`). `pnpm report` turns the JSON into a gallery.
+ */
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { chromium } from '@playwright/test';
+import { build } from 'vite';
+
+import { findProgram } from '../baseline/corpus/index.js';
+import { prepareProgram } from '../baseline/prepare.js';
+import type { EvalRecord } from '../baseline/record.js';
+import { freshPath } from '../results-path.js';
+import type { Drawn, Job } from './page/types.js';
+import {
+	DEFAULT_MODELS,
+	DEFAULT_PROGRAMS,
+	DEFAULT_PROMPTS,
+	detailFile,
+	levelFile,
+	selectRecords,
+	type LevelName
+} from './plan.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const resultsDir = resolve(here, '..', 'results');
+
+function option(name: string): string | undefined {
+	const at = process.argv.indexOf(`--${name}`);
+	return at >= 0 ? process.argv[at + 1] : undefined;
+}
+const list = (name: string, fallback: string[]): string[] =>
+	option(name)
+		?.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean) ?? fallback;
+
+/** The page's code as one script, so it needs no server and no file:// module loading. */
+async function bundle(): Promise<string> {
+	const pageDir = resolve(here, 'page');
+	const output = await build({
+		root: pageDir,
+		configFile: false,
+		logLevel: 'warn',
+		resolve: { dedupe: ['blockly'] },
+		define: { 'process.env.NODE_ENV': '"production"' },
+		build: {
+			write: false,
+			minify: true,
+			lib: { entry: resolve(pageDir, 'main.ts'), formats: ['iife'], name: 'zoomShots' }
+		}
+	});
+	const outputs = Array.isArray(output) ? output : [output];
+	const chunk = outputs
+		.flatMap((one) => ('output' in one ? one.output : []))
+		.find((item) => item.type === 'chunk');
+	if (!chunk || chunk.type !== 'chunk') throw new Error('the page did not bundle');
+	return chunk.code;
+}
+
+const resultsFile = resolve(option('results') ?? resolve(resultsDir, '2026-11-07-baseline.json'));
+const baseline = JSON.parse(readFileSync(resultsFile, 'utf8')) as {
+	runId: string;
+	models: Record<string, unknown>;
+	records: EvalRecord[];
+};
+const programs = list('programs', DEFAULT_PROGRAMS);
+const models = list('models', DEFAULT_MODELS);
+const prompts = list('prompts', DEFAULT_PROMPTS);
+const records = selectRecords(baseline.records, programs, models, prompts);
+
+const day = new Date().toISOString().slice(0, 10);
+const manifestPath = freshPath(resultsDir, `${day}-baseline-screenshots`, '.json');
+const folder = basename(manifestPath, '.json');
+const shotsDir = resolve(resultsDir, folder);
+mkdirSync(shotsDir, { recursive: true });
+
+const browser = await chromium.launch();
+try {
+	const page = await browser.newPage({ viewport: { width: 1900, height: 2700 } });
+	await page.setContent(
+		'<!doctype html><meta charset="utf-8"><body style="margin:0;background:#fff"><div id="ws"></div></body>'
+	);
+	await page.addScriptTag({ content: await bundle() });
+
+	/** Draws one job and saves the picture of it, unless drawing failed. */
+	async function draw(job: Job, file: string): Promise<Drawn & { file?: string }> {
+		// Strings, not functions: this file has no DOM types, and the page's code is the bundle.
+		const drawn = (await page.evaluate(`window.drawJob(${JSON.stringify(job)})`)) as Drawn;
+		if (drawn.error) return drawn;
+		// Two frames, so the resize and the scroll have been painted.
+		await page.evaluate(
+			'new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))'
+		);
+		await page.locator('#ws').screenshot({ path: resolve(shotsDir, file) });
+		return { ...drawn, file };
+	}
+
+	const programEntries = [];
+	const prepared = new Map<
+		string,
+		{ detail: Record<string, unknown>; blockDefs?: Job['blockDefs'] }
+	>();
+	for (const id of programs) {
+		const program = findProgram(id);
+		const { workspaceJson } = prepareProgram(program);
+		prepared.set(id, { detail: workspaceJson, blockDefs: program.blockDefs });
+		const drawn = await draw(
+			{ detail: workspaceJson, blockDefs: program.blockDefs },
+			detailFile(id)
+		);
+		console.log(`${id}: Detail, ${drawn.blocks} blocks${drawn.error ? ` — ${drawn.error}` : ''}`);
+		programEntries.push({
+			id,
+			title: program.title,
+			tier: program.tier,
+			blocks: program.blocks,
+			topLevelStacks: program.topLevelStacks,
+			expectedConcepts: program.expectedConcepts,
+			detail: drawn
+		});
+	}
+
+	const items = [];
+	for (const record of records) {
+		const { detail, blockDefs } = prepared.get(record.program.id) ?? { detail: {} };
+		const base = {
+			program: record.program.id,
+			model: record.model.id,
+			prompt: record.prompt.id,
+			attempts: record.attempts.length,
+			...(record.metrics?.failure && { failure: record.metrics.failure }),
+			...(record.metrics?.failureMessage && {
+				failureMessage: record.metrics.failureMessage.slice(0, 400)
+			})
+		};
+		if (!record.result) {
+			items.push({ ...base, status: 'invalid' as const });
+			console.log(`${record.program.id} / ${record.model.id} / ${record.prompt.id}: invalid`);
+			continue;
+		}
+		const levels: Record<string, Drawn & { file?: string }> = {};
+		for (const level of ['semantic', 'concept'] as LevelName[]) {
+			levels[level] = await draw(
+				{ detail, blockDefs, level: record.result[level] },
+				levelFile(record.program.id, record.model.id, record.prompt.id, level)
+			);
+		}
+		const note = Object.entries(levels)
+			.map(
+				([name, drawn]) => `${name} ${drawn.error ? 'FAILED to load' : `${drawn.topBlocks} top`}`
+			)
+			.join(', ');
+		console.log(`${record.program.id} / ${record.model.id} / ${record.prompt.id}: ${note}`);
+		items.push({ ...base, status: 'ok' as const, levels });
+	}
+
+	writeFileSync(
+		manifestPath,
+		JSON.stringify({
+			kind: 'baseline-screenshots',
+			ranAt: new Date().toISOString(),
+			source: basename(resultsFile),
+			sourceRunId: baseline.runId,
+			screenshots: folder,
+			prompts,
+			models: Object.fromEntries(models.map((id) => [id, baseline.models[id]])),
+			programs: programEntries,
+			items
+		})
+	);
+	console.log(`written ${manifestPath} and ${shotsDir}`);
+} finally {
+	await browser.close();
+}

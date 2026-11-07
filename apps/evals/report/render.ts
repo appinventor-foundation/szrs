@@ -515,7 +515,12 @@ h3{font-size:15px;margin:0 0 4px}
 /* One column: a zoomed level is a small group of blocks on a large canvas, and needs the width to be read. */
 .gallery{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 12px}
 .shot{margin:0}
+/* Prompts side by side (one column on a phone); each column stacks its levels. */
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.compare>div{min-width:0}
+h4{font-size:13px;margin:0 0 4px;color:var(--secondary)}
 .shot img{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:6px;background:#fff}
+.shot.natural img{width:auto;max-width:100%}
 .shot figcaption{font-size:12px;color:var(--secondary);margin:4px 0 0}
 .notes{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0;font-size:13px}
 .notes dt{color:var(--secondary)}

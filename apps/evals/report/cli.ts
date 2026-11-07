@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { baselineReport } from './baseline.js';
 import { renderReport } from './render.js';
 import type { Report } from './rows.js';
+import { screenshotsReport } from './screenshots.js';
 import { smokeReport } from './smoke.js';
 import { spikeReport } from './spike.js';
 
@@ -25,6 +26,7 @@ import { spikeReport } from './spike.js';
 const ADAPTERS: ((json: unknown) => Report | undefined)[] = [
 	spikeReport,
 	smokeReport,
+	screenshotsReport,
 	baselineReport
 ];
 
