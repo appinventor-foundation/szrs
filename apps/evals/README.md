@@ -68,7 +68,7 @@ The viewer is built around rows, not around any one check: a row is a model, a p
 ## Conventions
 
 - **Scripts stay in the repo** next to their results, so a result can be reproduced. A script is type-checked (`pnpm check-types`) and linted like the rest of the app.
-- **Results are dated and not edited later.** A new run is a new file. The one addition is an "Outcome" section recording what was decided because of them. The `.md` says which aliases resolved to which models, because aliases can be repointed.
+- **Results are dated and not edited later.** A new run is a new file, and no script overwrites a result: the spike, the probe and the smoke check add `-2`, `-3` to a name that is taken, and the baseline's default name has the time in it (an existing run file is refused unless you pass `--resume`). A resumed baseline run must be on the commit the file was made on, and its header grows to describe every record in it. The one addition is an "Outcome" section recording what was decided because of them. The `.md` says which aliases resolved to which models, because aliases can be repointed.
 - **No secrets.** The scripts never print keys, and the JSON holds only model outputs, token counts and timings.
 
 ## Results

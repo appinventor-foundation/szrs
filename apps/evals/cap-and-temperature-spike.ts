@@ -36,6 +36,8 @@ import { buildOutline } from '@szrs/llm-proxy/zoom/outline.js';
 import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
 import { buildZoomMessages, parseZoomResponse } from '@szrs/llm-proxy/zoom/zoom.js';
 
+import { freshPath } from './results-path.js';
+
 const BASE = process.env.LITELLM_BASE_URL ?? 'http://localhost:4000';
 const KEY = process.env.LITELLM_VIRTUAL_KEY ?? '';
 const LANGFUSE_HOST = process.env.LANGFUSE_HOST_URL ?? 'http://localhost:3001';
@@ -47,7 +49,7 @@ const aliases = modelsOnly ? [] : args;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const date = new Date().toISOString().slice(0, 10);
-const outFile = resolve(here, 'results', `${date}-cap-and-temperature-spike.json`);
+const outFile = freshPath(resolve(here, 'results'), `${date}-cap-and-temperature-spike`, '.json');
 
 type Message = { role: 'user'; content: string };
 const reply: Message[] = [{ role: 'user', content: 'Reply with the single word: ok' }];

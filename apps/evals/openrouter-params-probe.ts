@@ -33,13 +33,14 @@ import { findBenchmarkModel, type BenchmarkModel } from './baseline/model-regist
 import { fetchModels, identityFromModelString } from './baseline/models.js';
 import { prepareProgram } from './baseline/prepare.js';
 import { runOne } from './baseline/runner.js';
+import { freshPath } from './results-path.js';
 
 const BASE = process.env.LITELLM_BASE_URL ?? 'http://localhost:4000';
 const KEY = process.env.LITELLM_VIRTUAL_KEY ?? '';
 const ids = process.argv.slice(2);
 const here = dirname(fileURLToPath(import.meta.url));
 const date = new Date().toISOString().slice(0, 10);
-const outFile = resolve(here, 'results', `${date}-openrouter-params.json`);
+const outFile = freshPath(resolve(here, 'results'), `${date}-openrouter-params`, '.json');
 const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 const prompt = [

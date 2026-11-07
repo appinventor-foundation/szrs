@@ -14,7 +14,7 @@
 //
 // Files that run outside Vite use relative imports and no `$app/*` (AGENTS.md).
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, expect, type Locator, type Page } from '@playwright/test';
@@ -38,9 +38,23 @@ const proxyLog = option('proxy-log');
 const proxyUrl = option('proxy') ?? 'http://localhost:3000';
 const only = option('only')?.split(',');
 const resultsDir = resolve(here, '../../evals/results');
-const shotsName = `${date}-smoke-check`;
-const shotsDir = resolve(option('out') ?? resultsDir, shotsName);
-const jsonFile = resolve(option('out') ?? resultsDir, `${shotsName}.json`);
+const outDirectory = option('out') ?? resultsDir;
+// A result is never overwritten: a second run on the same day is `-2`, `-3`, and so on, for
+// both the JSON and the folder of screenshots.
+const shotsName = (() => {
+	const base = `${date}-smoke-check`;
+	let name = base;
+	for (
+		let n = 2;
+		existsSync(resolve(outDirectory, `${name}.json`)) || existsSync(resolve(outDirectory, name));
+		n++
+	) {
+		name = `${base}-${n}`;
+	}
+	return name;
+})();
+const shotsDir = resolve(outDirectory, shotsName);
+const jsonFile = resolve(outDirectory, `${shotsName}.json`);
 const ZOOM_TIMEOUT_MS = 300_000;
 
 if (aliases.length === 0) {

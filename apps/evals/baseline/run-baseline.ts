@@ -23,7 +23,8 @@
  *   --only id,id       only these corpus programs
  *   --tiers S,M        only programs of these size tiers
  *   --concurrency n    calls in flight at once (default 2)
- *   --run-id name      names the run (default: the date and "baseline")
+ *   --run-id name      names the run (default: the date, the time and "baseline"). An existing
+ *                      file is never overwritten: use --resume to continue it
  *   --resume           continue the run's results file, skipping what it already holds
  *   --dry-run          print what would run and an input-size estimate; call nothing
  *
@@ -44,6 +45,7 @@ import { fetchModels, fetchRouteNames, identityFromModelString, isServed } from 
 import { findBenchmarkModel } from './model-registry.js';
 import { prepareProgram } from './prepare.js';
 import type { EvalRecord } from './record.js';
+import { checkResume, mergeHeader, type RunHeader } from './resume.js';
 import { pool, runOne } from './runner.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -86,7 +88,10 @@ const samples = Number(option('samples') ?? 1);
 const only = list(option('only'));
 const tiers = list(option('tiers')) as Tier[] | undefined;
 const concurrency = Number(option('concurrency') ?? 2);
-const runId = option('run-id') ?? `${new Date().toISOString().slice(0, 10)}-baseline`;
+// The time is in the default name so that two runs on one day are two files.
+const runId =
+	option('run-id') ??
+	`${new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '')}-baseline`;
 const outFile = resolve(here, '..', 'results', `${runId}.json`);
 
 function usage(message: string): never {
@@ -149,10 +154,18 @@ async function main(): Promise<void> {
 		usage('LITELLM_VIRTUAL_KEY is not set (pnpm baseline:run loads apps/llm-proxy/.env.local)');
 
 	let records: EvalRecord[] = [];
+	let existing: RunHeader | undefined;
 	if (existsSync(outFile)) {
 		if (!flag('resume'))
 			usage(`${outFile} exists. Pass --resume to continue it, or choose another --run-id.`);
-		records = (JSON.parse(readFileSync(outFile, 'utf8')) as { records: EvalRecord[] }).records;
+		const file = JSON.parse(readFileSync(outFile, 'utf8')) as RunHeader & { records: EvalRecord[] };
+		records = file.records;
+		existing = file;
+		try {
+			checkResume(file, codeVersion());
+		} catch (error) {
+			usage(String(error instanceof Error ? error.message : error));
+		}
 	}
 	const done = new Set(
 		records.map((r) => `${r.program.id}|${r.prompt.id}|${r.model.id}|${r.sample}`)
@@ -193,7 +206,7 @@ async function main(): Promise<void> {
 	const code = codeVersion();
 	const save = async (): Promise<void> => {
 		mkdirSync(dirname(outFile), { recursive: true });
-		const body = {
+		const header: RunHeader = {
 			kind: 'baseline',
 			runId,
 			ranAt,
@@ -206,10 +219,15 @@ async function main(): Promise<void> {
 				fingerprint: promptFingerprint(getZoomPrompt(id)),
 				params: getZoomPrompt(id).params
 			})),
-			samples,
-			records
+			samples
 		};
-		writeFileSync(outFile, `${JSON.stringify(body)}\n`);
+		let merged: RunHeader;
+		try {
+			merged = existing ? mergeHeader(existing, header) : header;
+		} catch (error) {
+			usage(String(error instanceof Error ? error.message : error));
+		}
+		writeFileSync(outFile, `${JSON.stringify({ ...merged, records })}\n`);
 	};
 
 	const complete = litellmComplete({ baseUrl: BASE, key: KEY });
