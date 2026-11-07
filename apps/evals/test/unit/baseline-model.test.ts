@@ -5,7 +5,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { litellmComplete } from '../../baseline/litellm-complete.js';
-import { findBenchmarkModel } from '../../baseline/model-registry.js';
+import {
+	benchmarkModels,
+	effectiveParams,
+	findBenchmarkModel
+} from '../../baseline/model-registry.js';
 import { identityFromModelString, isServed } from '../../baseline/models.js';
 import type { CompleteRequest } from '../../baseline/runner.js';
 import { baselineReport } from '../../report/baseline.js';
@@ -157,7 +161,7 @@ describe('model registry', () => {
 	});
 
 	it('refuses an unknown id and lists the known ones', () => {
-		expect(() => findBenchmarkModel('nope')).toThrow(/Known: glm-5.3-flash/);
+		expect(() => findBenchmarkModel('nope')).toThrow(/Known: qwen3-coder-next, .*glm-5.3-flash/);
 	});
 
 	it('names the model, provider and maker from a full LiteLLM model string', () => {
@@ -168,6 +172,67 @@ describe('model registry', () => {
 			litellmModel: 'openrouter/z-ai/glm-5.3-flash'
 		});
 		expect(identityFromModelString('gpt-4o-mini').provider).toBeUndefined();
+	});
+});
+
+describe('the ten benchmark models', () => {
+	const ten = [
+		'qwen/qwen3-coder-next',
+		'qwen/qwen3.8-27b',
+		'google/gemma-4-26b-a4b-it',
+		'openai/gpt-oss-20b',
+		'deepseek/deepseek-v4.1-flash',
+		'z-ai/glm-5.3-flash',
+		'minimax/minimax-m3',
+		'google/gemini-3.5-flash-lite',
+		'openai/gpt-5.4-nano',
+		'anthropic/claude-haiku-5.5'
+	];
+
+	it('are all in the registry, by their OpenRouter names', () => {
+		const names = benchmarkModels.map((model) => model.model);
+		for (const id of ten) expect(names).toContain(`openrouter/${id}`);
+	});
+
+	it('have unique ids, and each is pinned to one provider with no fallback', () => {
+		expect(new Set(benchmarkModels.map((m) => m.id)).size).toBe(benchmarkModels.length);
+		for (const model of benchmarkModels) {
+			expect(model.request?.provider?.order).toHaveLength(1);
+			expect(model.request?.provider?.allow_fallbacks).toBe(false);
+			expect(model.model).toMatch(/^openrouter\/[^/]+\/[^/]+$/);
+		}
+	});
+
+	it('send no temperature to the two models that do not support one', () => {
+		for (const id of ['gpt-5.4-nano', 'claude-haiku-5.5']) {
+			expect(
+				effectiveParams({ temperature: 0.2, maxTokens: 32768 }, findBenchmarkModel(id).params)
+			).toEqual({
+				maxTokens: 32768
+			});
+		}
+		expect(
+			effectiveParams(
+				{ temperature: 0.2, maxTokens: 32768 },
+				findBenchmarkModel('glm-5.3-flash').params
+			)
+		).toEqual({ temperature: 0.2, maxTokens: 32768 });
+	});
+});
+
+describe('effectiveParams', () => {
+	it('keeps the shared parameters, and lets a model change or drop one', () => {
+		const shared = { temperature: 0.2, maxTokens: 32768 };
+		expect(effectiveParams(shared)).toEqual(shared);
+		expect(effectiveParams(shared, { temperature: 1 })).toEqual({
+			temperature: 1,
+			maxTokens: 32768
+		});
+		expect(effectiveParams(shared, { temperature: null })).toEqual({ maxTokens: 32768 });
+		expect(effectiveParams(shared, { maxTokens: 8000 })).toEqual({
+			temperature: 0.2,
+			maxTokens: 8000
+		});
 	});
 });
 
@@ -206,7 +271,12 @@ describe('a run under conditions', () => {
 		});
 		expect(seen[1].extra).toEqual({ provider: { order: ['z-ai'], allow_fallbacks: false } });
 		expect(seen[1].tags).toContain('baseline:test-run');
-		expect(withPin.model).toMatchObject({ id: 'a', sentAs: 'a-alias', request: pinned.request });
+		expect(withPin.model).toMatchObject({
+			id: 'a',
+			sentAs: 'a-alias',
+			request: pinned.request,
+			params: { temperature: 0.2, maxTokens: 32768 }
+		});
 		expect(withPin.attempts[0]).toMatchObject({ provider: 'Z.AI', reasoningTokens: 7 });
 		expect(withPin.metrics).toMatchObject({
 			reasoningTokens: 7,

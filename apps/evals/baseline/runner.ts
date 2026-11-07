@@ -7,7 +7,7 @@ import type { ChatMessage } from '@szrs/llm-proxy-contracts';
 import { promptFingerprint } from '@szrs/llm-proxy/zoom/cache-key.js';
 import { getZoomPrompt } from '@szrs/llm-proxy/zoom/prompts/index.js';
 import { buildZoomMessages, MAX_ATTEMPTS } from '@szrs/llm-proxy/zoom/zoom.js';
-import type { BenchmarkModel } from './model-registry.js';
+import { effectiveParams, type BenchmarkModel } from './model-registry.js';
 import { programHash, type PreparedProgram } from './prepare.js';
 import type { Attempt, EvalRecord } from './record.js';
 import { judgeAttempt, scoreRecord } from './metrics.js';
@@ -64,6 +64,7 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 	const { prepared, promptId, model, runId, sample, complete } = options;
 	const now = options.now ?? Date.now;
 	const prompt = getZoomPrompt(promptId);
+	const params = effectiveParams(prompt.params, model.params);
 	const attempts: Attempt[] = [];
 	const startedAt = new Date(now()).toISOString();
 	let lastError: string | undefined;
@@ -79,7 +80,7 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 			model: model.model,
 			...(model.request && { extra: { ...model.request } }),
 			messages,
-			...prompt.params,
+			...params,
 			tags: ['zoom', `zoom-prompt:${promptId}`, `baseline:${runId}`],
 			promptId
 		});
@@ -128,7 +129,7 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 		model: {
 			id: model.id,
 			sentAs: model.model,
-			params: prompt.params,
+			params,
 			...(model.request && { request: model.request })
 		},
 		sample,
