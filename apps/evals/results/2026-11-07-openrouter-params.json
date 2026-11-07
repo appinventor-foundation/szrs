@@ -1,0 +1,792 @@
+{
+	"kind": "openrouter-params",
+	"ranAt": "2026-11-07T11:37:31.931Z",
+	"litellm": "http://localhost:4000",
+	"modelIds": ["glm-5.3-flash", "deepseek-v4.1-flash-1017"],
+	"models": {
+		"glm-5.3-flash": {
+			"model": "glm-5.3-flash",
+			"provider": "openrouter",
+			"vendor": "z-ai",
+			"litellmModel": "openrouter/z-ai/glm-5.3-flash",
+			"sentAs": "openrouter-2",
+			"request": {
+				"provider": {
+					"order": ["z-ai"],
+					"allow_fallbacks": false
+				}
+			}
+		},
+		"deepseek-v4.1-flash-1017": {
+			"model": "deepseek-v4.1-flash-1017",
+			"provider": "openrouter",
+			"vendor": "deepseek",
+			"litellmModel": "openrouter/deepseek/deepseek-v4.1-flash-1017",
+			"sentAs": "openrouter",
+			"request": {
+				"provider": {
+					"order": ["deepinfra"],
+					"allow_fallbacks": false
+				}
+			}
+		}
+	},
+	"glm-5.3-flash": {
+		"cases": [
+			{
+				"case": "default (no extra fields)",
+				"status": 200,
+				"ms": 1981,
+				"finishReason": "stop",
+				"completionTokens": 185,
+				"reasoningTokens": 106,
+				"answeredCorrectly": true,
+				"servedBy": "InferenceNet"
+			},
+			{
+				"case": "reasoning low (top level)",
+				"status": 200,
+				"ms": 479,
+				"finishReason": "stop",
+				"completionTokens": 29,
+				"reasoningTokens": 0,
+				"answeredCorrectly": true,
+				"servedBy": "Makora"
+			},
+			{
+				"case": "reasoning low (extra_body)",
+				"status": 200,
+				"ms": 504,
+				"finishReason": "stop",
+				"completionTokens": 36,
+				"reasoningTokens": 8,
+				"answeredCorrectly": true,
+				"servedBy": "Wafer"
+			},
+			{
+				"case": "reasoning none (top level)",
+				"status": 400,
+				"ms": 235,
+				"answeredCorrectly": false,
+				"error": "litellm.BadRequestError: OpenrouterException - {\"error\":{\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400,\"metadata\":{\"provider_name\":null}}}No fallback model group found for lookup_groups=openrouter-2. Fallbacks=[{'gpt-4o-mini': ['local-lmstudio', 'local-ollama']}]. Received Model Group=openrouter-2\nAvailable Model Group Fallbacks=None\nError doing the fallback: litellm.BadRequestError: OpenrouterException - {\"error\":{\"message\":\"Reasoning is mandatory for t"
+			},
+			{
+				"case": "reasoning none (extra_body)",
+				"status": 400,
+				"ms": 210,
+				"answeredCorrectly": false,
+				"error": "litellm.BadRequestError: OpenrouterException - {\"error\":{\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400,\"metadata\":{\"provider_name\":null}}}No fallback model group found for lookup_groups=openrouter-2. Fallbacks=[{'gpt-4o-mini': ['local-lmstudio', 'local-ollama']}]. Received Model Group=openrouter-2\nAvailable Model Group Fallbacks=None\nError doing the fallback: litellm.BadRequestError: OpenrouterException - {\"error\":{\"message\":\"Reasoning is mandatory for t"
+			},
+			{
+				"case": "provider pin (top level)",
+				"status": 200,
+				"ms": 3903,
+				"finishReason": "stop",
+				"completionTokens": 130,
+				"reasoningTokens": 74,
+				"answeredCorrectly": true,
+				"servedBy": "Z.AI"
+			},
+			{
+				"case": "provider pin (extra_body)",
+				"status": 200,
+				"ms": 4580,
+				"finishReason": "stop",
+				"completionTokens": 110,
+				"reasoningTokens": 69,
+				"answeredCorrectly": true,
+				"servedBy": "Z.AI"
+			},
+			{
+				"case": "reasoning_effort low (OpenAI style)",
+				"status": 400,
+				"ms": 103,
+				"answeredCorrectly": false,
+				"error": "litellm.UnsupportedParamsError: openrouter does not support parameters: ['reasoning_effort'], for model=z-ai/glm-5.3-flash. To drop these, set `litellm.drop_params=True` or for proxy:\n\n`litellm_settings:\n drop_params: true`\n. \n If you want to use these params dynamically send allowed_openai_params=['reasoning_effort'] in your request.No fallback model group found for lookup_groups=openrouter-2. Fallbacks=[{'gpt-4o-mini': ['local-lmstudio', 'local-ollama']}]. Received Model Group=openrouter-2\nAva"
+			},
+			{
+				"case": "bogus provider (top level)",
+				"status": 404,
+				"ms": 225,
+				"answeredCorrectly": false,
+				"error": "litellm.NotFoundError: NotFoundError: OpenrouterException - {\"error\":{\"message\":\"No endpoints found for z-ai/glm-5.3-flash. Every candidate endpoint was removed during routing: Filter by Fallback removed relace/fp4, open-inference/fp4, wafer/us, wafer/nvfp4, darkbloom/fp4, tenstorrent/fp8, gmicloud/fp8, near-ai/fp8, novita/fp8, streamlake/fp8, particle-ai/nvfp4, inference-net/us, inference-net/fp4, phala/nvfp4, digitalocean, reka, coreweave/nvfp4, nextbit/fp4, morph/fp8, makora/fp4, mistral, coh"
+			},
+			{
+				"case": "bogus provider (extra_body)",
+				"status": 404,
+				"ms": 226,
+				"answeredCorrectly": false,
+				"error": "litellm.NotFoundError: NotFoundError: OpenrouterException - {\"error\":{\"message\":\"No endpoints found for z-ai/glm-5.3-flash. Every candidate endpoint was removed during routing: Filter by Fallback removed relace/fp4, open-inference/fp4, wafer/us, wafer/nvfp4, darkbloom/fp4, tenstorrent/fp8, gmicloud/fp8, near-ai/fp8, novita/fp8, streamlake/fp8, particle-ai/nvfp4, inference-net/us, inference-net/fp4, phala/nvfp4, digitalocean, reka, coreweave/nvfp4, nextbit/fp4, morph/fp8, makora/fp4, mistral, coh"
+			}
+		],
+		"zoomAtLow": {
+			"runId": "openrouter-params",
+			"program": {
+				"id": "dice-game",
+				"tier": "S",
+				"blocks": 14,
+				"topLevelStacks": 3,
+				"hash": "8ce47cba5728ed77"
+			},
+			"prompt": {
+				"id": "v1",
+				"fingerprint": "b6887cfae17c14161cd78c7f1b0758180c78bafcbca85805167321f49abceca1"
+			},
+			"model": {
+				"id": "glm-5.3-flash",
+				"sentAs": "openrouter-2",
+				"params": {
+					"temperature": 0.2,
+					"maxTokens": 32768
+				},
+				"request": {
+					"provider": {
+						"order": ["z-ai"],
+						"allow_fallbacks": false
+					},
+					"reasoning": {
+						"effort": "low"
+					}
+				}
+			},
+			"sample": 1,
+			"startedAt": "2026-11-07T11:38:32.466Z",
+			"attempts": [
+				{
+					"n": 1,
+					"rawText": "{\n  \"plan\": {\n    \"purpose\": \"A dice game that rolls a die, adds the result to a score, and can reset the score.\",\n    \"concepts\": [\n      {\n        \"id\": \"c1\",\n        \"name\": \"roll dice\",\n        \"stacks\": [\"b1\"],\n        \"operations\": [\"s1\"]\n      },\n      {\n        \"id\": \"c2\",\n        \"name\": \"accumulate score\",\n        \"stacks\": [\"b8\"],\n        \"operations\": [\"s2\"]\n      },\n      {\n        \"id\": \"c3\",\n        \"name\": \"reset game\",\n        \"stacks\": [\"b12\"],\n        \"operations\": [\"s3\"]\n      }\n    ]\n  },\n  \"semantic\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_die\",\n        \"message0\": \"roll a die from %1 to %2 and print the result\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 }\n        ],\n        \"tooltip\": \"Picks a random number between the two bounds and prints it.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_add_roll_to_score\",\n        \"message0\": \"add the roll to the score\",\n        \"tooltip\": \"Increases the running score by the value of the last roll.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_score\",\n        \"message0\": \"reset the score to %1\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"VALUE\", \"value\": 0 }\n        ],\n        \"tooltip\": \"Sets the score back to its starting value.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          { \"type\": \"zoom_dice_game_roll_die\", \"id\": \"s1\" },\n          { \"type\": \"zoom_dice_game_add_roll_to_score\", \"id\": \"s2\" },\n          { \"type\": \"zoom_dice_game_reset_score\", \"id\": \"s3\" }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"s1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"s1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] },\n      { \"block\": \"s3\", \"field\": \"VALUE\", \"detail\": [{ \"block\": \"b14\", \"field\": \"NUM\" }] }\n    ]\n  },\n  \"concept\": {\n    \"blockDefs\": [\n      {\n        \"type\": \"zoom_dice_game_roll_dice_concept\",\n        \"message0\": \"roll a die from %1 to %2\",\n        \"args0\": [\n          { \"type\": \"field_number\", \"name\": \"FROM\", \"value\": 1 },\n          { \"type\": \"field_number\", \"name\": \"TO\", \"value\": 6 }\n        ],\n        \"tooltip\": \"Rolls a random die value and announces it.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_keep_score_concept\",\n        \"message0\": \"keep a running score\",\n        \"tooltip\": \"Accumulates the die rolls into a total score.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      },\n      {\n        \"type\": \"zoom_dice_game_reset_game_concept\",\n        \"message0\": \"reset the game\",\n        \"tooltip\": \"Restores the game to its starting state.\",\n        \"previousStatement\": null,\n        \"nextStatement\": null\n      }\n    ],\n    \"workspaceJson\": {\n      \"blocks\": {\n        \"languageVersion\": 0,\n        \"blocks\": [\n          { \"type\": \"zoom_dice_game_roll_dice_concept\", \"id\": \"c1\" },\n          { \"type\": \"zoom_dice_game_keep_score_concept\", \"id\": \"c2\" },\n          { \"type\": \"zoom_dice_game_reset_game_concept\", \"id\": \"c3\" }\n        ]\n      }\n    },\n    \"bindings\": [\n      { \"block\": \"c1\", \"field\": \"FROM\", \"detail\": [{ \"block\": \"b4\", \"field\": \"NUM\" }] },\n      { \"block\": \"c1\", \"field\": \"TO\", \"detail\": [{ \"block\": \"b5\", \"field\": \"NUM\" }] }\n    ]\n  }\n}",
+					"latencyMs": 15536,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 1927,
+						"completionTokens": 1048,
+						"totalTokens": 2975
+					},
+					"firstTokenMs": 1458,
+					"reasoningTokens": 2
+				}
+			],
+			"result": {
+				"semantic": {
+					"blockDefs": [
+						{
+							"type": "zoom_dice_game_roll_die",
+							"message0": "roll a die from %1 to %2 and print the result",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "FROM",
+									"value": 1
+								},
+								{
+									"type": "field_number",
+									"name": "TO",
+									"value": 6
+								}
+							],
+							"tooltip": "Picks a random number between the two bounds and prints it.",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_add_roll_to_score",
+							"message0": "add the roll to the score",
+							"tooltip": "Increases the running score by the value of the last roll.",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_reset_score",
+							"message0": "reset the score to %1",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "VALUE",
+									"value": 0
+								}
+							],
+							"tooltip": "Sets the score back to its starting value.",
+							"previousStatement": null,
+							"nextStatement": null
+						}
+					],
+					"workspaceJson": {
+						"blocks": {
+							"languageVersion": 0,
+							"blocks": [
+								{
+									"type": "zoom_dice_game_roll_die",
+									"id": "s1"
+								},
+								{
+									"type": "zoom_dice_game_add_roll_to_score",
+									"id": "s2"
+								},
+								{
+									"type": "zoom_dice_game_reset_score",
+									"id": "s3"
+								}
+							]
+						}
+					},
+					"bindings": [
+						{
+							"block": "s1",
+							"field": "FROM",
+							"detail": [
+								{
+									"block": "b4",
+									"field": "NUM"
+								}
+							]
+						},
+						{
+							"block": "s1",
+							"field": "TO",
+							"detail": [
+								{
+									"block": "b5",
+									"field": "NUM"
+								}
+							]
+						},
+						{
+							"block": "s3",
+							"field": "VALUE",
+							"detail": [
+								{
+									"block": "b14",
+									"field": "NUM"
+								}
+							]
+						}
+					]
+				},
+				"concept": {
+					"blockDefs": [
+						{
+							"type": "zoom_dice_game_roll_dice_concept",
+							"message0": "roll a die from %1 to %2",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "FROM",
+									"value": 1
+								},
+								{
+									"type": "field_number",
+									"name": "TO",
+									"value": 6
+								}
+							],
+							"tooltip": "Rolls a random die value and announces it.",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_keep_score_concept",
+							"message0": "keep a running score",
+							"tooltip": "Accumulates the die rolls into a total score.",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_reset_game_concept",
+							"message0": "reset the game",
+							"tooltip": "Restores the game to its starting state.",
+							"previousStatement": null,
+							"nextStatement": null
+						}
+					],
+					"workspaceJson": {
+						"blocks": {
+							"languageVersion": 0,
+							"blocks": [
+								{
+									"type": "zoom_dice_game_roll_dice_concept",
+									"id": "c1"
+								},
+								{
+									"type": "zoom_dice_game_keep_score_concept",
+									"id": "c2"
+								},
+								{
+									"type": "zoom_dice_game_reset_game_concept",
+									"id": "c3"
+								}
+							]
+						}
+					},
+					"bindings": [
+						{
+							"block": "c1",
+							"field": "FROM",
+							"detail": [
+								{
+									"block": "b4",
+									"field": "NUM"
+								}
+							]
+						},
+						{
+							"block": "c1",
+							"field": "TO",
+							"detail": [
+								{
+									"block": "b5",
+									"field": "NUM"
+								}
+							]
+						}
+					]
+				}
+			},
+			"plan": {
+				"purpose": "A dice game that rolls a die, adds the result to a score, and can reset the score.",
+				"concepts": [
+					{
+						"id": "c1",
+						"name": "roll dice",
+						"stacks": ["b1"],
+						"operations": ["s1"]
+					},
+					{
+						"id": "c2",
+						"name": "accumulate score",
+						"stacks": ["b8"],
+						"operations": ["s2"]
+					},
+					{
+						"id": "c3",
+						"name": "reset game",
+						"stacks": ["b12"],
+						"operations": ["s3"]
+					}
+				]
+			},
+			"repairs": [],
+			"metrics": {
+				"valid": true,
+				"validFirstAttempt": true,
+				"attempts": 1,
+				"repairs": {},
+				"truncated": false,
+				"bindings": 5,
+				"completionTokens": 1048,
+				"reasoningTokens": 2,
+				"providers": [],
+				"totalSeconds": 15.536,
+				"promptTokens": 1927,
+				"firstTokenSeconds": 1.458,
+				"attemptsToSuccess": 1,
+				"bindingValidity": 1,
+				"coverage": {
+					"stacksCovered": 1,
+					"stacksDuplicated": 0,
+					"operationsCovered": 1
+				},
+				"semantic": {
+					"blocks": 3,
+					"topLevelBlocks": 3,
+					"compression": 0.21428571428571427,
+					"loads": true,
+					"valueLeaks": ["add the roll to the score"],
+					"namingProblems": []
+				},
+				"concept": {
+					"blocks": 3,
+					"topLevelBlocks": 3,
+					"compression": 0.21428571428571427,
+					"loads": true,
+					"valueLeaks": [],
+					"namingProblems": []
+				},
+				"monotonic": true,
+				"conceptCount": 3,
+				"conceptCountInRange": true,
+				"redundancy": 0.35294117647058826
+			}
+		}
+	},
+	"deepseek-v4.1-flash-1017": {
+		"cases": [
+			{
+				"case": "default (no extra fields)",
+				"status": 200,
+				"ms": 543,
+				"finishReason": "stop",
+				"completionTokens": 39,
+				"reasoningTokens": 36,
+				"answeredCorrectly": true,
+				"servedBy": "DeepInfra"
+			},
+			{
+				"case": "reasoning low (top level)",
+				"status": 200,
+				"ms": 735,
+				"finishReason": "stop",
+				"completionTokens": 39,
+				"reasoningTokens": 36,
+				"answeredCorrectly": true,
+				"servedBy": "InferenceNet"
+			},
+			{
+				"case": "reasoning low (extra_body)",
+				"status": 200,
+				"ms": 532,
+				"finishReason": "stop",
+				"completionTokens": 30,
+				"reasoningTokens": 27,
+				"answeredCorrectly": true,
+				"servedBy": "Cohere"
+			},
+			{
+				"case": "reasoning none (top level)",
+				"status": 200,
+				"ms": 1046,
+				"finishReason": "stop",
+				"completionTokens": 28,
+				"reasoningTokens": 0,
+				"answeredCorrectly": true,
+				"servedBy": "Morph"
+			},
+			{
+				"case": "reasoning none (extra_body)",
+				"status": 200,
+				"ms": 434,
+				"finishReason": "stop",
+				"completionTokens": 29,
+				"reasoningTokens": 0,
+				"answeredCorrectly": true,
+				"servedBy": "InferenceNet"
+			},
+			{
+				"case": "provider pin (top level)",
+				"status": 200,
+				"ms": 596,
+				"finishReason": "stop",
+				"completionTokens": 33,
+				"reasoningTokens": 30,
+				"answeredCorrectly": true,
+				"servedBy": "DeepInfra"
+			},
+			{
+				"case": "provider pin (extra_body)",
+				"status": 200,
+				"ms": 702,
+				"finishReason": "stop",
+				"completionTokens": 33,
+				"reasoningTokens": 30,
+				"answeredCorrectly": true,
+				"servedBy": "DeepInfra"
+			},
+			{
+				"case": "reasoning_effort low (OpenAI style)",
+				"status": 400,
+				"ms": 99,
+				"answeredCorrectly": false,
+				"error": "litellm.UnsupportedParamsError: openrouter does not support parameters: ['reasoning_effort'], for model=deepseek/deepseek-v4.1-flash-1017. To drop these, set `litellm.drop_params=True` or for proxy:\n\n`litellm_settings:\n drop_params: true`\n. \n If you want to use these params dynamically send allowed_openai_params=['reasoning_effort'] in your request.No fallback model group found for lookup_groups=openrouter. Fallbacks=[{'gpt-4o-mini': ['local-lmstudio', 'local-ollama']}]. Received Model Group=ope"
+			},
+			{
+				"case": "bogus provider (top level)",
+				"status": 404,
+				"ms": 238,
+				"answeredCorrectly": false,
+				"error": "litellm.NotFoundError: NotFoundError: OpenrouterException - {\"error\":{\"message\":\"No endpoints found for deepseek/deepseek-v4.1-flash-1017. Every candidate endpoint was removed during routing: Filter by Tier Endpoint Rows removed particle-ai/us/flex, deepinfra/fp8/flex (Excluded tier endpoint rows the request did not opt into); Filter by Guardrails removed deepseek (Paid model training violation (account settings)); Filter by Fallback removed relace/fp4, open-inference/fp4, morph/fp8, wafer/us, p"
+			},
+			{
+				"case": "bogus provider (extra_body)",
+				"status": 404,
+				"ms": 251,
+				"answeredCorrectly": false,
+				"error": "litellm.NotFoundError: NotFoundError: OpenrouterException - {\"error\":{\"message\":\"No endpoints found for deepseek/deepseek-v4.1-flash-1017. Every candidate endpoint was removed during routing: Filter by Tier Endpoint Rows removed particle-ai/us/flex, deepinfra/fp8/flex (Excluded tier endpoint rows the request did not opt into); Filter by Guardrails removed deepseek (Paid model training violation (account settings)); Filter by Fallback removed relace/fp4, open-inference/fp4, morph/fp8, wafer/us, p"
+			}
+		],
+		"zoomAtLow": {
+			"runId": "openrouter-params",
+			"program": {
+				"id": "dice-game",
+				"tier": "S",
+				"blocks": 14,
+				"topLevelStacks": 3,
+				"hash": "8ce47cba5728ed77"
+			},
+			"prompt": {
+				"id": "v1",
+				"fingerprint": "b6887cfae17c14161cd78c7f1b0758180c78bafcbca85805167321f49abceca1"
+			},
+			"model": {
+				"id": "deepseek-v4.1-flash-1017",
+				"sentAs": "openrouter",
+				"params": {
+					"temperature": 0.2,
+					"maxTokens": 32768
+				},
+				"request": {
+					"provider": {
+						"order": ["deepinfra"],
+						"allow_fallbacks": false
+					},
+					"reasoning": {
+						"effort": "low"
+					}
+				}
+			},
+			"sample": 1,
+			"startedAt": "2026-11-07T11:39:41.261Z",
+			"attempts": [
+				{
+					"n": 1,
+					"rawText": "{\"plan\":{\"purpose\":\"A dice game where a die roll is generated and shown, added to a running score, and the score can be reset.\",\"concepts\":[{\"id\":\"c1\",\"name\":\"roll a die\",\"stacks\":[\"b1\"],\"operations\":[\"s1\",\"s2\"]},{\"id\":\"c2\",\"name\":\"add roll to score\",\"stacks\":[\"b8\"],\"operations\":[\"s3\"]},{\"id\":\"c3\",\"name\":\"reset the score\",\"stacks\":[\"b12\"],\"operations\":[\"s4\"]}]},\"semantic\":{\"blockDefs\":[{\"type\":\"zoom_dice_game_roll_die\",\"message0\":\"roll a die with %1 sides\",\"args0\":[{\"type\":\"field_number\",\"name\":\"SIDES\",\"value\":6}],\"tooltip\":\"Pick a random number between 1 and the number of sides and store it as the roll\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_show_roll\",\"message0\":\"show the roll\",\"tooltip\":\"Print the current roll\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_add_roll_to_score\",\"message0\":\"add the roll to the score\",\"tooltip\":\"Increase the score by the current roll\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_reset_score\",\"message0\":\"reset the score to %1\",\"args0\":[{\"type\":\"field_number\",\"name\":\"START\",\"value\":0}],\"tooltip\":\"Set the score back to a starting value\",\"previousStatement\":null,\"nextStatement\":null}],\"workspaceJson\":{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"zoom_dice_game_roll_die\",\"id\":\"s1\"},{\"type\":\"zoom_dice_game_show_roll\",\"id\":\"s2\"},{\"type\":\"zoom_dice_game_add_roll_to_score\",\"id\":\"s3\"},{\"type\":\"zoom_dice_game_reset_score\",\"id\":\"s4\"}]}},\"bindings\":[{\"block\":\"s1\",\"field\":\"SIDES\",\"detail\":[{\"block\":\"b5\",\"field\":\"NUM\"}]},{\"block\":\"s4\",\"field\":\"START\",\"detail\":[{\"block\":\"b14\",\"field\":\"NUM\"}]}]},\"concept\":{\"blockDefs\":[{\"type\":\"zoom_dice_game_roll_a_die_concept\",\"message0\":\"roll a die with %1 sides\",\"args0\":[{\"type\":\"field_number\",\"name\":\"SIDES\",\"value\":6}],\"tooltip\":\"Roll a die and show the result\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_add_roll_to_score_concept\",\"message0\":\"add the roll to the score\",\"tooltip\":\"Increase the running score by the current roll\",\"previousStatement\":null,\"nextStatement\":null},{\"type\":\"zoom_dice_game_reset_the_score_concept\",\"message0\":\"reset the score to %1\",\"args0\":[{\"type\":\"field_number\",\"name\":\"START\",\"value\":0}],\"tooltip\":\"Set the score back to a starting value\",\"previousStatement\":null,\"nextStatement\":null}],\"workspaceJson\":{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"zoom_dice_game_roll_a_die_concept\",\"id\":\"c1\"},{\"type\":\"zoom_dice_game_add_roll_to_score_concept\",\"id\":\"c2\"},{\"type\":\"zoom_dice_game_reset_the_score_concept\",\"id\":\"c3\"}]}},\"bindings\":[{\"block\":\"c1\",\"field\":\"SIDES\",\"detail\":[{\"block\":\"b5\",\"field\":\"NUM\"}]},{\"block\":\"c3\",\"field\":\"START\",\"detail\":[{\"block\":\"b14\",\"field\":\"NUM\"}]}]}}",
+					"latencyMs": 7058,
+					"finishReason": "stop",
+					"usage": {
+						"promptTokens": 2024,
+						"completionTokens": 1288,
+						"totalTokens": 3312
+					},
+					"firstTokenMs": 4003,
+					"reasoningTokens": 494
+				}
+			],
+			"result": {
+				"semantic": {
+					"blockDefs": [
+						{
+							"type": "zoom_dice_game_roll_die",
+							"message0": "roll a die with %1 sides",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "SIDES",
+									"value": 6
+								}
+							],
+							"tooltip": "Pick a random number between 1 and the number of sides and store it as the roll",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_show_roll",
+							"message0": "show the roll",
+							"tooltip": "Print the current roll",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_add_roll_to_score",
+							"message0": "add the roll to the score",
+							"tooltip": "Increase the score by the current roll",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_reset_score",
+							"message0": "reset the score to %1",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "START",
+									"value": 0
+								}
+							],
+							"tooltip": "Set the score back to a starting value",
+							"previousStatement": null,
+							"nextStatement": null
+						}
+					],
+					"workspaceJson": {
+						"blocks": {
+							"languageVersion": 0,
+							"blocks": [
+								{
+									"type": "zoom_dice_game_roll_die",
+									"id": "s1"
+								},
+								{
+									"type": "zoom_dice_game_show_roll",
+									"id": "s2"
+								},
+								{
+									"type": "zoom_dice_game_add_roll_to_score",
+									"id": "s3"
+								},
+								{
+									"type": "zoom_dice_game_reset_score",
+									"id": "s4"
+								}
+							]
+						}
+					},
+					"bindings": [
+						{
+							"block": "s1",
+							"field": "SIDES",
+							"detail": [
+								{
+									"block": "b5",
+									"field": "NUM"
+								}
+							]
+						},
+						{
+							"block": "s4",
+							"field": "START",
+							"detail": [
+								{
+									"block": "b14",
+									"field": "NUM"
+								}
+							]
+						}
+					]
+				},
+				"concept": {
+					"blockDefs": [
+						{
+							"type": "zoom_dice_game_roll_a_die_concept",
+							"message0": "roll a die with %1 sides",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "SIDES",
+									"value": 6
+								}
+							],
+							"tooltip": "Roll a die and show the result",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_add_roll_to_score_concept",
+							"message0": "add the roll to the score",
+							"tooltip": "Increase the running score by the current roll",
+							"previousStatement": null,
+							"nextStatement": null
+						},
+						{
+							"type": "zoom_dice_game_reset_the_score_concept",
+							"message0": "reset the score to %1",
+							"args0": [
+								{
+									"type": "field_number",
+									"name": "START",
+									"value": 0
+								}
+							],
+							"tooltip": "Set the score back to a starting value",
+							"previousStatement": null,
+							"nextStatement": null
+						}
+					],
+					"workspaceJson": {
+						"blocks": {
+							"languageVersion": 0,
+							"blocks": [
+								{
+									"type": "zoom_dice_game_roll_a_die_concept",
+									"id": "c1"
+								},
+								{
+									"type": "zoom_dice_game_add_roll_to_score_concept",
+									"id": "c2"
+								},
+								{
+									"type": "zoom_dice_game_reset_the_score_concept",
+									"id": "c3"
+								}
+							]
+						}
+					},
+					"bindings": [
+						{
+							"block": "c1",
+							"field": "SIDES",
+							"detail": [
+								{
+									"block": "b5",
+									"field": "NUM"
+								}
+							]
+						},
+						{
+							"block": "c3",
+							"field": "START",
+							"detail": [
+								{
+									"block": "b14",
+									"field": "NUM"
+								}
+							]
+						}
+					]
+				}
+			},
+			"plan": {
+				"purpose": "A dice game where a die roll is generated and shown, added to a running score, and the score can be reset.",
+				"concepts": [
+					{
+						"id": "c1",
+						"name": "roll a die",
+						"stacks": ["b1"],
+						"operations": ["s1", "s2"]
+					},
+					{
+						"id": "c2",
+						"name": "add roll to score",
+						"stacks": ["b8"],
+						"operations": ["s3"]
+					},
+					{
+						"id": "c3",
+						"name": "reset the score",
+						"stacks": ["b12"],
+						"operations": ["s4"]
+					}
+				]
+			},
+			"repairs": [],
+			"metrics": {
+				"valid": true,
+				"validFirstAttempt": true,
+				"attempts": 1,
+				"repairs": {},
+				"truncated": false,
+				"bindings": 4,
+				"completionTokens": 1288,
+				"reasoningTokens": 494,
+				"providers": [],
+				"totalSeconds": 7.058,
+				"promptTokens": 2024,
+				"firstTokenSeconds": 4.003,
+				"attemptsToSuccess": 1,
+				"bindingValidity": 1,
+				"coverage": {
+					"stacksCovered": 1,
+					"stacksDuplicated": 0,
+					"operationsCovered": 1
+				},
+				"semantic": {
+					"blocks": 4,
+					"topLevelBlocks": 4,
+					"compression": 0.2857142857142857,
+					"loads": true,
+					"valueLeaks": ["add the roll to the score"],
+					"namingProblems": []
+				},
+				"concept": {
+					"blocks": 3,
+					"topLevelBlocks": 3,
+					"compression": 0.21428571428571427,
+					"loads": true,
+					"valueLeaks": ["add the roll to the score"],
+					"namingProblems": []
+				},
+				"monotonic": true,
+				"conceptCount": 3,
+				"conceptCountInRange": true,
+				"redundancy": 0.6666666666666666
+			}
+		}
+	}
+}

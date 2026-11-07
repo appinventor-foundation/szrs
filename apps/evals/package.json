@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix",
     "test:unit": "vitest run test/unit",
     "spike:cap": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local cap-and-temperature-spike.ts",
+    "probe:openrouter": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local openrouter-params-probe.ts",
     "baseline:run": "tsx --env-file-if-exists=../llm-proxy/.env.local --env-file-if-exists=.env.local baseline/run-baseline.ts",
     "baseline:score": "tsx baseline/score.ts",
     "report": "tsx report/cli.ts"
