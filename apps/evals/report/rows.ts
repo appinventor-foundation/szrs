@@ -36,14 +36,45 @@ export interface ReportSection {
 	title: string;
 	description?: string;
 	html: string;
+	/** Whether the section starts expanded (default true). */
+	open?: boolean;
+	/** `after` puts it below the charts and the outputs' heading, for reference material (default: before the charts). */
+	placement?: 'before' | 'after';
+}
+
+/** What a charted number means, so a chart can say what it shows and which way is better. */
+export interface MetricInfo {
+	label: string;
+	/** One sentence: what it counts or measures. */
+	about?: string;
+	unit?: string;
+	/** `rate`: 1 or 0 per run, charted as a percentage of runs. */
+	kind?: 'rate';
+	/** Which direction is an improvement; leave out when neither is. */
+	better?: 'higher' | 'lower';
+	/** The plan's metric id (D1, D5, ...), for the glossary. */
+	code?: string;
+	/** Decimal places shown; default is none above 100 and one below. */
+	decimals?: number;
+}
+
+/** Charts that belong together, drawn under one collapsible heading. */
+export interface MetricGroup {
+	title: string;
+	description?: string;
+	keys: string[];
 }
 
 export interface Report {
 	title: string;
 	subtitle?: string;
 	rows: ResultRow[];
-	/** Shown before the charts. */
+	/** Shown before the charts (or after them, see `placement`). */
 	sections: ReportSection[];
+	/** What each charted number means. A number with no entry is labelled with its key. */
+	metrics?: Record<string, MetricInfo>;
+	/** How to group the charts. Without it they share one group. */
+	chartGroups?: MetricGroup[];
 }
 
 /** "z-ai via openrouter", "openai": where a model comes from, for the secondary text beside its name. */

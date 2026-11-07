@@ -141,7 +141,7 @@ describe('renderReport', () => {
 		expect(html).toContain('2 runs, 100 to 300');
 	});
 
-	it('draws a panel per tier on a shared scale', () => {
+	it('draws all programs together, and a panel per tier on the same scale, folded away', () => {
 		const html = renderReport(
 			report([
 				row({ tier: 'S', metrics: { completionTokens: 100 } }),
@@ -151,8 +151,16 @@ describe('renderReport', () => {
 
 		expect(html).toContain('<h4>Tier S</h4>');
 		expect(html).toContain('<h4>Tier M</h4>');
-		// Both panels end their axis at the same tick (1,000), not at 100 and 1,000.
-		expect(count(html, '>1,000</text>')).toBe(2);
+		expect(html).toContain('<h4>All programs</h4>');
+		expect(html).toContain('<details class="tiers"><summary>By size tier (S, M)</summary>');
+		// All three panels end their axis at the same tick (1,000), not at 100 and 1,000.
+		expect(count(html, '>1,000</text>')).toBe(3);
+	});
+
+	it('draws one panel, with no tier fold, when the rows have no tiers', () => {
+		const html = renderReport(report([row()]));
+		expect(html).not.toContain('class="tiers"');
+		expect(html).not.toContain('All programs');
 	});
 
 	it('names the model first, with where it comes from beside it', () => {
@@ -219,6 +227,121 @@ describe('renderReport', () => {
 		expect(html).toContain('90%</strong> of 8,192 tokens');
 		// The meter is not also drawn as a bar chart.
 		expect(count(html, '<svg')).toBe(0);
+	});
+});
+
+describe('the page', () => {
+	const two = [row(), row({ prompt: 'v1' })];
+
+	it('has a contents list of every section and chart, linking to ids that exist', () => {
+		const html = renderReport(report(two, [{ title: 'A table', html: '<p>x</p>' }]));
+		const nav = /<nav class="toc"[\s\S]*?<\/nav>/.exec(html)?.[0] ?? '';
+		expect(nav).toContain('>A table<');
+		expect(nav).toContain('>Concept blocks<');
+		expect(nav).toContain('>Output tokens (reasoning included)<');
+		for (const [, id] of nav.matchAll(/href="#([^"]+)"/g)) {
+			expect(html).toContain(`id="${id}"`);
+		}
+		expect(nav).toContain('data-all="open"');
+		expect(nav).toContain('data-all="close"');
+	});
+
+	it('makes every section collapsible and open, except the outputs, which are most of the page', () => {
+		const html = renderReport(
+			report([row({ detail: { rawText: 'raw' } })], [{ title: 'A table', html: '<p>x</p>' }])
+		);
+		expect(html).toMatch(/<details class="section" id="s-a-table" open>/);
+		expect(html).toMatch(/<details class="section" id="s-the-outputs">/);
+		expect(count(html, 'class="section"')).toBeGreaterThanOrEqual(3);
+	});
+
+	it('can put a section after the charts, and start one collapsed', () => {
+		const html = renderReport(
+			report(two, [
+				{ title: 'Before', html: '<p>b</p>' },
+				{ title: 'Reference', html: '<p>r</p>', placement: 'after', open: false }
+			])
+		);
+		expect(html.indexOf('id="s-before"')).toBeLessThan(html.indexOf('id="chart-completionTokens"'));
+		expect(html.indexOf('id="s-reference"')).toBeGreaterThan(
+			html.indexOf('id="chart-completionTokens"')
+		);
+		expect(html).toMatch(/<details class="section" id="s-reference">/);
+	});
+
+	it('groups charts under their own headings, and puts the rest under "Other measures"', () => {
+		const html = renderReport({
+			...report([row({ metrics: { completionTokens: 5, retries: 2 } })]),
+			chartGroups: [{ title: 'Cost', keys: ['completionTokens'] }]
+		});
+		expect(html).toContain('<h2>Cost</h2>');
+		expect(html).toContain('<h2>Other measures</h2>');
+		expect(html).not.toContain('<h2>Zoom by model and prompt</h2>');
+	});
+
+	it('gives a chart its meaning, its direction and its own legend', () => {
+		const html = renderReport({
+			...report(two),
+			metrics: {
+				completionTokens: {
+					label: 'Output tokens',
+					about: 'What the model wrote, reasoning included.',
+					better: 'lower',
+					code: 'D21'
+				}
+			}
+		});
+		expect(html).toContain('<strong>Output tokens</strong>');
+		expect(html).toContain('What the model wrote, reasoning included.');
+		expect(html).toContain('\u2193 lower is better');
+		expect(html).toContain('>D21<');
+		// The legend is in the card, so it is not far above the chart.
+		const card = /<figure class="card"[\s\S]*?<\/figure>/.exec(html)?.[0] ?? '';
+		expect(card).toContain('class="legend"');
+	});
+
+	it('draws a rate as a percentage of runs on a fixed 0 to 100 axis', () => {
+		const html = renderReport({
+			...report([
+				row({ metrics: { valid: 1 } }),
+				row({ metrics: { valid: 0 } }),
+				row({ metrics: { valid: 1 } }),
+				row({ metrics: { valid: 1 } })
+			]),
+			metrics: { valid: { label: 'Valid runs', kind: 'rate', better: 'higher' } }
+		});
+		expect(html).toContain('data-value="75%"');
+		expect(html).toContain('>100%</text>');
+		expect(html).not.toContain('>0.75<');
+	});
+
+	it('positions its scroll containers, so text hidden from sight cannot widen the page', () => {
+		// An absolutely positioned screen-reader span escapes an overflow container that is not
+		// positioned, and makes the whole page scroll sideways on a phone.
+		const html = renderReport(report([row()]));
+		expect(html).toContain('.table-wrap{overflow-x:auto;position:relative}');
+		expect(html).toContain('position:relative}');
+		expect(html).toMatch(/\.plot\{[^}]*position:relative/);
+	});
+
+	it('groups the raw outputs by model', () => {
+		const html = renderReport(
+			report([
+				row({ model: 'a', detail: { rawText: '1' } }),
+				row({ model: 'a', prompt: 'v1', detail: { rawText: '2' } }),
+				row({ model: 'b', detail: { rawText: '3' } })
+			])
+		);
+		expect(count(html, 'class="output-group"')).toBe(2);
+		expect(html).toContain('<summary>a \u00b7 2 runs</summary>');
+		expect(html).toContain('<summary>b \u00b7 1 run</summary>');
+	});
+
+	it('shows each tier-less output with its prompt and outcome', () => {
+		const html = renderReport(
+			report([row({ facts: { outcome: 'failed (parse)' }, detail: { rawText: 'x' } })])
+		);
+		expect(html).toContain('v0 \u00b7 failed (parse)');
 	});
 });
 

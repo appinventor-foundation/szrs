@@ -2,11 +2,17 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-import { rescore, isBaselineFile, type BaselineFile } from '../baseline/summary.js';
-import { findProgram } from '../baseline/corpus/index.js';
+import { rescore, isBaselineFile } from '../baseline/summary.js';
 import type { Metrics } from '../baseline/record.js';
-import { esc } from './html.js';
-import { modelVia, type Report, type ResultRow } from './rows.js';
+import {
+	BASELINE_CHART_GROUPS,
+	BASELINE_METRICS,
+	glossary,
+	promptEffect,
+	programGrid,
+	standsOut
+} from './baseline-insights.js';
+import type { Report, ResultRow } from './rows.js';
 
 const rate = (value: boolean | undefined): number | undefined =>
 	value === undefined ? undefined : value ? 1 : 0;
@@ -98,74 +104,26 @@ export function baselineReport(json: unknown): Report | undefined {
 		rows,
 		sections: [
 			{
-				title: 'By program',
-				description:
-					'One row per program; a cell per model and prompt. The concept count is next to the author’s provisional expectation (not a golden annotation).',
-				html: programTable(json, scored)
+				title: 'What stands out',
+				description: 'The findings that can be computed from these runs, with their counts.',
+				html: standsOut(json, scored)
 			},
 			{
-				title: 'How to read this',
-				html: '<p>Bars average over the runs behind them. Validity, loadability and the like are 1 or 0 per run, so a bar is a rate. Every metric is scored again from the stored model text each time this page is made, with the validators as they are now.</p>'
+				title: 'What changing the prompt did, per model',
+				html: promptEffect(json, scored)
+			},
+			{
+				title: 'By program',
+				html: programGrid(json, scored)
+			},
+			{
+				title: 'What the measures mean',
+				placement: 'after',
+				open: false,
+				html: glossary()
 			}
-		]
+		],
+		metrics: BASELINE_METRICS,
+		chartGroups: BASELINE_CHART_GROUPS
 	};
-}
-
-function programTable(file: BaselineFile, scored: ReturnType<typeof rescore>): string {
-	const columns = [
-		...new Set(scored.map((s) => `${s.record.model.id}\u0000${s.record.prompt.id}`))
-	];
-	const programIds = [...new Set(scored.map((s) => s.record.program.id))];
-	const head = columns
-		.map((column) => {
-			const [alias, prompt] = column.split('\u0000');
-			const found = file.models?.[alias];
-			const who = {
-				model: found?.model ?? alias,
-				provider: found?.provider,
-				vendor: found?.vendor
-			};
-			const via = modelVia(who);
-			return `<th scope="col">${esc(who.model)} ${esc(prompt)}${via ? `<span class="via-line">${esc(via)}</span>` : ''}</th>`;
-		})
-		.join('');
-	const body = programIds
-		.map((id) => {
-			const program = findProgramSafe(id);
-			const cells = columns
-				.map((column) => {
-					const [alias, prompt] = column.split('\u0000');
-					const runs = scored.filter(
-						(s) =>
-							s.record.program.id === id &&
-							s.record.model.id === alias &&
-							s.record.prompt.id === prompt
-					);
-					if (runs.length === 0) return '<td>—</td>';
-					const parts = runs.map((run) => {
-						const m = run.metrics;
-						if (!m) return `<span class="bad-text">✕ not scored</span>`;
-						if (!m.valid) return `<span class="bad-text">✕ ${esc(m.failure ?? 'failed')}</span>`;
-						const loads =
-							m.semantic?.loads === false || m.concept?.loads === false ? ' (does not load)' : '';
-						return `<span>✓ ${esc(String(m.conceptCount))} concept${m.conceptCount === 1 ? '' : 's'}${esc(loads)}</span>`;
-					});
-					return `<td>${parts.join('<br>')}</td>`;
-				})
-				.join('');
-			const expected = program
-				? `${program.expectedConcepts[0]}–${program.expectedConcepts[1]}`
-				: '?';
-			return `<tr><th scope="row">${esc(program?.title ?? id)}<span class="via-line">${program ? `${esc(program.tier)}, ${program.blocks} blocks, expected ${esc(expected)}` : ''}</span></th>${cells}</tr>`;
-		})
-		.join('');
-	return `<div class="table-wrap"><table class="wide"><thead><tr><th scope="col">Program</th>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
-}
-
-function findProgramSafe(id: string) {
-	try {
-		return findProgram(id);
-	} catch {
-		return undefined;
-	}
 }
