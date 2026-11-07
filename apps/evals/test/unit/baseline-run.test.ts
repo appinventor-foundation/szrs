@@ -88,6 +88,22 @@ describe('runOne', () => {
 		expect(record.metrics).toMatchObject({ valid: false, failure: 'other' });
 	});
 
+	it('records a timeout as its own kind of failure, with the repeats that came before it', async () => {
+		const record = await run(async () => ({
+			ok: false,
+			status: 0,
+			message: 'no answer after 2400s',
+			timedOut: true,
+			retries: 2
+		}));
+		expect(record.attempts).toHaveLength(1);
+		expect(record.attempts[0]).toMatchObject({
+			upstreamError: { status: 0, timedOut: true },
+			retries: 2
+		});
+		expect(record.metrics).toMatchObject({ valid: false, failure: 'timeout' });
+	});
+
 	it('uses the prompt asked for', async () => {
 		const v0 = script(ok(validZoom()));
 		const v1 = script(ok(validZoom()));
@@ -238,6 +254,26 @@ describe('summary', () => {
 		base.records[0].metrics = undefined;
 		const scored = rescore(base);
 		expect(scored.map((item) => item.metrics?.valid)).toEqual([true, false]);
+	});
+
+	it('reads a timeout recorded before the flag existed from its message', async () => {
+		const base = await file();
+		base.records[0].attempts = [
+			{
+				n: 1,
+				rawText: '',
+				latencyMs: 2473000,
+				upstreamError: {
+					status: 0,
+					message: 'TimeoutError: The operation was aborted due to timeout'
+				}
+			}
+		];
+		const [first] = rescore(base);
+		expect(first.metrics).toMatchObject({ valid: false, failure: 'timeout' });
+		const [cell] = cells(rescore(base)).filter((c) => c.prompt === 'v1');
+		expect(cell.timeouts).toBe(1);
+		expect(cell.valid).toBe(0);
 	});
 
 	it('does not score a record of a program the corpus does not have', async () => {

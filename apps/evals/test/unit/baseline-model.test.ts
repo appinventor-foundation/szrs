@@ -122,7 +122,7 @@ describe('litellmComplete', () => {
 			sleep: async () => {}
 		})(request);
 		expect(fetchMock).toHaveBeenCalledTimes(4);
-		expect(result).toMatchObject({ ok: false, status: 429 });
+		expect(result).toMatchObject({ ok: false, status: 429, retries: 3 });
 	});
 
 	it('does not repeat a request the provider rejected (a pin that cannot be served is a 404)', async () => {
@@ -132,6 +132,31 @@ describe('litellmComplete', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(result).toMatchObject({ ok: false, status: 404 });
 		expect(result.ok === false && result.message).toContain('No endpoints found');
+	});
+
+	it('records a call that takes too long as a timeout, and does not repeat it', async () => {
+		// A fetch that never answers, and honours the signal as the real one does.
+		const fetchMock = vi.fn().mockImplementation(
+			(_url: string, init: { signal: AbortSignal }) =>
+				new Promise((_resolve, reject) => {
+					init.signal.addEventListener('abort', () => reject(init.signal.reason));
+				})
+		);
+		vi.stubGlobal('fetch', fetchMock);
+		const waits: number[] = [];
+
+		const result = await litellmComplete({
+			baseUrl: 'http://x',
+			key: 'k',
+			timeoutMs: 20,
+			sleep: async (ms) => void waits.push(ms)
+		})(request);
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(waits).toEqual([]);
+		expect(result).toMatchObject({ ok: false, status: 0, timedOut: true });
+		expect(result.ok === false && result.message).toContain('0.02s');
+		expect(result.ok === false && result.retries).toBeUndefined();
 	});
 
 	it('reports a network error as a failure after the repeats', async () => {

@@ -9,7 +9,8 @@ import type { Tier } from './corpus/index.js';
 import type { RequestExtras } from './model-registry.js';
 
 /** How one call to the model ended (the same vocabulary as the proxy's attempt log). */
-export type AttemptOutcome = 'ok' | 'parse' | 'schema' | 'validation' | 'truncated' | 'other';
+export type AttemptOutcome =
+	'ok' | 'parse' | 'schema' | 'validation' | 'truncated' | 'timeout' | 'other';
 
 /** One call to the model. The raw text is kept so a later validator can score it again. */
 export interface Attempt {
@@ -28,7 +29,7 @@ export interface Attempt {
 	/** Calls repeated after a busy or unavailable answer (429, 502, 503), not counted as attempts. */
 	retries?: number;
 	/** Set when the call itself failed (LiteLLM answered with an error status). */
-	upstreamError?: { status: number; message: string };
+	upstreamError?: { status: number; message: string; timedOut?: boolean };
 }
 
 /** One program zoomed once with one prompt on one model (plan, Appendix D). */

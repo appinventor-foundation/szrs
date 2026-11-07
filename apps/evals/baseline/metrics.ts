@@ -27,7 +27,13 @@ export function judgeAttempt(
 	attempt: Attempt,
 	detail: Json
 ): { outcome: AttemptOutcome; message?: string; parsed?: ReturnType<typeof parseZoomResponse> } {
-	if (attempt.upstreamError) return { outcome: 'other', message: attempt.upstreamError.message };
+	if (attempt.upstreamError) {
+		const { status, message, timedOut } = attempt.upstreamError;
+		// Records made before the flag existed say it only in the message.
+		const timeout =
+			timedOut === true || (status === 0 && /timeout|timed out|no answer after/i.test(message));
+		return { outcome: timeout ? 'timeout' : 'other', message };
+	}
 	if (attempt.finishReason === 'length') return { outcome: 'truncated' };
 	try {
 		return { outcome: 'ok', parsed: parseZoomResponse(attempt.rawText, detail) };

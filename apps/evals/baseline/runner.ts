@@ -26,7 +26,7 @@ export type Completion =
 			cost?: number;
 			retries?: number;
 	  }
-	| { ok: false; status: number; message: string };
+	| { ok: false; status: number; message: string; timedOut?: boolean; retries?: number };
 
 export interface CompleteRequest {
 	/** Sent as `model`. */
@@ -90,7 +90,12 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 				n,
 				rawText: '',
 				latencyMs,
-				upstreamError: { status: call.status, message: call.message }
+				upstreamError: {
+					status: call.status,
+					message: call.message,
+					...(call.timedOut && { timedOut: true })
+				},
+				...(call.retries && { retries: call.retries })
 			});
 			break;
 		}

@@ -6,14 +6,20 @@ import { isRecord } from '@szrs/llm-proxy/zoom/saved-blocks.js';
 
 import type { CompleteFn, Completion } from './runner.js';
 
-/** A call longer than this is given up on and recorded as a failure (the proxy has no timeout of its own). */
-const CALL_TIMEOUT_MS = 600_000;
+/**
+ * A call longer than this is given up on and recorded as a timeout (the proxy has no
+ * timeout of its own). A slow reasoning model can take half an hour to fill the 32768-token
+ * cap (qwen3.8-27b made about 18 tokens a second), so the default is generous.
+ */
+export const DEFAULT_CALL_TIMEOUT_MS = 2_400_000;
 /** Busy or unavailable: the call is repeated after a wait. */
 const RETRY_STATUSES = new Set([429, 502, 503, 504]);
 const RETRY_WAITS_MS = [8_000, 20_000, 45_000];
 
 export interface LiteLLMCompleteOptions {
 	baseUrl: string;
+	/** How long one call may take before it is recorded as a timeout. */
+	timeoutMs?: number;
 	key: string;
 	/** For tests: how to wait between repeated calls. */
 	sleep?: (ms: number) => Promise<void>;
@@ -48,7 +54,7 @@ async function callOnce(
 			stream: true,
 			stream_options: { include_usage: true }
 		}),
-		signal: AbortSignal.timeout(CALL_TIMEOUT_MS)
+		signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_CALL_TIMEOUT_MS)
 	});
 	if (!res.ok || !res.body) {
 		const body = await res.text();
@@ -130,7 +136,9 @@ async function callOnce(
 /**
  * The runner's model call. A busy or unavailable answer (429, 502, 503, 504, or a
  * network error) is repeated after a wait, up to three times, and the number of
- * repeats is recorded; any other failure is returned as it is.
+ * repeats is recorded, on a failure as well as on a success. A timeout is not
+ * repeated: a call that took that long would take that long again. Any other
+ * failure is returned as it is.
  */
 export function litellmComplete(options: LiteLLMCompleteOptions): CompleteFn {
 	const sleep =
@@ -142,11 +150,22 @@ export function litellmComplete(options: LiteLLMCompleteOptions): CompleteFn {
 			try {
 				result = await callOnce(options, request);
 			} catch (error) {
-				result = { ok: false, status: 0, message: String(error).slice(0, 300) };
+				result =
+					error instanceof Error && error.name === 'TimeoutError'
+						? {
+								ok: false,
+								status: 0,
+								timedOut: true,
+								message: `no answer after ${(options.timeoutMs ?? DEFAULT_CALL_TIMEOUT_MS) / 1000}s`
+							}
+						: { ok: false, status: 0, message: String(error).slice(0, 300) };
 			}
-			const retryable = !result.ok && (result.status === 0 || RETRY_STATUSES.has(result.status));
+			const retryable =
+				!result.ok &&
+				!result.timedOut &&
+				(result.status === 0 || RETRY_STATUSES.has(result.status));
 			if (!retryable || retries >= RETRY_WAITS_MS.length) {
-				return result.ok && retries > 0 ? { ...result, retries } : result;
+				return retries > 0 ? { ...result, retries } : result;
 			}
 			await sleep(RETRY_WAITS_MS[retries]);
 			retries++;

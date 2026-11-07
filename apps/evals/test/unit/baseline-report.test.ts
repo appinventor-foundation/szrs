@@ -44,6 +44,22 @@ describe('baseline report', () => {
 		).toContain('abc1234 (with uncommitted changes)');
 	});
 
+	it('shows a timeout as one, apart from what the model wrote', async () => {
+		const base = await file();
+		base.records[1].attempts = [
+			{
+				n: 1,
+				rawText: '',
+				latencyMs: 1,
+				upstreamError: { status: 0, message: 'x', timedOut: true }
+			}
+		];
+		const report = baselineReport(base);
+		expect(report?.rows[1].facts?.outcome).toBe('failed (timeout)');
+		expect(report?.rows[1].metrics.timedOut).toBe(1);
+		expect(report?.rows[0].metrics.timedOut).toBe(0);
+	});
+
 	it('leaves other kinds of file to their own adapters', () => {
 		expect(baselineReport({ kind: 'smoke-check' })).toBeUndefined();
 		expect(baselineReport({ modelIds: ['a'] })).toBeUndefined();

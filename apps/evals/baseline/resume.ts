@@ -8,6 +8,8 @@ import type { BaselineFile } from './summary.js';
 export type RunHeader = Omit<BaselineFile, 'records'> & {
 	litellm?: string;
 	samples?: number;
+	/** How long one call could take before it was recorded as a timeout. */
+	callTimeoutSeconds?: number;
 	resumedAt?: string[];
 };
 

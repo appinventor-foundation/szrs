@@ -23,6 +23,8 @@
  *   --only id,id       only these corpus programs
  *   --tiers S,M        only programs of these size tiers
  *   --concurrency n    calls in flight at once (default 2)
+ *   --call-timeout s   seconds one call may take before it is recorded as a timeout, and not
+ *                      repeated (default 2400)
  *   --run-id name      names the run (default: the date, the time and "baseline"). An existing
  *                      file is never overwritten: use --resume to continue it
  *   --resume           continue the run's results file, skipping what it already holds
@@ -40,7 +42,7 @@ import { promptFingerprint } from '@szrs/llm-proxy/zoom/cache-key.js';
 import { getZoomPrompt, zoomPromptIds } from '@szrs/llm-proxy/zoom/prompts/index.js';
 import { buildZoomMessages } from '@szrs/llm-proxy/zoom/zoom.js';
 import { corpus, type Tier } from './corpus/index.js';
-import { litellmComplete } from './litellm-complete.js';
+import { DEFAULT_CALL_TIMEOUT_MS, litellmComplete } from './litellm-complete.js';
 import { fetchModels, fetchRouteNames, identityFromModelString, isServed } from './models.js';
 import { findBenchmarkModel } from './model-registry.js';
 import { prepareProgram } from './prepare.js';
@@ -88,6 +90,7 @@ const samples = Number(option('samples') ?? 1);
 const only = list(option('only'));
 const tiers = list(option('tiers')) as Tier[] | undefined;
 const concurrency = Number(option('concurrency') ?? 2);
+const callTimeoutSeconds = Number(option('call-timeout') ?? DEFAULT_CALL_TIMEOUT_MS / 1000);
 // The time is in the default name so that two runs on one day are two files.
 const runId =
 	option('run-id') ??
@@ -96,7 +99,7 @@ const outFile = resolve(here, '..', 'results', `${runId}.json`);
 
 function usage(message: string): never {
 	console.error(
-		`${message}\nUsage: pnpm baseline:run --models <id,...> [--prompts v0,v1] [--samples k] [--only id] [--tiers S,M] [--concurrency n] [--run-id name] [--resume] [--dry-run]`
+		`${message}\nUsage: pnpm baseline:run --models <id,...> [--prompts v0,v1] [--samples k] [--only id] [--tiers S,M] [--concurrency n] [--call-timeout s] [--run-id name] [--resume] [--dry-run]`
 	);
 	process.exit(2);
 }
@@ -105,6 +108,7 @@ async function main(): Promise<void> {
 	if (modelIds.length === 0) usage('--models is required');
 	const models = modelIds.map((id) => findBenchmarkModel(id));
 	if (!Number.isInteger(samples) || samples < 1) usage('--samples must be a positive integer');
+	if (!(callTimeoutSeconds > 0)) usage('--call-timeout must be a positive number of seconds');
 	for (const id of promptIds) getZoomPrompt(id); // throws on an unknown id
 
 	const programs = corpus.filter(
@@ -219,7 +223,8 @@ async function main(): Promise<void> {
 				fingerprint: promptFingerprint(getZoomPrompt(id)),
 				params: getZoomPrompt(id).params
 			})),
-			samples
+			samples,
+			callTimeoutSeconds
 		};
 		let merged: RunHeader;
 		try {
@@ -230,7 +235,11 @@ async function main(): Promise<void> {
 		writeFileSync(outFile, `${JSON.stringify({ ...merged, records })}\n`);
 	};
 
-	const complete = litellmComplete({ baseUrl: BASE, key: KEY });
+	const complete = litellmComplete({
+		baseUrl: BASE,
+		key: KEY,
+		timeoutMs: callTimeoutSeconds * 1000
+	});
 	let finished = 0;
 	console.log(
 		`${todo.length} runs to do (${wanted.length - todo.length} already in the file), ${concurrency} at a time.`

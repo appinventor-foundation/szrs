@@ -39,6 +39,7 @@ console.table(
 		firstAttempt: `${cell.validFirstAttempt}/${cell.runs}`,
 		attempts: cell.attempts,
 		truncated: cell.truncated,
+		timeouts: cell.timeouts,
 		loads: cell.loads === undefined ? '' : `${Math.round(cell.loads * 100)}%`,
 		outTokens: cell.meanCompletionTokens === undefined ? '' : Math.round(cell.meanCompletionTokens),
 		seconds: cell.meanSeconds === undefined ? '' : Math.round(cell.meanSeconds)

@@ -20,6 +20,7 @@ function rowMetrics(m: Metrics): ResultRow['metrics'] {
 		valid: rate(m.valid),
 		validFirstAttempt: rate(m.validFirstAttempt),
 		truncated: rate(m.truncated),
+		timedOut: rate(m.failure === 'timeout'),
 		attempts: m.attempts,
 		repairs: Object.values(m.repairs).reduce((a, b) => a + b, 0),
 		loads: levels.length > 0 ? rate(levels.every((level) => level.loads)) : undefined,

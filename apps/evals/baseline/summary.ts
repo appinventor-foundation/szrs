@@ -69,6 +69,8 @@ export interface Cell {
 	validFirstAttempt: number;
 	attempts: number;
 	truncated: number;
+	/** Runs that failed because the call timed out, not because of what the model wrote. */
+	timeouts: number;
 	loads?: number;
 	meanCompletionTokens?: number;
 	meanSeconds?: number;
@@ -95,6 +97,7 @@ export function cells(scored: ReturnType<typeof rescore>): Cell[] {
 			validFirstAttempt: metrics.filter((m) => m.validFirstAttempt).length,
 			attempts: metrics.reduce((sum, m) => sum + m.attempts, 0),
 			truncated: metrics.filter((m) => m.truncated).length,
+			timeouts: metrics.filter((m) => m.failure === 'timeout').length,
 			...(levels.length > 0 && {
 				loads: levels.filter((level) => level.loads).length / levels.length
 			}),
