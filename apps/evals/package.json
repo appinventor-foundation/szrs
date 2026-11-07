@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@szrs/llm-proxy": "workspace:*",
-    "@szrs/llm-proxy-contracts": "workspace:*"
+    "@szrs/llm-proxy-contracts": "workspace:*",
+    "blockly": "13.4.0"
   },
   "devDependencies": {
     "@szrs/eslint-config": "workspace:*",

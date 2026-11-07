@@ -407,6 +407,9 @@ importers:
       '@szrs/llm-proxy-contracts':
         specifier: workspace:*
         version: link:../../packages/llm-proxy-contracts
+      blockly:
+        specifier: 13.4.0
+        version: 13.4.0(jsdom@29.1.1(@noble/hashes@1.8.0))
     devDependencies:
       '@szrs/eslint-config':
         specifier: workspace:*
