@@ -1,0 +1,17 @@
+# LOCAL ONLY. Layered on top of config.yaml by docker-compose.benchmark.yml so that
+# apps/evals can benchmark any OpenRouter model without an alias per model.
+#
+# Never baked into the Dokploy image (docker/litellm/Dockerfile copies only
+# config.yaml): a wildcard in production would let any caller of the proxy's key
+# name any OpenRouter model.
+#
+# The caller names the model in the request, e.g. "model": "openrouter/z-ai/glm-5.3-flash".
+# LiteLLM sends everything after "openrouter/" to OpenRouter, with the API key below.
+include:
+  - config.yaml
+
+model_list:
+  - model_name: 'openrouter/*'
+    litellm_params:
+      model: 'openrouter/*'
+      api_key: os.environ/OPENROUTER_API_KEY
