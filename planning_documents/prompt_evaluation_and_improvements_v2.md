@@ -1,6 +1,6 @@
 # Semantic zoom prompts: a phase-0 fix set, then evidence-driven improvement (v2)
 
-Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset`); this document is now the plan for phase 0b and later.** Third version, written 2026-11-05 against branch `feat/plugindemo` and updated in place after phase 0a. It supersedes `prompt_evaluation_and_improvements.md` and `prompt_evaluation_and_improvements_v1.md`, which are left untouched. Section 3 describes the code as it was before phase 0a, sections 4 to 8 and the appendices are the design as proposed, and section 1 and 6.0 say what the implementation changed; the code and `apps/evals/results/` are the source of truth. Statements about the code were checked against the files named beside them. Anything about App Inventor internals, provider behaviour, thresholds or literature that was not checked is marked **(to verify)**.
+Status: **phases 0a (2026-11-06) and 0b (2026-11-07) are done; this document is now the plan for phase 1 and later.** Phase 0b ran the baseline: section 6.7 says what it found, and `apps/evals/results/2026-11-07-baseline.md` has the numbers. Third version, written 2026-11-05 against branch `feat/plugindemo` and updated in place after phase 0a. It supersedes `prompt_evaluation_and_improvements.md` and `prompt_evaluation_and_improvements_v1.md`, which are left untouched. Section 3 describes the code as it was before phase 0a, sections 4 to 8 and the appendices are the design as proposed, and section 1 and 6.0 say what the implementation changed; the code and `apps/evals/results/` are the source of truth. Statements about the code were checked against the files named beside them. Anything about App Inventor internals, provider behaviour, thresholds or literature that was not checked is marked **(to verify)**.
 
 ## 1. Summary
 
@@ -21,7 +21,7 @@ Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset
 - **Prompt id:** the name of a frozen, versioned prompt, such as `v0`, `v1` or `v1-noplan` (P0-1).
 - **Tier:** a size band of programs in the evaluation corpus (S, M, L, XL, XXL; section 9.2).
 
-**Where we are, and where to start (phase 0b).** Phase 0a is done: items P0-1 to P0-10 are implemented, tested and committed (branch `feat/fixset`), `v1` is frozen and is the default prompt, and the spike and the smoke check have run. Section 6.0 says what each item became, and the measurements are in `apps/evals/results/` (`2026-11-06-cap-and-temperature-spike.md` and `2026-11-06-smoke-check.md`, with 29 screenshots). Where this document and the code disagree, the code is right.
+**Where we are (phase 0b is done; the rest of this section says how it started).** Phase 0a is done: items P0-1 to P0-10 are implemented, tested and committed (branch `feat/fixset`), `v1` is frozen and is the default prompt, and the spike and the smoke check have run. Section 6.0 says what each item became, and the measurements are in `apps/evals/results/` (`2026-11-06-cap-and-temperature-spike.md` and `2026-11-06-smoke-check.md`, with 29 screenshots). Where this document and the code disagree, the code is right.
 
 **What the implementation changed from the plan** (it matters for what comes next):
 
@@ -33,7 +33,7 @@ Status: **phase 0a is implemented and committed (2026-11-06, branch `feat/fixset
 6. **Instrumentation.** Langfuse shows the tags `zoom` and `zoom-prompt:<id>`, not the metadata field itself. Streams report token usage.
 7. **Smaller things.** `v1`'s retry text names the plan (the `v0` text would have told the model to drop it). The cache fingerprint also covers the sampling parameters. The `v1` freeze does not pin the parameters, which are shared with `v0`.
 
-**Where to start phase 0b.**
+**How phase 0b started** (done 2026-11-07; the decisions: the 32768 cap and `temperature` 0.2 stayed, except that two models take no temperature; ten models, each pinned to one provider with no fallback, called through LiteLLM; `apps/evals/` became its own package).
 
 1. **Decide first** (these change the baseline's conditions): the output cap against glm's outliers, or limits on reasoning per model; whether `temperature` stays in the shared parameters (both models accepted it, but reasoning models may ignore it); and which models the baseline covers. The spike and the smoke check used two OpenRouter models (`deepseek-v4.1-flash-1017` and `glm-5.3-flash`); the weakest supported model is still undecided, and local models were not tried.
 2. **Build the harness in `apps/evals/`** (its own package; phase 0a's `apps/llm-proxy/checks/` moved there). It already holds scripts, dated results and a viewer (`pnpm report`) built around rows of model, prompt, size tier and numbers, so the baseline needs a script and an adapter that maps its records (Appendix D) to rows. `zoom()` in `cap-and-temperature-spike.ts` is a working example of what the runner does: it imports the registry, calls `buildZoomMessages` and `parseZoomResponse` directly, bypasses the cache, and the spike also records which model each alias resolves to (`/v1/model/info`).
@@ -478,6 +478,13 @@ Checks: every level loads in Blockly; concept count is sensible; blocks do not o
 ### 6.7 Phase 0b: the baseline
 
 With 0a done, 0b builds the harness (section 9.10) and a first corpus (section 9.2), runs `v0` and `v1` on two or more models under the same parameters, scores the stored outputs with the deterministic metrics (those that apply to both, section 9.4) and a light judge pass, and has a few people skim the outputs side by side. Its question is H0 (does the original have failures that small programs hide?) and H1 (is `v1` better than `v0`?). Its output is the report that phase 1's decisions rest on. Because outputs are stored raw, later validators can be applied to `v0` and `v1` outputs without new model calls.
+
+**Outcome (2026-11-07).** The harness (`apps/evals`, its own package), a 20-program corpus and the deterministic metrics exist, and the baseline ran: `v0` and `v1` on ten models through LiteLLM, 400 runs at commit `61715c4`, $2.69. Results and limits: `apps/evals/results/2026-11-07-baseline.md`. Not done from the plan above: golden annotations, the light judge pass, the human skim, the replay gate in CI, the binding round trip (D7), layout (D25) and stability over several samples (D19). What the baseline found:
+
+- **H0 holds, in a different form from the one proposed.** `v0` produced exactly one Concept block in all 168 of its valid zooms, at every size, so the failure is not hidden by small programs: it shows on any program with several stacks. Its validity did not fall with size in this sample (88% of S runs, 81% of M, 80% of L, 90% of XL).
+- **H1 is mixed on the measures that need no judgment.** `v1`'s Concept count was in the author's provisional range in 97% of its valid zooms against 54% for `v0`, it reached the minimum on 16 of 16 compositions against 0 of 16, and its plan covered every stack once in every valid zoom. But 78% of its runs were valid against 84% for `v0` (more schema failures, concentrated in the weaker models), and it put more Detail values into labels (5.3 against 3.0 per zoom). Whether its abstractions are better needs the judge and the human measures.
+- **The proxy's checks miss some structural errors:** 6 of 324 valid zooms (1.9%) had a level that does not load in Blockly.
+- **Models differ a great deal in how often their output is valid,** from every run of `claude-haiku-5.5`, `gemini-3.5-flash-lite` and `glm-5.3-flash` to 3 of 20 for `qwen3-coder-next` with `v1`. The weakest supported model (open question 2 below) is not decided by this.
 
 ## 7. Phase 1: improve from evidence
 

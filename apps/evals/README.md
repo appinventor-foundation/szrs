@@ -76,3 +76,4 @@ The viewer is built around rows, not around any one check: a row is a model, a p
 - [2026-11-06: cap and temperature spike](results/2026-11-06-cap-and-temperature-spike.md)
 - [2026-11-06: zoom smoke check](results/2026-11-06-smoke-check.md)
 - [2026-11-07: OpenRouter reasoning and provider fields through LiteLLM](results/2026-11-07-openrouter-params.md)
+- [2026-11-07: zoom baseline, `v0` and `v1` on ten models](results/2026-11-07-baseline.md)
