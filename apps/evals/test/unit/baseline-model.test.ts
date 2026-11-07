@@ -181,7 +181,7 @@ describe('the ten benchmark models', () => {
 		'qwen/qwen3.8-27b',
 		'google/gemma-4-26b-a4b-it',
 		'openai/gpt-oss-20b',
-		'deepseek/deepseek-v4.1-flash',
+		'deepseek/deepseek-v4.1-flash-1017',
 		'z-ai/glm-5.3-flash',
 		'minimax/minimax-m3',
 		'google/gemini-3.5-flash-lite',
@@ -189,7 +189,8 @@ describe('the ten benchmark models', () => {
 		'anthropic/claude-haiku-5.5'
 	];
 
-	it('are all in the registry, by their OpenRouter names', () => {
+	it('are exactly the ten in the registry, by their OpenRouter names', () => {
+		expect(benchmarkModels).toHaveLength(10);
 		const names = benchmarkModels.map((model) => model.model);
 		for (const id of ten) expect(names).toContain(`openrouter/${id}`);
 	});

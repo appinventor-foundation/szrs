@@ -63,7 +63,7 @@ const pin = (...order: string[]): RequestExtras => ({
 });
 
 /**
- * The ten models of the baseline (chosen 2026-11-07), and one older one. Pins follow one rule:
+ * The ten models of the baseline (chosen 2026-11-07). Pins follow one rule:
  * the maker\u2019s own endpoint where it is available to this account, otherwise a host serving
  * the weights at bf16 or fp8, with a maximum output of at least the 32768-token cap. A pin is
  * only known to work once a request has been served by it (pnpm baseline:run stops on a
@@ -98,11 +98,11 @@ export const benchmarkModels: BenchmarkModel[] = [
 			'DeepInfra (bf16). The weights are released in MXFP4, so fp4 hosts are also faithful. Reasoning is mandatory.'
 	},
 	{
-		id: 'deepseek-v4.1-flash',
-		model: 'openrouter/deepseek/deepseek-v4.1-flash',
-		request: pin('morph'),
+		id: 'deepseek-v4.1-flash-1017',
+		model: 'openrouter/deepseek/deepseek-v4.1-flash-1017',
+		request: pin('deepinfra'),
 		notes:
-			'Morph (fp8). DeepSeek\u2019s own endpoint is excluded by the OpenRouter account\u2019s privacy setting.'
+			'The newer DeepSeek flash release, chosen over deepseek-v4.1-flash. DeepInfra (fp8): DeepSeek\u2019s own endpoint is excluded by the OpenRouter account\u2019s privacy setting.'
 	},
 	{
 		id: 'glm-5.3-flash',
@@ -139,13 +139,6 @@ export const benchmarkModels: BenchmarkModel[] = [
 		params: { temperature: null },
 		notes:
 			'Anthropic, the maker\u2019s own endpoint. The model does not support temperature, so none is sent.'
-	},
-	{
-		id: 'deepseek-v4.1-flash-1017',
-		model: 'openrouter/deepseek/deepseek-v4.1-flash-1017',
-		request: pin('deepinfra'),
-		notes:
-			'Not one of the ten; the model of the 2026-11-06 spike. DeepInfra (fp8): DeepSeek\u2019s own endpoint is excluded by the OpenRouter account\u2019s privacy setting.'
 	}
 ];
 
