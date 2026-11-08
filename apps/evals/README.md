@@ -53,7 +53,7 @@ Each program is loaded into a headless Blockly workspace and saved first, as the
 
 ## Viewing results
 
-`pnpm report` (from `apps/evals`) turns every `results/*.json` into a self-contained `.html` page beside it, and `pnpm report path/to/file.json` does one. Open the file in a browser: it needs no server and loads nothing from the network. The HTML is generated, so it is gitignored.
+`pnpm report` (from `apps/evals`) turns every `results/*.json` into a self-contained `.html` page beside it, and `pnpm report path/to/file.json` does one. Open the file in a browser: it needs no server and loads nothing from the network. The HTML is generated, so it is gitignored. To read two baseline files in one report (two prompts run on different days, so the prompt-effect table compares them per model), use `pnpm report --compare a.json,b.json --prompts v2,v3 --name <label>`: it writes `results/<label>.html` and changes neither file; the commit is shown only when every file was made on the same one. The colour anchors (D23, and D24a, which flags candidates for labels, not wrong anchors) have their own charts and three columns in that table; the charts average each run's share and the table pools the blocks, so they differ slightly.
 
 The page leads with each model's own name (`glm-5.3-flash`), with its provider beside it and the config alias only as a hint, because the alias says nothing about what was measured. The spike records what each alias resolves to in its `models` block (from LiteLLM's `/v1/model/info`). To add it to a result written without one, run `pnpm spike:cap --models-only <results.json>`; that makes no model calls.
 

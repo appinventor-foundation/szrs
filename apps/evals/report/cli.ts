@@ -7,6 +7,9 @@
  *
  *   pnpm report                      every results/*.json
  *   pnpm report path/to/results.json one file
+ *   pnpm report --compare a.json,b.json [--prompts v2,v3] --name label
+ *                                    two or more baseline files as one report,
+ *                                    results/<label>.html (the files are not changed)
  *
  * The HTML is generated, so it is not committed (see .gitignore).
  */
@@ -14,7 +17,8 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { baselineReport } from './baseline.js';
+import { isBaselineFile } from '../baseline/summary.js';
+import { baselineReport, combineBaselines } from './baseline.js';
 import { renderReport } from './render.js';
 import type { Report } from './rows.js';
 import { screenshotsReport } from './screenshots.js';
@@ -31,6 +35,35 @@ const ADAPTERS: ((json: unknown) => Report | undefined)[] = [
 ];
 
 const resultsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'results');
+const option = (name: string): string | undefined => {
+	const at = process.argv.indexOf(`--${name}`);
+	return at >= 0 ? process.argv[at + 1] : undefined;
+};
+
+if (option('compare') !== undefined) {
+	const name = option('name');
+	if (!name || !/^[\w.-]+$/.test(name)) {
+		console.error('--compare needs --name <label> (letters, digits, . _ -)');
+		process.exit(1);
+	}
+	const inputs = option('compare')!
+		.split(',')
+		.map((file) => JSON.parse(readFileSync(resolve(file.trim()), 'utf8')) as unknown);
+	const baselines = inputs.filter(isBaselineFile);
+	if (baselines.length !== inputs.length || baselines.length < 2) {
+		console.error('--compare takes two or more baseline results files');
+		process.exit(1);
+	}
+	const prompts = option('prompts')
+		?.split(',')
+		.map((id) => id.trim());
+	const combined = baselineReport(combineBaselines(baselines, prompts));
+	const out = resolve(resultsDir, `${name}.html`);
+	writeFileSync(out, renderReport(combined!));
+	console.log(`written ${out}`);
+	process.exit(0);
+}
+
 const requested = process.argv.slice(2);
 const files =
 	requested.length > 0

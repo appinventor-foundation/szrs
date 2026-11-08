@@ -2,7 +2,7 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-import { rescore, isBaselineFile } from '../baseline/summary.js';
+import { rescore, isBaselineFile, type BaselineFile } from '../baseline/summary.js';
 import type { Metrics } from '../baseline/record.js';
 import {
 	BASELINE_CHART_GROUPS,
@@ -19,8 +19,12 @@ const rate = (value: boolean | undefined): number | undefined =>
 const seconds = (value: number | undefined): number | undefined =>
 	value === undefined ? undefined : Math.round(value * 10) / 10;
 
+const share = (part: number, whole: number): number | undefined =>
+	whole > 0 ? part / whole : undefined;
+
 function rowMetrics(m: Metrics): ResultRow['metrics'] {
 	const levels = m.semantic && m.concept ? [m.semantic, m.concept] : [];
+	const { semantic: sa, concept: ca } = m.anchors ?? {};
 	return {
 		// 1 or 0 per run, so the bar is the rate.
 		valid: rate(m.valid),
@@ -43,6 +47,11 @@ function rowMetrics(m: Metrics): ResultRow['metrics'] {
 			levels.length > 0 ? levels.reduce((sum, l) => sum + l.namingProblems.length, 0) : undefined,
 		redundancy: m.redundancy === undefined ? undefined : Math.round(m.redundancy * 100) / 100,
 		bindingValidity: m.bindingValidity,
+		// Colour anchors (D23, D24a). Only a run that has them is counted: no plan, no anchors.
+		semanticAnchored: sa && share(sa.named, sa.zoomBlocks),
+		semanticAnchorsResolved: sa && share(sa.resolved, sa.named),
+		conceptAnchorsResolved: ca && share(ca.resolved, ca.named),
+		anchorFlagged: m.anchorChecks && share(m.anchorChecks.flagged, m.anchorChecks.checked),
 		planCoversStacks: m.coverage?.stacksCovered,
 		promptTokens: m.promptTokens,
 		completionTokens: m.completionTokens,
@@ -126,5 +135,36 @@ export function baselineReport(json: unknown): Report | undefined {
 		],
 		metrics: BASELINE_METRICS,
 		chartGroups: BASELINE_CHART_GROUPS
+	};
+}
+
+/**
+ * Several baseline files as one, so two prompts run on different days can be
+ * read in one report (the prompt-effect table compares the first prompt with the
+ * second). Records keep the order of the files; a model's identity comes from the
+ * first file that names it. `prompts` keeps only those prompts' records. The
+ * commit is kept only when every file was made on the same one, since the report
+ * says which code made the numbers; otherwise the run ids say which files were
+ * combined. Nothing is written: the files are not changed.
+ */
+export function combineBaselines(files: BaselineFile[], prompts?: string[]): BaselineFile {
+	const records = files
+		.flatMap((file) => file.records)
+		.filter((record) => prompts === undefined || prompts.includes(record.prompt.id));
+	const models: NonNullable<BaselineFile['models']> = {};
+	for (const file of files) {
+		for (const [id, identity] of Object.entries(file.models ?? {})) models[id] ??= identity;
+	}
+	const used = new Set(records.map((record) => record.prompt.id));
+	const commits = new Set(files.map((file) => file.code?.commit));
+	const [first] = files;
+	return {
+		kind: 'baseline',
+		runId: files.map((file) => file.runId).join(' + '),
+		modelIds: [...new Set(files.flatMap((file) => file.modelIds))],
+		models,
+		prompts: files.flatMap((file) => file.prompts ?? []).filter((prompt) => used.has(prompt.id)),
+		...(commits.size === 1 && first.code && { code: first.code }),
+		records
 	};
 }

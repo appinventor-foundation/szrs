@@ -166,6 +166,38 @@ export const BASELINE_METRICS: Record<string, MetricInfo> = {
 		about:
 			'Share of the zoom’s bindings that name a Detail field that exists and has the right kind.'
 	},
+	semanticAnchored: {
+		label: 'Semantic blocks the plan gives an anchor',
+		code: 'D23',
+		kind: 'rate',
+		better: 'higher',
+		about:
+			'Of the blocks in the Semantic level, the share the plan names a Detail block for (its anchor), which gives the block its colour. Without one the block is drawn in the default grey. A prompt with no covers (v0 to v2) has none. The bar is the mean over runs of each run’s share.'
+	},
+	semanticAnchorsResolved: {
+		label: 'Semantic anchors that are Detail blocks',
+		code: 'D23',
+		kind: 'rate',
+		better: 'higher',
+		about:
+			'Of the Semantic anchors the plan names, the share that are blocks of the Detail program. An anchor that is not gives the block the default grey. The plan’s target is at least 95%. It says the ids are real, not that the block is the right one.'
+	},
+	conceptAnchorsResolved: {
+		label: 'Concept anchors that are Detail blocks',
+		code: 'D23',
+		kind: 'rate',
+		better: 'higher',
+		about:
+			'Of the Concept blocks, the share whose first listed stack is a block of the Detail program. A v1 or later plan has these; a v2 plan has them too.'
+	},
+	anchorFlagged: {
+		label: 'Semantic anchors flagged by D24a',
+		code: 'D24a',
+		kind: 'rate',
+		better: 'lower',
+		about:
+			'Of the Semantic anchors that are Detail blocks, the share that break a structural rule: a statement block anchored on a value block (or the reverse), or a value the block edits that is not inside its anchor. A candidate generator for labels, not a verdict: it flags real errors and also some correct anchors (a “return” block on a value).'
+	},
 	costUsd: {
 		label: 'Cost per run (US dollars)',
 		code: 'D21',
@@ -228,6 +260,12 @@ export const BASELINE_CHART_GROUPS: MetricGroup[] = [
 		keys: ['valueLeaks', 'namingProblems', 'bindingValidity']
 	},
 	{
+		title: 'Colour anchors',
+		description:
+			'Whether the plan names the Detail block each zoom block stands for, and whether those names are real (v3 on). Nothing here says the block is the right one: that needs labels.',
+		keys: ['semanticAnchored', 'semanticAnchorsResolved', 'conceptAnchorsResolved', 'anchorFlagged']
+	},
+	{
 		title: 'Cost, time and size',
 		description: 'What a run costs, how long it takes, and how much text goes in and out.',
 		keys: ['costUsd', 'totalSeconds', 'promptTokens', 'completionTokens', 'reasoningTokens']
@@ -252,6 +290,25 @@ function runsOf(scored: Scored): Run[] {
 				]
 			: []
 	);
+}
+
+/** 100 times the sum of `part` over the sum of `whole`, over runs that have both; NaN when none do. */
+function pooled(
+	runs: Run[],
+	part: (m: Metrics) => number | undefined,
+	whole: (m: Metrics) => number | undefined
+): number {
+	let p = 0;
+	let w = 0;
+	for (const run of runs) {
+		const a = part(run.m);
+		const b = whole(run.m);
+		if (a !== undefined && b !== undefined) {
+			p += a;
+			w += b;
+		}
+	}
+	return w > 0 ? (100 * p) / w : NaN;
 }
 
 const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
@@ -498,13 +555,35 @@ export function promptEffect(file: BaselineFile, scored: Scored): string {
 					: (100 * valid.filter((run) => run.m.conceptCountInRange).length) / valid.length,
 			tokens: mean(list.map((run) => run.m.completionTokens)),
 			cost: mean(list.map((run) => run.m.costUsd ?? 0)),
-			seconds: mean(list.map((run) => run.m.totalSeconds))
+			seconds: mean(list.map((run) => run.m.totalSeconds)),
+			// Pooled over the valid zooms' blocks, not a mean of per-run shares. NaN when there are none.
+			anchored: pooled(
+				valid,
+				(m) => m.anchors?.semantic.named,
+				(m) => m.anchors?.semantic.zoomBlocks
+			),
+			resolved: pooled(
+				valid,
+				(m) => m.anchors?.semantic.resolved,
+				(m) => m.anchors?.semantic.named
+			),
+			flagged: pooled(
+				valid,
+				(m) => m.anchorChecks?.flagged,
+				(m) => m.anchorChecks?.checked
+			)
 		};
 	};
 	const rowFor = (label: string, a: Run[], b: Run[]): { html: string; order: number } => {
 		const x = stats(a);
 		const y = stats(b);
 		const percent = (value: number): string => `${Math.round(value)}%`;
+		const anchor = (from: number, to: number, better: 'higher' | 'lower'): string =>
+			Number.isNaN(to)
+				? '<span class="was">n/a</span>'
+				: Number.isNaN(from)
+					? `<span class="was">n/a → ${esc(percent(to))}</span>`
+					: delta(from, to, 'points', better, percent);
 		const cells = [
 			delta(x.valid, y.valid, 'points', 'higher', percent),
 			delta(x.first, y.first, 'points', 'higher', percent),
@@ -513,7 +592,10 @@ export function promptEffect(file: BaselineFile, scored: Scored): string {
 				: delta(x.range, y.range, 'points', 'higher', percent),
 			delta(x.tokens, y.tokens, 'percent', 'lower', (v) => fmt(Math.round(v))),
 			delta(x.cost, y.cost, 'percent', 'lower', (v) => `$${v.toFixed(4)}`),
-			delta(x.seconds, y.seconds, 'percent', 'lower', (v) => `${Math.round(v)} s`)
+			delta(x.seconds, y.seconds, 'percent', 'lower', (v) => `${Math.round(v)} s`),
+			anchor(x.anchored, y.anchored, 'higher'),
+			anchor(x.resolved, y.resolved, 'higher'),
+			anchor(x.flagged, y.flagged, 'lower')
 		];
 		return {
 			order: y.valid - x.valid,
@@ -538,7 +620,7 @@ export function promptEffect(file: BaselineFile, scored: Scored): string {
 		runs.filter((run) => run.prompt === other)
 	);
 
-	return `<p class="lead">Each cell is the value with ${code(base)}, then with ${code(other)}, and the change. Sorted by the change in valid runs, biggest gain first. “Concept count in range” is among valid zooms only. ▲ and ▼ say the number went up or down; the word (better, worse, about the same) says whether that is an improvement. Differences of 2 points or 5% or less count as about the same.</p><div class="table-wrap"><table class="effect"><thead><tr><th scope="col">Model</th><th scope="col">Valid runs</th><th scope="col">Valid on the first attempt</th><th scope="col">Concept count in range</th><th scope="col">Output tokens per run</th><th scope="col">Cost per run</th><th scope="col">Seconds per run</th></tr></thead><tbody>${rows.map((row) => row.html).join('')}${all.html}</tbody></table></div>`;
+	return `<p class="lead">Each cell is the value with ${code(base)}, then with ${code(other)}, and the change. Sorted by the change in valid runs, biggest gain first. “Concept count in range” is among valid zooms only. ▲ and ▼ say the number went up or down; the word (better, worse, about the same) says whether that is an improvement. Differences of 2 points or 5% or less count as about the same. The last three columns are about colour: they pool the Semantic blocks of the valid zooms (the charts below average each run’s own share, so they differ a little), “n/a” means that prompt has no covers or no checks, and D24a flags are candidates for labels, not verdicts.</p><div class="table-wrap"><table class="effect"><thead><tr><th scope="col">Model</th><th scope="col">Valid runs</th><th scope="col">Valid on the first attempt</th><th scope="col">Concept count in range</th><th scope="col">Output tokens per run</th><th scope="col">Cost per run</th><th scope="col">Seconds per run</th><th scope="col">Semantic blocks with an anchor (D23)</th><th scope="col">Anchors that are Detail blocks (D23)</th><th scope="col">Anchors flagged (D24a)</th></tr></thead><tbody>${rows.map((row) => row.html).join('')}${all.html}</tbody></table></div>`;
 }
 
 // ---------------------------------------------------------------------------
