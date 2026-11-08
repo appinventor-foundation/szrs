@@ -18,6 +18,7 @@ import {
 	type ZoomProgressEvent
 } from './zoom_client';
 import { ZoomSession, type ZoomInfo } from './zoom_session';
+import { anchorsOf } from '@szrs/llm-proxy-contracts/anchors';
 import { ZoomView } from './zoom_view';
 
 export interface SemanticZoomOptions {
@@ -152,7 +153,7 @@ export class SemanticZoomPlugin {
 		// The user may have moved to another level while this was loading.
 		if (this.level !== level) return;
 		try {
-			this.zoomView.show(result[level]);
+			this.zoomView.show(result[level], anchorsOf(result.plan, level));
 		} catch (error) {
 			// The generated blocks didn't load, so don't keep them (DECISIONS.md #10).
 			this.zoomSession.forget();

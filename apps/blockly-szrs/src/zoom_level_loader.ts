@@ -7,6 +7,8 @@
  */
 import * as Blockly from 'blockly/core';
 import type { ZoomLevel as ZoomLevelResult } from '@szrs/llm-proxy-contracts';
+import type { ZoomAnchors } from '@szrs/llm-proxy-contracts/anchors';
+import { applyAnchorColours } from './zoom_colour';
 
 /**
  * Loads zoomed levels into a workspace. Blockly's block registry is global,
@@ -19,11 +21,17 @@ export class ZoomLevelLoader {
 	/**
 	 * Replaces `target`'s contents with `level`: registers the level's block
 	 * definitions (removing the previous level's), loads its workspace, and
-	 * shows each bound field with its current value from `detail`.
+	 * shows each bound field with its current value from `detail`, and gives the
+	 * zoom blocks that have an anchor in `detail` the colour of their anchor.
 	 *
 	 * @throws If a definition isn't a zoom_ block, or Blockly can't load the level.
 	 */
-	load(level: ZoomLevelResult, target: Blockly.Workspace, detail: Blockly.Workspace): void {
+	load(
+		level: ZoomLevelResult,
+		target: Blockly.Workspace,
+		detail: Blockly.Workspace,
+		anchors: ZoomAnchors = {}
+	): void {
 		target.clear();
 		this.unregister();
 
@@ -43,6 +51,7 @@ export class ZoomLevelLoader {
 			if (field && value !== null && value !== undefined) field.setValue(value);
 		}
 
+		applyAnchorColours(target, detail, anchors);
 		this.arrange(target);
 
 		// Only bound fields can be edited; nothing else in a zoomed level

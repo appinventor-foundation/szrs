@@ -8,6 +8,8 @@
 import * as Blockly from 'blockly/core';
 import type { ZoomLevel as ZoomLevelResult } from '@szrs/llm-proxy-contracts';
 import { ZoomLevelLoader } from './zoom_level_loader';
+import type { ZoomAnchors } from '@szrs/llm-proxy-contracts/anchors';
+import { applyAnchorColours } from './zoom_colour';
 import { ZoomViewEditor } from './zoom_view_editor';
 
 /**
@@ -23,6 +25,7 @@ export class ZoomView {
 	private resizeObserver: ResizeObserver | null = null;
 	private editor: ZoomViewEditor | null = null;
 	private readonly loader = new ZoomLevelLoader();
+	private anchors: ZoomAnchors = {};
 
 	/**
 	 * @param mainWorkspace The workspace holding the Detail program.
@@ -34,17 +37,19 @@ export class ZoomView {
 	) {}
 
 	/**
-	 * Shows `level` over the main workspace.
+	 * Shows `level` over the main workspace, its zoom blocks in the colour of
+	 * their `anchors` in the Detail program.
 	 *
 	 * @throws If Blockly can't load the level. The view is left hidden.
 	 */
-	show(level: ZoomLevelResult): void {
+	show(level: ZoomLevelResult, anchors: ZoomAnchors = {}): void {
 		const view = this.ensureWorkspace();
 		// Displayed before loading, so the loader lays the level out in a workspace
 		// that is on screen.
 		if (this.container) this.container.style.display = '';
 		try {
-			this.loader.load(level, view, this.mainWorkspace);
+			this.anchors = anchors;
+			this.loader.load(level, view, this.mainWorkspace, anchors);
 			this.editor?.setBindings(level.bindings);
 		} catch (error) {
 			this.hide();
@@ -58,6 +63,7 @@ export class ZoomView {
 	hide(): void {
 		if (this.container) this.container.style.display = 'none';
 		this.editor?.setBindings([]);
+		this.anchors = {};
 		this.viewWorkspace?.clear();
 		this.loader.unregister();
 		// Clicking in the view can make it Blockly's main workspace; undo that.
@@ -67,6 +73,7 @@ export class ZoomView {
 	dispose(): void {
 		this.resizeObserver?.disconnect();
 		this.editor?.dispose();
+		this.mainWorkspace.removeChangeListener(this.handleMainEvent);
 		this.viewWorkspace?.dispose();
 		this.loader.unregister();
 		Blockly.utils.dom.removeNode(this.container);
@@ -75,6 +82,18 @@ export class ZoomView {
 		this.viewWorkspace = null;
 		this.container = null;
 	}
+
+	/**
+	 * The view's theme is the main workspace's, also after the host changes it.
+	 * A zoom block shown in a style follows on its own; one that copied a colour
+	 * is given its anchor's colour in the new theme.
+	 */
+	private handleMainEvent = (event: Blockly.Events.Abstract): void => {
+		const view = this.viewWorkspace;
+		if (event.type !== Blockly.Events.THEME_CHANGE || !view) return;
+		view.setTheme(this.mainWorkspace.getTheme());
+		applyAnchorColours(view, this.mainWorkspace, this.anchors);
+	};
 
 	private ensureWorkspace(): Blockly.WorkspaceSvg {
 		if (this.viewWorkspace) return this.viewWorkspace;
@@ -100,6 +119,7 @@ export class ZoomView {
 		// inject() makes the new workspace Blockly's "main" one, and host code
 		// often relies on Blockly.getMainWorkspace() meaning its own workspace.
 		Blockly.common.setMainWorkspace(this.mainWorkspace);
+		this.mainWorkspace.addChangeListener(this.handleMainEvent);
 		this.editor = new ZoomViewEditor(view, this.mainWorkspace, this.onDetailEdited);
 		this.resizeObserver = new ResizeObserver(() => Blockly.svgResize(view));
 		this.resizeObserver.observe(container);
