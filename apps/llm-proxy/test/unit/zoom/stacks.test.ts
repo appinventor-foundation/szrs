@@ -76,6 +76,16 @@ describe('buildStacks', () => {
 		expect(first.inputs.COND).toEqual({ block: { type: 'zoom_x_v', id: 's4' } });
 	});
 
+	it('leaves out an input whose list is empty: nothing runs inside it', () => {
+		const raw = response([
+			[block('zoom_x_a', 's1', { inputs: { DO: [], ELSE: [block('zoom_x_a', 's2')] } })]
+		]);
+
+		expect(buildStacks(raw)).toEqual([]);
+		const [first] = topOf(raw, 'semantic') as { inputs: Record<string, unknown> }[];
+		expect(Object.keys(first.inputs)).toEqual(['ELSE']);
+	});
+
 	it('keeps an input written the way Blockly saves it, and builds the stacks inside it', () => {
 		const raw = response([
 			[

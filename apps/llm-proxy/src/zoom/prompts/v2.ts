@@ -114,6 +114,7 @@ Blocks inside one stack run in the stack's own order. Top-level stacks have no o
 - Labels (message0, tooltip) describe what the block does, never current values: "repeat up to {b7.NUM}", not "repeat up to 10"
 - Every zoom_ block type used in a level's stacks must be defined in that level's blockDefs
 - A zoom block can sit inside a built-in Blockly block only where it fits. A block with "previousStatement" and "nextStatement" goes in a statement input (DO0 of controls_if, DO of controls_for) or after another block, never in a value input (TEXT of text_print, IF0 of controls_if). A block that stands for a value has "output": null instead, and goes only in a value input. Use the input names Blockly gives the built-in block, as the Detail workspace JSON shows them: controls_if has IF0, DO0, IF1, DO1 and ELSE, not IF or DO
+- A built-in block that changes shape with its state needs the same "extraState" the Detail workspace JSON gives it. A controls_if with an else or else-if has "extraState": { "elseIfCount": 1, "hasElse": true }, and without it Blockly refuses its ELSE and IF1 inputs. Copy it from a Detail block of that type, or work it out from the inputs you use
 - Give every block in stacks a short unique "id" ("s1", "s2", … for semantic; "c1", … for concept)
 
 ## Editable values

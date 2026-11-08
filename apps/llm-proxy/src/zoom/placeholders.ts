@@ -34,6 +34,7 @@ export function expandPlaceholders(
 		if (!isRecord(level) || !Array.isArray(level.blockDefs)) continue;
 		const blocks = isRecord(level.workspaceJson) ? allBlocks(level.workspaceJson) : [];
 		const bindings: unknown[] = Array.isArray(level.bindings) ? level.bindings : [];
+		const unused = new Set<unknown>();
 
 		for (const def of level.blockDefs.filter(isRecord)) {
 			if (typeof def.type !== 'string') continue;
@@ -49,11 +50,17 @@ export function expandPlaceholders(
 			if (found.messages.length === 0) continue;
 
 			const users = blocks.filter((block) => block.type === type);
-			if (users.length !== 1) {
+			if (users.length === 0) {
+				// Nothing shows this definition, so its references bind nothing: drop it.
+				unused.add(def);
+				repairs.push(
+					`${where} dropped: it has {…} references and no block in ${name}.workspaceJson uses it`
+				);
+				continue;
+			}
+			if (users.length > 1) {
 				problems.push(
-					users.length === 0
-						? `${where} has {…} references, but ${name}.workspaceJson has no block of that type`
-						: `${where} has {…} references but is used by ${users.length} blocks in ${name}.workspaceJson; a block type with references must be used by exactly one block. Define one type for each block that shows a value`
+					`${where} has {…} references but is used by ${users.length} blocks in ${name}.workspaceJson; a block type with references must be used by exactly one block. Define one type for each block that shows a value`
 				);
 				continue;
 			}
@@ -92,6 +99,7 @@ export function expandPlaceholders(
 				def[`args${message.n}`] = args;
 			}
 		}
+		if (unused.size > 0) level.blockDefs = level.blockDefs.filter((def) => !unused.has(def));
 		level.bindings = bindings;
 	}
 	return { repairs, problems };

@@ -201,6 +201,11 @@ describe('v2', () => {
 		expect(v2.system).toContain('Do not end a label in "do", "then" or "repeat"');
 	});
 
+	it('tells the model to give a built-in block its extraState, as controls_if with an else needs', () => {
+		expect(v2.system).toContain('"extraState": { "elseIfCount": 1, "hasElse": true }');
+		expect(v2.system).toContain('Copy it from a Detail block of that type');
+	});
+
 	it('says where a zoom block may sit inside a built-in block', () => {
 		expect(v2.system).toContain('goes in a statement input');
 		expect(v2.system).toContain('"output": null');

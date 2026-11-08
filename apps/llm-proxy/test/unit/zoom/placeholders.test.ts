@@ -140,6 +140,26 @@ describe('expandPlaceholders', () => {
 		expect(repairs[0]).toContain('moved from controls_repeat_ext "b1" to the math_number "b2"');
 	});
 
+	it('drops a definition with references that no block uses, as a repair, and keeps the rest', () => {
+		const raw = response('repeat {b2.NUM} times');
+		raw.semantic.blockDefs.push({ type: 'zoom_x_unused', message0: 'never shown {b4.TEXT}' });
+
+		const { repairs, problems } = expand(raw);
+
+		expect(problems).toEqual([]);
+		expect(raw.semantic.blockDefs.map((def) => def.type)).toEqual(['zoom_x_op']);
+		expect(repairs).toEqual([
+			'semantic.blockDefs "zoom_x_unused" dropped: it has {…} references and no block in semantic.workspaceJson uses it'
+		]);
+	});
+
+	it('drops the only definition when it is unused, and leaves the schema to say a level needs one', () => {
+		const raw = response('repeat {b2.NUM} times');
+		raw.semantic.workspaceJson = workspace();
+		expand(raw);
+		expect(raw.semantic.blockDefs).toEqual([]);
+	});
+
 	describe('problems, as messages for the model', () => {
 		it('reports an unknown Detail block', () => {
 			const { problems } = expand(response('repeat {b99.NUM} times'));
@@ -191,10 +211,13 @@ describe('expandPlaceholders', () => {
 			expect(problems[0]).toContain('Define one type for each block');
 		});
 
-		it('reports a type with references that no block uses', () => {
+		it('still reports a definition with references that two blocks use', () => {
 			const raw = response('repeat {b2.NUM} times');
-			raw.semantic.workspaceJson = workspace();
-			expect(expand(raw).problems[0]).toContain('has no block of that type');
+			raw.semantic.workspaceJson = workspace(
+				{ type: 'zoom_x_op', id: 's1' },
+				{ type: 'zoom_x_op', id: 's2' }
+			);
+			expect(expand(raw).problems[0]).toContain('is used by 2 blocks');
 		});
 
 		it('reports a reference in the tooltip, where it would show as text', () => {
