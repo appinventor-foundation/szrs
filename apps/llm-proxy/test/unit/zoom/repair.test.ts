@@ -106,6 +106,65 @@ describe('repairZoomResult', () => {
 		);
 	});
 
+	describe('connection types', () => {
+		const withDef = (def: Record<string, unknown>) =>
+			zoom({ blockDefs: [{ type: 'zoom_x_op', message0: 'do it', ...def }] });
+		const defOf = (raw: ReturnType<typeof zoom>) =>
+			(raw.semantic.blockDefs as Record<string, unknown>[])[0];
+
+		it('sets a block type written as a connection check to null, as a repair', () => {
+			const raw = withDef({
+				previousStatement: 'zoom_x_loop',
+				nextStatement: ['zoom_x_a', 'zoom_x_b'],
+				output: 'Number'
+			});
+
+			const repairs = repairZoomResult(raw, detail);
+
+			expect(defOf(raw)).toMatchObject({
+				previousStatement: null,
+				nextStatement: null,
+				output: null
+			});
+			expect(repairs).toEqual([
+				'semantic: set "previousStatement", "nextStatement", "output" of zoom_x_op to null, because zoom blocks have no connection types'
+			]);
+		});
+
+		it('leaves null and a value that is not a type check alone', () => {
+			const raw = withDef({ previousStatement: null, nextStatement: false, output: 7 });
+
+			expect(repairZoomResult(raw, detail)).toEqual([]);
+			expect(defOf(raw)).toMatchObject({
+				previousStatement: null,
+				nextStatement: false,
+				output: 7
+			});
+		});
+
+		it('touches no other key of the definition', () => {
+			const raw = withDef({ nextStatement: 'zoom_x_loop', tooltip: 'does it', colour: 30 });
+			repairZoomResult(raw, detail);
+			expect(defOf(raw)).toMatchObject({ message0: 'do it', tooltip: 'does it', colour: 30 });
+		});
+
+		it('is part of reading a model answer, whichever prompt asked for it', () => {
+			const def = { type: 'zoom_x_op', message0: 'do it', nextStatement: 'zoom_x_op' };
+			const level = {
+				blockDefs: [def],
+				workspaceJson: workspace({ type: 'zoom_x_op', id: 's1' }),
+				bindings: []
+			};
+			const { result, repairs } = parseZoomResponse(
+				JSON.stringify({ semantic: level, concept: plainLevel() }),
+				detail,
+				'v1'
+			);
+			expect(result.semantic.blockDefs[0].nextStatement).toBeNull();
+			expect(repairs).toHaveLength(1);
+		});
+	});
+
 	it('wraps a workspace saved without its outer "blocks" key, which has one meaning', () => {
 		const raw = zoom({
 			workspaceJson: { languageVersion: 0, blocks: [{ type: 'zoom_x_op', id: 'p1' }] }

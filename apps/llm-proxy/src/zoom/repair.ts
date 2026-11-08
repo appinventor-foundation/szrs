@@ -47,7 +47,10 @@ export function repairZoomResult(raw: unknown, detailWorkspace: Record<string, u
 			}
 		}
 
-		for (const def of defs) repairPlaceholders(def, name, repairs);
+		for (const def of defs) {
+			clearConnectionTypes(def, name, repairs);
+			repairPlaceholders(def, name, repairs);
+		}
 
 		const bindings = (Array.isArray(level.bindings) ? level.bindings : []).filter(isRecord);
 		bindings.forEach((binding, i) => {
@@ -67,6 +70,32 @@ export function repairZoomResult(raw: unknown, detailWorkspace: Record<string, u
 		});
 	}
 	return repairs;
+}
+
+const CONNECTION_KEYS = ['previousStatement', 'nextStatement', 'output'] as const;
+
+/**
+ * A zoom block's connections carry no type: its blocks are only displayed
+ * (DECISIONS.md #7), and a type that is a block's name (`"nextStatement":
+ * "zoom_x_loop"`, as qwen3-coder-next writes) is a connection check that makes
+ * Blockly refuse the block next to anything else. A string or a list in
+ * `previousStatement`, `nextStatement` or `output` is such a check, and
+ * `null` ("connects to anything") is the one thing it can mean, so it is set.
+ * Other values are left alone.
+ */
+function clearConnectionTypes(
+	def: Record<string, unknown>,
+	level: string,
+	repairs: string[]
+): void {
+	const typed = CONNECTION_KEYS.filter(
+		(key) => typeof def[key] === 'string' || Array.isArray(def[key])
+	);
+	if (typed.length === 0) return;
+	for (const key of typed) def[key] = null;
+	repairs.push(
+		`${level}: set ${typed.map((key) => `"${key}"`).join(', ')} of ${String(def.type)} to null, because zoom blocks have no connection types`
+	);
 }
 
 function argLists(def: Record<string, unknown>): [string, unknown[]][] {
