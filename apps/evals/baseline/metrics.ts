@@ -6,9 +6,10 @@
  * The deterministic metrics of plan section 9.4 that need no golden annotation
  * and no model: they read a stored record, so they can be run again whenever a
  * validator changes (the replay principle). Not covered yet: D7 (the binding
- * round trip), D9 and D10 (golden), D19 (see `stability`), D20, D22 to D25.
+ * round trip), D9 and D10 (golden), D19 (see `stability`), D20, D22, D24 and D25 (D24 needs golden anchors or a judge; D25 is the screenshots' overlap count).
  */
 import { ZoomResponseSchema, type ZoomLevel, type ZoomResponse } from '@szrs/llm-proxy-contracts';
+import { anchorsOf } from '@szrs/llm-proxy-contracts/anchors';
 
 import { classifyError } from '@szrs/llm-proxy/zoom/attempt-log.js';
 import { allBlocks, byId, isRecord } from '@szrs/llm-proxy/zoom/saved-blocks.js';
@@ -248,6 +249,34 @@ function coverage(
 	};
 }
 
+/**
+ * D23: for each level, the zoom blocks the plan names an anchor for (see the
+ * plugin's `anchorsOf`), and how many of those anchors are blocks of Detail. A
+ * block with an anchor that is not in Detail is drawn in the default colour, so
+ * `resolved` over `named` is how often the plan's colour source works, and
+ * `named` over `zoomBlocks` how many blocks the plan covers at all.
+ */
+function anchorMetrics(
+	plan: NonNullable<EvalRecord['plan']>,
+	result: ZoomResponse,
+	detail: Json
+): NonNullable<Metrics['anchors']> {
+	const detailIds = new Set(allBlocks(detail).flatMap((block) => (block.id ? [block.id] : [])));
+	const of = (name: 'semantic' | 'concept'): NonNullable<Metrics['anchors']>['semantic'] => {
+		const anchors = anchorsOf(plan, name);
+		const zoomBlocks = allBlocks(result[name].workspaceJson as Json).filter((block) =>
+			block.type.startsWith('zoom_')
+		);
+		const named = zoomBlocks.filter((block) => block.id !== undefined && block.id in anchors);
+		return {
+			zoomBlocks: zoomBlocks.length,
+			named: named.length,
+			resolved: named.filter((block) => detailIds.has(anchors[block.id!])).length
+		};
+	};
+	return { semantic: of('semantic'), concept: of('concept') };
+}
+
 export interface ScoreOptions {
 	/** Load levels into a headless Blockly workspace (D5). On by default. */
 	headless?: boolean;
@@ -336,6 +365,7 @@ export function scoreRecord(
 			repairs: repairCounts,
 			...bindingMetricsOf(result, detail),
 			...(plan && { coverage: coverage(plan, detail, result.semantic) }),
+			...(plan && { anchors: anchorMetrics(plan, result, detail) }),
 			semantic,
 			concept,
 			monotonic:

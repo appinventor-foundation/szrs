@@ -8,12 +8,20 @@
  *
  *   pnpm baseline:screenshots [--results a.json[,b.json]] [--name label]
  *                             [--programs a,b] [--models a,b] [--prompts v0,v1]
+ *                             [--colour] [--covers covers.json]
  *
  * For each program it draws the Detail program, then for each model and prompt
  * the run's Semantic and Concept levels, through the plugin's own
  * `ZoomLevelLoader` (see page/main.ts). A run that never produced a zoom has
  * no pictures and is recorded as invalid; a level the plugin cannot load is
  * recorded with the plugin's error.
+ *
+ * By default a zoom is drawn as it was stored. `--colour` draws it as the proxy returns it
+ * today: block definitions with no colour get the default one, and the plugin colours each zoom
+ * block by its anchor in the run's stored plan (concept blocks have one in a `v1` or `v2` run;
+ * Semantic blocks only with `covers`). `--covers` is a JSON file of hand-made covers,
+ * `{ "program/model/prompt": { "s1": ["b3", "b4"] } }`, in canonical ids, added to that run's
+ * plan: it shows what the plugin does with a plan a `v3` run would give, without a model call.
  *
  * `--results` takes several files, comma separated, to put prompts from different
  * runs side by side (the first file wins when two hold the same run). Writes
@@ -39,8 +47,11 @@ import {
 	DEFAULT_PROMPTS,
 	detailFile,
 	levelFile,
+	colouredLevels,
 	mergeResults,
+	runKey,
 	selectRecords,
+	type CoversByRun,
 	type LevelName
 } from './plan.js';
 
@@ -97,6 +108,15 @@ const programs = list('programs', DEFAULT_PROGRAMS);
 const models = list('models', DEFAULT_MODELS);
 const prompts = list('prompts', DEFAULT_PROMPTS);
 const records = selectRecords(merged.records, programs, models, prompts);
+const colour = process.argv.includes('--colour') || option('covers') !== undefined;
+const covers: CoversByRun = option('covers')
+	? (JSON.parse(readFileSync(resolve(option('covers')!), 'utf8')) as CoversByRun)
+	: {};
+const unknownCovers = Object.keys(covers).filter(
+	(key) => !records.some((record) => runKey(record) === key)
+);
+if (unknownCovers.length > 0)
+	throw new Error(`--covers names no selected run: ${unknownCovers.join('; ')}`);
 
 const day = new Date().toISOString().slice(0, 10);
 const name = option('name') ?? 'baseline-screenshots';
@@ -171,9 +191,15 @@ try {
 			continue;
 		}
 		const levels: Record<string, Drawn & { file?: string }> = {};
+		const shown = colour ? colouredLevels(record, covers) : undefined;
 		for (const level of ['semantic', 'concept'] as LevelName[]) {
 			levels[level] = await draw(
-				{ detail, blockDefs, level: record.result[level] },
+				{
+					detail,
+					blockDefs,
+					level: shown?.[level].level ?? record.result[level],
+					anchors: shown?.[level].anchors
+				},
 				levelFile(record.program.id, record.model.id, record.prompt.id, level)
 			);
 		}
@@ -195,6 +221,7 @@ try {
 			sourceRunId: merged.sourceRunId,
 			screenshots: folder,
 			prompts,
+			colour,
 			models: Object.fromEntries(models.map((id) => [id, merged.models[id]])),
 			programs: programEntries,
 			items

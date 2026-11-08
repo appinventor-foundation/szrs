@@ -100,6 +100,11 @@ export interface Metrics {
 	bindingConsistency?: number;
 	/** D11: from the plan (v1 and later). */
 	coverage?: { stacksCovered: number; stacksDuplicated: number; operationsCovered: number };
+	/**
+	 * D23, from the plan (when it has `covers`, or concept ids): per level, the zoom blocks, how
+	 * many of them the plan names an anchor for, and how many of those anchors are Detail blocks.
+	 */
+	anchors?: Record<'semantic' | 'concept', { zoomBlocks: number; named: number; resolved: number }>;
 	semantic?: LevelMetrics;
 	concept?: LevelMetrics;
 	/** D13 */

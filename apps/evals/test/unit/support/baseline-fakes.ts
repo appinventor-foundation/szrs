@@ -11,7 +11,10 @@ import { allBlocks } from '@szrs/llm-proxy/zoom/saved-blocks.js';
 
 /** The parts of a zoom the tests edit. */
 export interface ZoomJson {
-	plan: { concepts: { id: string; stacks: string[]; operations: string[] }[] };
+	plan: {
+		concepts: { id: string; stacks: string[]; operations: string[] }[];
+		covers?: Record<string, string[]>;
+	};
 	semantic: {
 		blockDefs: Record<string, unknown>[];
 		workspaceJson: { blocks: { blocks: Record<string, unknown>[] } };

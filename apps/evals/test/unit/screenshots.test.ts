@@ -8,7 +8,13 @@ import type { EvalRecord } from '../../baseline/record.js';
 import { renderReport } from '../../report/render.js';
 import { screenshotsReport } from '../../report/screenshots.js';
 import { smokeReport } from '../../report/smoke.js';
-import { detailFile, levelFile, mergeResults, selectRecords } from '../../screenshots/plan.js';
+import {
+	colouredLevels,
+	detailFile,
+	levelFile,
+	mergeResults,
+	selectRecords
+} from '../../screenshots/plan.js';
 
 const record = (program: string, model: string, prompt: string, sample = 1): EvalRecord =>
 	({
@@ -257,5 +263,43 @@ describe('screenshotsReport', () => {
 		const report = screenshotsReport(screenshots());
 		expect(report).toBeDefined();
 		expect(renderReport(report!)).toContain('Baseline zooms, drawn');
+	});
+});
+
+describe('colouredLevels', () => {
+	const level = (type: string, extra: object = {}) => ({
+		blockDefs: [{ type, message0: 'x', ...extra }],
+		workspaceJson: {},
+		bindings: []
+	});
+	const stored = {
+		...record('a', 'm1', 'v2'),
+		result: { semantic: level('zoom_a_op'), concept: level('zoom_a_c', { colour: 30 }) },
+		plan: { concepts: [{ id: 'c1', stacks: ['b1', 'b2'], operations: ['s1'] }] }
+	} as unknown as EvalRecord;
+
+	it('gives definitions with no colour the default one and keeps a colour the model gave', () => {
+		const shown = colouredLevels(stored)!;
+
+		expect(shown.semantic.level.blockDefs[0].colour).toBe('#7d8590');
+		expect(shown.concept.level.blockDefs[0].colour).toBe(30);
+	});
+
+	it('anchors a concept block by its concept, and a Semantic block only when covers say so', () => {
+		expect(colouredLevels(stored)!.concept.anchors).toEqual({ c1: 'b1' });
+		expect(colouredLevels(stored)!.semantic.anchors).toEqual({});
+
+		const covered = colouredLevels(stored, { 'a/m1/v2': { s1: ['b4', 'b1'] } })!;
+		expect(covered.semantic.anchors).toEqual({ s1: 'b4' });
+		// Covers for another run are not applied to this one.
+		expect(colouredLevels(stored, { 'a/m1/v1': { s1: ['b4'] } })!.semantic.anchors).toEqual({});
+	});
+
+	it('leaves the stored record as it was, and has nothing for a run with no zoom', () => {
+		colouredLevels(stored, { 'a/m1/v2': { s1: ['b4'] } });
+
+		expect(stored.result!.semantic.blockDefs[0]).not.toHaveProperty('colour');
+		expect(stored.plan).not.toHaveProperty('covers');
+		expect(colouredLevels(record('a', 'm1', 'v0'))).toBeUndefined();
 	});
 });

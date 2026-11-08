@@ -2,6 +2,10 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
+import type { ZoomLevel } from '@szrs/llm-proxy-contracts';
+import { anchorsOf, type ZoomAnchors } from '@szrs/llm-proxy-contracts/anchors';
+import { applyDefaultColour } from '@szrs/llm-proxy/zoom/colour.js';
+
 import type { EvalRecord } from '../baseline/record.js';
 
 /** Which stored runs to draw by default: the programs and models the user chose on 2026-11-07. */
@@ -96,5 +100,34 @@ export function mergeResults(files: ResultsFile[]): {
 		sourceRunId: files.map((file) => file.runId).join(', '),
 		models,
 		records: files.flatMap((file) => file.records)
+	};
+}
+
+/** Hand-made `covers`, by `program/model/prompt` (the stored runs of `v0` to `v2` have none). */
+export type CoversByRun = Record<string, Record<string, string[]>>;
+
+export const runKey = (record: EvalRecord): string =>
+	`${record.program.id}/${record.model.id}/${record.prompt.id}`;
+
+/**
+ * A stored run's two levels as the proxy would return them today, with the
+ * anchors the plugin would colour them by. The proxy gives a definition that
+ * sets no colour the default one; the anchors come from the run's stored plan,
+ * with `covers` added from `covers` when given (a stored `v0` to `v2` run has
+ * none, so its Semantic blocks have no anchors unless covers are made by hand).
+ * The record is not changed. Undefined for a run with no zoom.
+ */
+export function colouredLevels(
+	record: EvalRecord,
+	covers: CoversByRun = {}
+): Record<LevelName, { level: ZoomLevel; anchors: ZoomAnchors }> | undefined {
+	if (!record.result) return undefined;
+	const result = structuredClone(record.result);
+	applyDefaultColour(result);
+	const given = covers[runKey(record)];
+	const plan = record.plan && { ...record.plan, ...(given && { covers: given }) };
+	return {
+		semantic: { level: result.semantic, anchors: anchorsOf(plan, 'semantic') },
+		concept: { level: result.concept, anchors: anchorsOf(plan, 'concept') }
 	};
 }

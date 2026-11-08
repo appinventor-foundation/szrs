@@ -289,6 +289,33 @@ describe('metrics', () => {
 		expect(score(JSON.stringify(json)).metrics.coverage?.stacksCovered).toBe(0);
 	});
 
+	it('counts the zoom blocks whose plan anchor is a Detail block (D23)', () => {
+		const json = JSON.parse(validZoom()) as ZoomJson;
+		const detailIds = allBlocks(prepared.workspaceJson).map((block) => block.id!);
+
+		// A plan with no covers: the Concept block has its anchor (the concept's first stack), the Semantic one none.
+		expect(score(JSON.stringify(json)).metrics.anchors).toEqual({
+			semantic: { zoomBlocks: 1, named: 0, resolved: 0 },
+			concept: { zoomBlocks: 1, named: 1, resolved: 1 }
+		});
+
+		json.plan.covers = { s1: [detailIds[1], detailIds[0]] };
+		expect(score(JSON.stringify(json)).metrics.anchors?.semantic).toEqual({
+			zoomBlocks: 1,
+			named: 1,
+			resolved: 1
+		});
+
+		// Ids that are not in Detail are named but do not resolve; a plan entry for a block the level lacks is not counted.
+		json.plan.covers = { s1: ['b999'], s7: [detailIds[0]] };
+		json.plan.concepts[0].stacks = ['b998'];
+		const metrics = score(JSON.stringify(json)).metrics;
+		expect(metrics.anchors).toEqual({
+			semantic: { zoomBlocks: 1, named: 1, resolved: 0 },
+			concept: { zoomBlocks: 1, named: 1, resolved: 0 }
+		});
+	});
+
 	it('scores a zoom that breaks a plan rule as valid, but not as valid on the first attempt', () => {
 		const metrics = score(validZoom({ conceptBlocks: 3 })).metrics;
 		expect(metrics).toMatchObject({ valid: true, validFirstAttempt: false });

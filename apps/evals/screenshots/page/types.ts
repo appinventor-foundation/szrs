@@ -3,6 +3,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0
 
 import type { ZoomLevel } from '@szrs/llm-proxy-contracts';
+import type { ZoomAnchors } from '@szrs/llm-proxy-contracts/anchors';
 
 type Json = Record<string, unknown>;
 
@@ -13,6 +14,8 @@ export interface Job {
 	blockDefs?: Json[];
 	/** A zoom level to draw; without it the Detail program itself is drawn. */
 	level?: ZoomLevel;
+	/** For a level: the Detail block each zoom block stands for; the plugin colours the zoom blocks by them. */
+	anchors?: ZoomAnchors;
 }
 
 export interface Drawn {

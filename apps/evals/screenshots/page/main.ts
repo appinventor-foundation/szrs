@@ -80,11 +80,19 @@ function colours(workspace: Blockly.Workspace): string[] {
 	const empty: Drawn = { blocks: 0, topBlocks: 0, overlaps: 0, colours: [] };
 	try {
 		if (job.level) {
-			// The plugin keeps the Detail program in its own workspace; the loader reads bound values from it.
-			const detail = new Blockly.Workspace();
-			Blockly.serialization.workspaces.load(job.detail, detail);
-			loader.load(job.level, workspace, detail);
-			detail.dispose();
+			// The plugin keeps the Detail program in its own, rendered workspace; the loader reads bound
+			// values and the anchors' styles and colours from it. Hidden here, as it is not drawn.
+			const hidden = document.createElement('div');
+			hidden.style.cssText = 'position:absolute;left:-10000px;width:400px;height:300px';
+			document.body.appendChild(hidden);
+			const detail = Blockly.inject(hidden, { sounds: false });
+			try {
+				Blockly.serialization.workspaces.load(job.detail, detail);
+				loader.load(job.level, workspace, detail, job.anchors);
+			} finally {
+				detail.dispose();
+				hidden.remove();
+			}
 		} else {
 			Blockly.serialization.workspaces.load(job.detail, workspace);
 			// Canonical Detail has no positions, so lay the stacks out as the user's own would be.
