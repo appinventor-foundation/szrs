@@ -104,9 +104,8 @@ describe('v1', () => {
 		}
 	};
 
-	it('is registered, and is the default', () => {
+	it('is registered', () => {
 		expect(zoomPromptIds()).toEqual(['v0', 'v1', 'v2']);
-		expect(DEFAULT_PROMPT_ID).toBe('v1');
 	});
 
 	it('keeps the block definition, binding and encoding rules word for word', () => {
@@ -161,15 +160,44 @@ describe('v1', () => {
 	});
 });
 
-// v2 is not frozen yet (it has not been baselined), so no hashes are pinned.
-// Freeze it, with the hashes, once it has produced results we rely on.
+// v2 became the default on 2026-11-08 and its results are what later prompts are
+// measured against. If one of these fails, someone edited it: put the change in a
+// new prompt id (v3) instead. Its user message is built exactly as v1's, so those
+// two hashes are v1's. Its sampling parameters are not pinned here, as for v1.
+describe('v2 is frozen', () => {
+	const v2 = getZoomPrompt('v2');
+	const probe = {
+		slug: 'probe-slug',
+		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
+	};
+
+	it('has the system text it was frozen with', () => {
+		expect(sha256(v2.system)).toBe(
+			'21267b0e0a8788a2ca2636c1484d99371a13e5501c63e7d04b72d4d271078ca7'
+		);
+	});
+
+	it('builds the user message it was frozen with', () => {
+		expect(sha256(v2.buildUser(probe))).toBe(
+			'a6c7277661a7d5a1c88fdf008fa1bee0e16999fb330581c6d318b379dfa66289'
+		);
+	});
+
+	it('builds the retry message it was frozen with', () => {
+		expect(sha256(v2.buildUser(probe, 'concept: missing'))).toBe(
+			'43a4068cf0ad3c388b11f4c0440aede784b99c6142cdcf6d5f28ce0c89ca1df4'
+		);
+	});
+});
+
 describe('v2', () => {
 	const v1 = getZoomPrompt('v1');
 	const v2 = getZoomPrompt('v2');
 
-	it('is registered but is not the default', () => {
+	it('is registered and is the default, so a request that names no prompt uses it', () => {
 		expect(zoomPromptIds()).toContain('v2');
-		expect(DEFAULT_PROMPT_ID).not.toBe('v2');
+		expect(DEFAULT_PROMPT_ID).toBe('v2');
+		expect(getZoomPrompt().id).toBe('v2');
 	});
 
 	it('asks for placeholders, which the proxy expands; v0 and v1 ask for bindings', () => {

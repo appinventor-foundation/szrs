@@ -30,9 +30,12 @@ import type { ZoomPrompt } from './types.js';
 // The plan, the level rules, the block definition rules and the JSON encoding
 // rules are v1's, word for word, except where they mention fields or bindings.
 //
-// Not frozen until it has been baselined (then never edit it: a test pins its
-// hashes, and a change is v3.ts). Not the default: set `output` so the proxy
-// expands the references.
+// FROZEN 2026-11-08, when it became the default (baselines:
+// apps/evals/results/2026-11-07-v2-baseline.md and 2026-11-08-v2-baseline-2.md;
+// pictures: 2026-11-08-v0-v1-v2-screenshots.md). Never edit the text or how the
+// user message is built: a test pins their hashes. Change the wording by adding
+// v3.ts and registering it beside this one. `output` and `workspace` tell the
+// proxy to expand what the model writes (placeholders.ts, stacks.ts).
 export const V2_SYSTEM = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (the Detail level) and a slug, and describe the same program at two higher levels of abstraction. Your output is only ever displayed: the program always runs from the Detail blocks, so you never write code.
 
 ## Output format

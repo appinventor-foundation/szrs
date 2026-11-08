@@ -22,6 +22,7 @@ Status: written 2026-11-07 on branch `feat/promptphase1`, after phases 0a and 0b
 3. A `v2` zoom has **no bound dropdowns**, and a block type that shows a Detail value must be used by exactly one block. Both are checked against data in section 6.
 4. Before the `v2` run, the user wants to look at screenshots of a small subset of the stored zooms (section 7, step 2), and this document written (done).
 5. After looking at the screenshots, split Semantic stacks are measured (D28) and `v2` carries a rule against them (section 5, split stacks, and criterion C8).
+6. **`v2` became the default prompt and was frozen on 2026-11-08,** on the user's decision after the rerun and the pictures (section 6, outcomes of both runs). Its text and messages are pinned by hash tests, so a change is `v3`. Not decided and not done: whether plan coverage and concept-count bounds become blocking checks (section 7, step 5), the proxy setting connection types to `null`, colour from the host's own blocks (step 7).
 
 ## 2. How to read this document and v2
 
