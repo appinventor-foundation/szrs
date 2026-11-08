@@ -65,3 +65,36 @@ export function selectRecords(
 	}
 	return selected;
 }
+
+/** What the script needs from one results file. */
+export interface ResultsFile {
+	/** The file's name, for the manifest. */
+	name: string;
+	runId: string;
+	models: Record<string, unknown>;
+	records: EvalRecord[];
+}
+
+/**
+ * Several results files as one: the records in file order (so when two files
+ * hold the same program, model and prompt, the first file wins, which
+ * `selectRecords` relies on), each model's identity from the first file that
+ * names it, and the file names and run ids joined for the manifest.
+ */
+export function mergeResults(files: ResultsFile[]): {
+	source: string;
+	sourceRunId: string;
+	models: Record<string, unknown>;
+	records: EvalRecord[];
+} {
+	const models: Record<string, unknown> = {};
+	for (const file of files) {
+		for (const [id, identity] of Object.entries(file.models)) models[id] ??= identity;
+	}
+	return {
+		source: files.map((file) => file.name).join(', '),
+		sourceRunId: files.map((file) => file.runId).join(', '),
+		models,
+		records: files.flatMap((file) => file.records)
+	};
+}

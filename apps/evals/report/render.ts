@@ -516,7 +516,7 @@ h3{font-size:15px;margin:0 0 4px}
 .gallery{display:grid;grid-template-columns:1fr;gap:12px;margin:8px 0 12px}
 .shot{margin:0}
 /* Prompts side by side (one column on a phone); each column stacks its levels. */
-.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
 .compare>div{min-width:0}
 h4{font-size:13px;margin:0 0 4px;color:var(--secondary)}
 .shot img{display:block;width:100%;height:auto;border:1px solid var(--border);border-radius:6px;background:#fff}

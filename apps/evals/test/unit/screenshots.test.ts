@@ -8,7 +8,7 @@ import type { EvalRecord } from '../../baseline/record.js';
 import { renderReport } from '../../report/render.js';
 import { screenshotsReport } from '../../report/screenshots.js';
 import { smokeReport } from '../../report/smoke.js';
-import { detailFile, levelFile, selectRecords } from '../../screenshots/plan.js';
+import { detailFile, levelFile, mergeResults, selectRecords } from '../../screenshots/plan.js';
 
 const record = (program: string, model: string, prompt: string, sample = 1): EvalRecord =>
 	({
@@ -45,6 +45,51 @@ describe('selectRecords', () => {
 		expect(() => selectRecords(stored, ['a', 'zzz'], ['m1', 'm2'], ['v0'])).toThrow(
 			'a / m2 / v0; zzz / m1 / v0; zzz / m2 / v0'
 		);
+	});
+});
+
+describe('mergeResults', () => {
+	const file = (
+		name: string,
+		runId: string,
+		models: Record<string, unknown>,
+		records: EvalRecord[]
+	) => ({
+		name,
+		runId,
+		models,
+		records
+	});
+
+	it('keeps the records in file order, so the first file wins for a repeated run', () => {
+		const a = record('p', 'm', 'v1');
+		const b = record('p', 'm', 'v1');
+		const c = record('p', 'm', 'v2');
+		const merged = mergeResults([
+			file('one.json', 'r1', {}, [a]),
+			file('two.json', 'r2', {}, [b, c])
+		]);
+
+		expect(merged.records).toEqual([a, b, c]);
+		expect(selectRecords(merged.records, ['p'], ['m'], ['v1'])[0]).toBe(a);
+		expect(selectRecords(merged.records, ['p'], ['m'], ['v2'])[0]).toBe(c);
+	});
+
+	it('takes each model identity from the first file that has it, and names the files and runs', () => {
+		const merged = mergeResults([
+			file('one.json', 'r1', { m: { model: 'first' } }, []),
+			file('two.json', 'r2', { m: { model: 'second' }, n: { model: 'only-second' } }, [])
+		]);
+
+		expect(merged.models).toEqual({ m: { model: 'first' }, n: { model: 'only-second' } });
+		expect(merged.source).toBe('one.json, two.json');
+		expect(merged.sourceRunId).toBe('r1, r2');
+	});
+
+	it('is fine with one file', () => {
+		const merged = mergeResults([file('only.json', 'r', {}, [record('p', 'm', 'v0')])]);
+		expect(merged.source).toBe('only.json');
+		expect(merged.records).toHaveLength(1);
 	});
 });
 

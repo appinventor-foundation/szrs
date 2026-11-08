@@ -6,7 +6,7 @@
  * Draws the zooms the baseline stored, in a real browser, and keeps the
  * pictures: no model is called, so it costs nothing. Run from apps/evals:
  *
- *   pnpm baseline:screenshots [--results results/2026-11-07-baseline.json]
+ *   pnpm baseline:screenshots [--results a.json[,b.json]] [--name label]
  *                             [--programs a,b] [--models a,b] [--prompts v0,v1]
  *
  * For each program it draws the Detail program, then for each model and prompt
@@ -15,7 +15,9 @@
  * no pictures and is recorded as invalid; a level the plugin cannot load is
  * recorded with the plugin's error.
  *
- * Writes results/<date>-baseline-screenshots.json and, beside it, a folder of
+ * `--results` takes several files, comma separated, to put prompts from different
+ * runs side by side (the first file wins when two hold the same run). Writes
+ * results/<date>-<label>.json (label default `baseline-screenshots`) and, beside it, a folder of
  * the same name with the PNGs. An existing result is never overwritten (a
  * second run is `-2`). `pnpm report` turns the JSON into a gallery.
  */
@@ -37,6 +39,7 @@ import {
 	DEFAULT_PROMPTS,
 	detailFile,
 	levelFile,
+	mergeResults,
 	selectRecords,
 	type LevelName
 } from './plan.js';
@@ -77,19 +80,27 @@ async function bundle(): Promise<string> {
 	return chunk.code;
 }
 
-const resultsFile = resolve(option('results') ?? resolve(resultsDir, '2026-11-07-baseline.json'));
-const baseline = JSON.parse(readFileSync(resultsFile, 'utf8')) as {
-	runId: string;
-	models: Record<string, unknown>;
-	records: EvalRecord[];
-};
+const resultFiles = (option('results') ?? resolve(resultsDir, '2026-11-07-baseline.json'))
+	.split(',')
+	.map((file) => resolve(file.trim()));
+const merged = mergeResults(
+	resultFiles.map((file) => {
+		const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+			runId: string;
+			models: Record<string, unknown>;
+			records: EvalRecord[];
+		};
+		return { name: basename(file), ...parsed };
+	})
+);
 const programs = list('programs', DEFAULT_PROGRAMS);
 const models = list('models', DEFAULT_MODELS);
 const prompts = list('prompts', DEFAULT_PROMPTS);
-const records = selectRecords(baseline.records, programs, models, prompts);
+const records = selectRecords(merged.records, programs, models, prompts);
 
 const day = new Date().toISOString().slice(0, 10);
-const manifestPath = freshPath(resultsDir, `${day}-baseline-screenshots`, '.json');
+const name = option('name') ?? 'baseline-screenshots';
+const manifestPath = freshPath(resultsDir, `${day}-${name}`, '.json');
 const folder = basename(manifestPath, '.json');
 const shotsDir = resolve(resultsDir, folder);
 mkdirSync(shotsDir, { recursive: true });
@@ -147,6 +158,7 @@ try {
 			program: record.program.id,
 			model: record.model.id,
 			prompt: record.prompt.id,
+			run: record.runId,
 			attempts: record.attempts.length,
 			...(record.metrics?.failure && { failure: record.metrics.failure }),
 			...(record.metrics?.failureMessage && {
@@ -179,11 +191,11 @@ try {
 		JSON.stringify({
 			kind: 'baseline-screenshots',
 			ranAt: new Date().toISOString(),
-			source: basename(resultsFile),
-			sourceRunId: baseline.runId,
+			source: merged.source,
+			sourceRunId: merged.sourceRunId,
 			screenshots: folder,
 			prompts,
-			models: Object.fromEntries(models.map((id) => [id, baseline.models[id]])),
+			models: Object.fromEntries(models.map((id) => [id, merged.models[id]])),
 			programs: programEntries,
 			items
 		})
