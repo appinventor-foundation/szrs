@@ -16,6 +16,7 @@ import { allBlocks, byId, isRecord } from '@szrs/llm-proxy/zoom/saved-blocks.js'
 import { checkZoomResult } from '@szrs/llm-proxy/zoom/validate.js';
 import { parseZoomResponse, prepareOutput } from '@szrs/llm-proxy/zoom/zoom.js';
 import type { CorpusProgram } from './corpus/index.js';
+import { checkAnchors } from './anchor-check.js';
 import { loadsInBlockly } from './headless.js';
 import type { Attempt, AttemptOutcome, EvalRecord, LevelMetrics, Metrics } from './record.js';
 import { snakeSlug, type PreparedProgram } from './prepare.js';
@@ -366,6 +367,9 @@ export function scoreRecord(
 			...bindingMetricsOf(result, detail),
 			...(plan && { coverage: coverage(plan, detail, result.semantic) }),
 			...(plan && { anchors: anchorMetrics(plan, result, detail) }),
+			...(plan?.covers && {
+				anchorChecks: checkAnchors(plan, result, detail, prepared.program.blockDefs)
+			}),
 			semantic,
 			concept,
 			monotonic:

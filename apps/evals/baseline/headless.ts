@@ -73,3 +73,25 @@ export function loadsInBlockly(level: { blockDefs: Json[]; workspaceJson: Json }
 		};
 	}
 }
+
+/**
+ * Whether a block type is a statement block (it has a previous or next
+ * connection), a value block (an output connection) or neither or unknown, as
+ * Blockly makes it. `blockDefs` are a custom block set's definitions.
+ */
+export function blockShape(type: string, blockDefs: Json[] = []): 'statement' | 'value' | 'other' {
+	try {
+		return withDefinitions(blockDefs, () => {
+			const workspace = new Blockly.Workspace();
+			try {
+				const block = workspace.newBlock(type);
+				if (block.outputConnection) return 'value';
+				return block.previousConnection || block.nextConnection ? 'statement' : 'other';
+			} finally {
+				workspace.dispose();
+			}
+		});
+	} catch {
+		return 'other';
+	}
+}

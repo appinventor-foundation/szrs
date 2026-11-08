@@ -5,6 +5,7 @@
 import type { ZoomResponse } from '@szrs/llm-proxy-contracts';
 
 import type { ZoomPlan } from '@szrs/llm-proxy/zoom/plan.js';
+import type { AnchorChecks } from './anchor-check.js';
 import type { Tier } from './corpus/index.js';
 import type { RequestExtras } from './model-registry.js';
 
@@ -105,6 +106,8 @@ export interface Metrics {
 	 * many of them the plan names an anchor for, and how many of those anchors are Detail blocks.
 	 */
 	anchors?: Record<'semantic' | 'concept', { zoomBlocks: number; named: number; resolved: number }>;
+	/** D24a: the rules that can be checked without golden labels (`anchor-check.ts`), for the Semantic level. */
+	anchorChecks?: AnchorChecks;
 	semantic?: LevelMetrics;
 	concept?: LevelMetrics;
 	/** D13 */

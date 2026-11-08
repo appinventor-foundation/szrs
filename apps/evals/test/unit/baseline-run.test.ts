@@ -316,6 +316,20 @@ describe('metrics', () => {
 		});
 	});
 
+	it('scores the anchor checks only for a plan with covers (D24a)', () => {
+		const json = JSON.parse(validZoom({ withBinding: true })) as ZoomJson;
+		expect(score(JSON.stringify(json)).metrics.anchorChecks).toBeUndefined();
+
+		// Anchored on the number the zoom block edits: a value block under a statement block.
+		const number = allBlocks(prepared.workspaceJson).find(
+			(block) => block.type === 'math_number' && block.fields?.NUM === 10
+		)!;
+		json.plan.covers = { s1: [number.id!] };
+		const checks = score(JSON.stringify(json)).metrics.anchorChecks;
+		expect(checks).toMatchObject({ checked: 1, withBindings: 1, flagged: 1 });
+		expect(checks?.problems.map((p) => p.rule)).toEqual(['shape']);
+	});
+
 	it('scores a zoom that breaks a plan rule as valid, but not as valid on the first attempt', () => {
 		const metrics = score(validZoom({ conceptBlocks: 3 })).metrics;
 		expect(metrics).toMatchObject({ valid: true, validFirstAttempt: false });
