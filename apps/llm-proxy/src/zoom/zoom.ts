@@ -6,10 +6,12 @@ import {
 } from '@szrs/llm-proxy-contracts';
 import { z } from 'zod';
 
+import { applyDefaultColour } from './colour.js';
 import { getZoomPrompt } from './prompts/index.js';
 import { checkPlan } from './plan-check.js';
 import { readPlan, type ZoomPlan } from './plan.js';
 import { expandPlaceholders } from './placeholders.js';
+import { isRecord } from './saved-blocks.js';
 import { buildStacks } from './stacks.js';
 import { repairZoomResult } from './repair.js';
 import { checkZoomResult } from './validate.js';
@@ -123,7 +125,11 @@ export function parseZoomResponse(
 	const prepared = prepareOutput(raw, detailWorkspace, promptId);
 	if (prepared.failure) throw prepared.failure;
 	const { repairs } = prepared;
-	const result = ZoomResponseSchema.safeParse(raw);
+	// The plan is read leniently above, and returned with the result: a plan the
+	// schema would not accept must not cost a retry.
+	const result = ZoomResponseSchema.safeParse(
+		isRecord(raw) ? Object.fromEntries(Object.entries(raw).filter(([key]) => key !== 'plan')) : raw
+	);
 	if (!result.success) {
 		throw new ZoomOutputError('schema', inPromptWords(z.prettifyError(result.error), promptId));
 	}
@@ -135,5 +141,7 @@ export function parseZoomResponse(
 	const warnings = checkPlan(plan, result.data, detailWorkspace).map((message) =>
 		inPromptWords(message, promptId)
 	);
-	return { result: result.data, repairs, ...(plan && { plan }), warnings };
+	const response: ZoomResponse = { ...result.data, ...(plan && { plan }) };
+	applyDefaultColour(response);
+	return { result: response, repairs, ...(plan && { plan }), warnings };
 }

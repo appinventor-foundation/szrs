@@ -72,8 +72,8 @@ export function normalizeWorkspace(workspaceJson: Record<string, unknown>): Norm
 }
 
 /**
- * Returns `result` with the Detail block ids in its bindings mapped back to
- * the ids in the caller's workspace. Works on a copy, so a result kept for
+ * Returns `result` with the Detail block ids in its bindings and in its plan
+ * (`stacks` and `covers`) mapped back to the ids in the caller's workspace. Works on a copy, so a result kept for
  * reuse is never changed.
  */
 export function restoreIds(result: ZoomResponse, originalIds: Map<string, string>): ZoomResponse {
@@ -83,6 +83,13 @@ export function restoreIds(result: ZoomResponse, originalIds: Map<string, string
 			for (const ref of binding.detail) {
 				ref.block = originalIds.get(ref.block) ?? ref.block;
 			}
+		}
+	}
+	if (restored.plan) {
+		const restore = (id: string): string => originalIds.get(id) ?? id;
+		for (const concept of restored.plan.concepts) concept.stacks = concept.stacks.map(restore);
+		for (const ids of Object.values(restored.plan.covers ?? {})) {
+			ids.forEach((id, i) => (ids[i] = restore(id)));
 		}
 	}
 	return restored;

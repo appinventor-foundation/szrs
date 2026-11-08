@@ -29,7 +29,7 @@ describe('zoomCacheKey', () => {
 	it('is prefixed, versioned and stable', () => {
 		const key = zoomCacheKey(request);
 
-		expect(key).toMatch(/^szrs:zoom:v2:[0-9a-f]{64}$/);
+		expect(key).toMatch(/^szrs:zoom:v3:[0-9a-f]{64}$/);
 		expect(zoomCacheKey({ ...request })).toBe(key);
 	});
 

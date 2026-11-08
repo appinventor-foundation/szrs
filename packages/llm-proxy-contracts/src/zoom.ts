@@ -104,9 +104,38 @@ export const ZoomLevelSchema = z.object({
 });
 export type ZoomLevel = z.infer<typeof ZoomLevelSchema>;
 
+/** One feature or responsibility in the model's plan. */
+export const ZoomPlanConceptSchema = z.object({
+	/** Also the id of this concept's block in the Concept level. */
+	id: z.string().optional(),
+	name: z.string().optional(),
+	/** Ids of the top-level Detail blocks the concept covers; the first is its anchor. */
+	stacks: z.array(z.string()),
+	/** Ids of the blocks in the Semantic level that describe it. */
+	operations: z.array(z.string())
+});
+export type ZoomPlanConcept = z.infer<typeof ZoomPlanConceptSchema>;
+
+/**
+ * What the model planned the levels from. The plugin uses it to look up, for a
+ * zoom block, the Detail block it stands for (its anchor) and to show the zoom
+ * block with that block's colour: the first of `stacks` for a concept block,
+ * the first of `covers[id]` for a Semantic one. Every part is a hint: a plan
+ * may be missing, or name blocks that do not exist, and a zoom is still valid.
+ */
+export const ZoomPlanSchema = z.object({
+	purpose: z.string().optional(),
+	concepts: z.array(ZoomPlanConceptSchema),
+	/** Semantic block id -> ids of the Detail blocks it stands for (any depth), anchor first. */
+	covers: z.record(z.string(), z.array(z.string())).optional()
+});
+export type ZoomPlan = z.infer<typeof ZoomPlanSchema>;
+
 export const ZoomResponseSchema = z.object({
 	semantic: ZoomLevelSchema,
-	concept: ZoomLevelSchema
+	concept: ZoomLevelSchema,
+	/** Optional: absent for prompts that ask for no plan, and for results stored before it was returned. */
+	plan: ZoomPlanSchema.optional()
 });
 export type ZoomResponse = z.infer<typeof ZoomResponseSchema>;
 

@@ -4,7 +4,7 @@ import { DEFAULT_PROMPT_ID, getZoomPrompt, type ZoomPrompt } from './prompts/ind
 
 // Bump when a change that isn't in the prompt (repair or validation rules, the
 // shape of a stored result) should stop old entries being reused.
-const KEY_VERSION = 'v2';
+const KEY_VERSION = 'v3';
 
 const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 

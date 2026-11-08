@@ -5,7 +5,7 @@
 import type { ZoomResponse } from '@szrs/llm-proxy-contracts';
 
 import type { ZoomPlan } from './plan.js';
-import { isRecord } from './saved-blocks.js';
+import { allBlocks, isRecord } from './saved-blocks.js';
 
 /**
  * What a valid zoom can still get wrong that the prompts state as rules. These
@@ -21,8 +21,12 @@ import { isRecord } from './saved-blocks.js';
  *    has top-level stacks. A concept is a feature or responsibility; a stack is
  *    never split into several, so more concepts than stacks means a stack was
  *    split, usually into its own steps.
+ *  - C. What `covers` names exists: each key is a block of the Semantic level
+ *    and each id a block of the Detail workspace (the first of each list gives
+ *    the zoom block its colour, so an id that is not there gives it the wrong
+ *    one or none). A plan with no `covers` passes.
  *
- * Chosen from the baseline (plan v3, section 7, step 5): on the stored runs `v1`
+ * A and B were chosen from the baseline (plan v3, section 7, step 5): on the stored runs `v1`
  * trips neither on any valid zoom, and `v2` trips one of them on 9 of 182, all
  * from the two weakest models.
  */
@@ -62,6 +66,30 @@ export function checkPlan(
 		} else if (concepts > stacks) {
 			problems.push(
 				`concept: ${concepts} concept blocks for a program with ${stacks} top-level stack${stacks === 1 ? '' : 's'}. A concept is a feature or responsibility, never one step of a stack, and a stack is never split into several concepts: use at most ${stacks}${stacks === 1 ? ', which means exactly one for this program' : ''}`
+			);
+		}
+	}
+
+	const covers = Object.entries(plan?.covers ?? {});
+	if (covers.length > 0) {
+		const detailIds = new Set(allBlocks(detailWorkspace).flatMap((b) => (b.id ? [b.id] : [])));
+		const semanticIds = new Set(
+			allBlocks(result.semantic.workspaceJson).flatMap((b) => (b.id ? [b.id] : []))
+		);
+		const unknownKeys = covers.map(([id]) => id).filter((id) => !semanticIds.has(id));
+		const unknownIds = [
+			...new Set(covers.flatMap(([, ids]) => ids).filter((id) => !detailIds.has(id)))
+		];
+		// Without ids in the program (A skips those too) there is nothing to check against.
+		if (unknownKeys.length > 0 || (detailIds.size > 0 && unknownIds.length > 0)) {
+			const said = [
+				unknownKeys.length > 0 && `not blocks of the Semantic level: ${list(unknownKeys)}`,
+				detailIds.size > 0 &&
+					unknownIds.length > 0 &&
+					`not blocks of the Detail workspace: ${list(unknownIds)}`
+			].filter(Boolean);
+			problems.push(
+				`plan.covers: each key is the id of a Semantic block and each value a list of Detail block ids, but ${said.join('; ')}. Copy the ids exactly`
 			);
 		}
 	}

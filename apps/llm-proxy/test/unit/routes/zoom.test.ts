@@ -3,6 +3,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildApp } from '../../../src/app.js';
 import { getZoomPrompt } from '../../../src/zoom/prompts/index.js';
+import { coloured } from '../coloured.js';
 
 process.env.INTERNAL_API_KEY ||= 'test-secret';
 process.env.LITELLM_VIRTUAL_KEY ||= 'test-litellm-key';
@@ -24,6 +25,21 @@ const level = (type: string) => ({
 });
 
 const validZoom = { semantic: level('zoom_x_op'), concept: level('zoom_x_concept') };
+
+// The model's plan, in canonical ids: b1 is the repeat, b2 its number.
+const planned = {
+	plan: {
+		purpose: 'repeat',
+		concepts: [{ id: 'c1', stacks: ['b1'], operations: ['l1'] }],
+		covers: { l1: ['b2', 'b1'] }
+	},
+	...validZoom
+};
+const plannedInCallerIds = {
+	purpose: 'repeat',
+	concepts: [{ id: 'c1', stacks: ['r@ndom-id'], operations: ['l1'] }],
+	covers: { l1: ['n#um-id', 'r@ndom-id'] }
+};
 
 const payload = { model: 'local-ollama', slug: 'x', workspaceJson: { blocks: {} } };
 
@@ -100,7 +116,7 @@ describe('POST /v1/zoom', () => {
 		const response = await postZoom();
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(validZoom);
+		expect(response.json()).toEqual(coloured(validZoom));
 	});
 
 	it('prompts with canonical ids and returns bindings in the caller’s ids', async () => {
@@ -119,6 +135,15 @@ describe('POST /v1/zoom', () => {
 		expect(response.json().semantic.bindings[0].detail).toEqual([
 			{ block: 'n#um-id', field: 'NUM' }
 		]);
+	});
+
+	it('returns the plan, in the caller’s ids', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(litellmReply(JSON.stringify(planned))));
+
+		const response = await postZoom(randomIdPayload);
+
+		expect(response.statusCode).toBe(200);
+		expect(response.json().plan).toEqual(plannedInCallerIds);
 	});
 
 	it('retries with the error fed back when the model output is invalid', async () => {
@@ -261,7 +286,16 @@ describe('POST /v1/zoom/stream', () => {
 		const tokens = events.filter((event) => event.type === 'token');
 		expect(tokens).toHaveLength(2);
 		expect(tokens.map((event) => event.text).join('')).toBe(content);
-		expect(events.at(-1)).toEqual({ type: 'done', result: validZoom });
+		expect(events.at(-1)).toEqual({ type: 'done', result: coloured(validZoom) });
+	});
+
+	it('streams the plan, in the caller’s ids', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(litellmStream(JSON.stringify(planned))));
+
+		const response = await postZoomStream(randomIdPayload);
+
+		const done = parseEvents(response.body).at(-1);
+		expect(done?.type === 'done' && done.result.plan).toEqual(plannedInCallerIds);
 	});
 
 	it('retries with the error fed back when the model output is invalid', async () => {
@@ -276,7 +310,7 @@ describe('POST /v1/zoom/stream', () => {
 		const attempts = events.filter((event) => event.type === 'attempt');
 		expect(attempts).toHaveLength(2);
 		expect(attempts[1]).toMatchObject({ attempt: 2, previousError: expect.any(String) });
-		expect(events.at(-1)).toEqual({ type: 'done', result: validZoom });
+		expect(events.at(-1)).toEqual({ type: 'done', result: coloured(validZoom) });
 		const secondBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
 		expect(secondBody.messages[1].content).toContain('Your previous attempt was invalid');
 	});

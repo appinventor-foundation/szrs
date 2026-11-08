@@ -7,6 +7,7 @@ import {
 	toSnakeSlug,
 	ZOOM_SYSTEM_PROMPT
 } from '../../../src/zoom/zoom.js';
+import { coloured } from '../coloured.js';
 
 const level = (type: string) => ({
 	blockDefs: [{ type, message0: 'do it' }],
@@ -56,18 +57,18 @@ describe('parseZoomResponse', () => {
 		withSemantic({ blockDefs: [{ type: 'zoom_x_op', ...def }] });
 
 	it('parses plain JSON', () => {
-		expect(parseZoomResponse(JSON.stringify(valid), detail).result).toEqual(valid);
+		expect(parseZoomResponse(JSON.stringify(valid), detail).result).toEqual(coloured(valid));
 	});
 
 	it('strips markdown fences', () => {
 		expect(parseZoomResponse('```json\n' + JSON.stringify(valid) + '\n```', detail).result).toEqual(
-			valid
+			coloured(valid)
 		);
 	});
 
 	it('strips leading prose', () => {
 		expect(parseZoomResponse('Here you go: ' + JSON.stringify(valid), detail).result).toEqual(
-			valid
+			coloured(valid)
 		);
 	});
 

@@ -7,6 +7,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildApp } from '../../../src/app.js';
 import type { ZoomCache } from '../../../src/zoom/cache.js';
+import { coloured } from '../coloured.js';
 
 process.env.INTERNAL_API_KEY ||= 'test-secret';
 process.env.LITELLM_VIRTUAL_KEY ||= 'test-litellm-key';
@@ -93,13 +94,13 @@ describe('POST /v1/zoom: a valid zoom that breaks a plan rule', () => {
 		const response = await post('/v1/zoom');
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(clean);
+		expect(response.json()).toEqual(coloured(clean));
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 		expect(sent(fetchMock, 1)).toContain('Your previous attempt was invalid');
 		expect(sent(fetchMock, 1)).toContain(
 			'concept: 3 concept blocks for a program with 1 top-level stack'
 		);
-		expect(stored).toEqual([clean]);
+		expect(stored).toEqual([coloured(clean)]);
 	});
 
 	it('is the answer if every attempt breaks the rule, and is not stored', async () => {
@@ -109,7 +110,7 @@ describe('POST /v1/zoom: a valid zoom that breaks a plan rule', () => {
 		const response = await post('/v1/zoom');
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(flagged);
+		expect(response.json()).toEqual(coloured(flagged));
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 		expect(stored).toEqual([]);
 	});
@@ -124,7 +125,7 @@ describe('POST /v1/zoom: a valid zoom that breaks a plan rule', () => {
 		const response = await post('/v1/zoom');
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(flagged);
+		expect(response.json()).toEqual(coloured(flagged));
 		expect(fetchMock).toHaveBeenCalledTimes(3);
 	});
 
@@ -146,7 +147,7 @@ describe('POST /v1/zoom: a valid zoom that breaks a plan rule', () => {
 		const response = await post('/v1/zoom');
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(flagged);
+		expect(response.json()).toEqual(coloured(flagged));
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 
@@ -162,7 +163,7 @@ describe('POST /v1/zoom: a valid zoom that breaks a plan rule', () => {
 		const response = await post('/v1/zoom');
 
 		expect(response.statusCode).toBe(200);
-		expect(response.json()).toEqual(flagged);
+		expect(response.json()).toEqual(coloured(flagged));
 		// It asked again, and the failure of that second call is what it fell back from.
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
@@ -206,8 +207,8 @@ describe('POST /v1/zoom/stream: a valid zoom that breaks a plan rule', () => {
 			attempt: 2,
 			previousError: expect.stringContaining('concept: 3 concept blocks')
 		});
-		expect(all.at(-1)).toEqual({ type: 'done', result: clean });
-		expect(stored).toEqual([clean]);
+		expect(all.at(-1)).toEqual({ type: 'done', result: coloured(clean) });
+		expect(stored).toEqual([coloured(clean)]);
 	});
 
 	it('is the answer if every attempt breaks the rule, and is not stored', async () => {
@@ -217,7 +218,7 @@ describe('POST /v1/zoom/stream: a valid zoom that breaks a plan rule', () => {
 		const all = await events();
 
 		expect(fetchMock).toHaveBeenCalledTimes(3);
-		expect(all.at(-1)).toEqual({ type: 'done', result: flagged });
+		expect(all.at(-1)).toEqual({ type: 'done', result: coloured(flagged) });
 		expect(stored).toEqual([]);
 	});
 
@@ -233,7 +234,7 @@ describe('POST /v1/zoom/stream: a valid zoom that breaks a plan rule', () => {
 		const all = await events();
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
-		expect(all.at(-1)).toEqual({ type: 'done', result: flagged });
+		expect(all.at(-1)).toEqual({ type: 'done', result: coloured(flagged) });
 		expect(all.some((event) => event.type === 'error')).toBe(false);
 	});
 

@@ -36,6 +36,41 @@ const plan = (...concepts: string[][]): ZoomPlan => ({
 	concepts: concepts.map((stacks) => ({ stacks, operations: [] }))
 });
 
+describe('checkPlan, rule C: covers names blocks that exist', () => {
+	// Detail: a repeat (b1) with a number inside it (b2), a print (b3).
+	const detail = workspace(
+		{ type: 'controls_repeat_ext', id: 'b1', inputs: { TIMES: { block: stack('b2') } } },
+		stack('b3')
+	);
+	const withCovers = (covers: Record<string, string[]>): ZoomPlan => ({
+		concepts: [{ stacks: ['b1', 'b3'], operations: ['s1'] }],
+		covers
+	});
+
+	it('passes covers that name a Semantic block and Detail blocks at any depth', () => {
+		expect(checkPlan(withCovers({ s1: ['b2', 'b3'] }), zoom(1), detail)).toEqual([]);
+	});
+
+	it('passes a plan with no covers', () => {
+		expect(checkPlan(plan(['b1', 'b3']), zoom(1), detail)).toEqual([]);
+	});
+
+	it('names a Detail id that does not exist', () => {
+		const problems = checkPlan(withCovers({ s1: ['b2', 'b9'] }), zoom(1), detail);
+		expect(problems).toHaveLength(1);
+		expect(problems[0]).toContain('not blocks of the Detail workspace: "b9"');
+	});
+
+	it('names a key that is not a block of the Semantic level', () => {
+		const problems = checkPlan(withCovers({ s7: ['b1'] }), zoom(1), detail);
+		expect(problems[0]).toContain('not blocks of the Semantic level: "s7"');
+	});
+
+	it('cannot check Detail ids when the program has none', () => {
+		expect(checkPlan(withCovers({ s1: ['b9'] }), zoom(1), workspace(stack(), stack()))).toEqual([]);
+	});
+});
+
 describe('checkPlan, rule A: the plan lists every top-level Detail block once', () => {
 	const detail = workspace(stack('b1'), stack('b2'));
 
@@ -158,5 +193,22 @@ describe('parseZoomResponse returns the messages as warnings and does not throw 
 		const parsed = parseZoomResponse(noPlan, detail, 'v0');
 		expect(parsed.warnings).toHaveLength(1);
 		expect(parsed.warnings[0]).toContain('concept: 2 concept blocks');
+	});
+
+	it('warns when covers names a Detail block that is not there, and still returns the zoom', () => {
+		// The Semantic block of `level` has the id "zoom_x_op0".
+		const withCovers = (ids: string[]) =>
+			JSON.stringify({
+				plan: { concepts: [{ stacks: ['b1'], operations: [] }], covers: { zoom_x_op0: ids } },
+				semantic: level('zoom_x_op', 1),
+				concept: level('zoom_x_concept', 1)
+			});
+
+		expect(parseZoomResponse(withCovers(['b1']), detail, 'v1').warnings).toEqual([]);
+
+		const bad = parseZoomResponse(withCovers(['b1', 'b77']), detail, 'v1');
+		expect(bad.warnings).toHaveLength(1);
+		expect(bad.warnings[0]).toContain('"b77"');
+		expect(bad.result.plan?.covers).toEqual({ zoom_x_op0: ['b1', 'b77'] });
 	});
 });

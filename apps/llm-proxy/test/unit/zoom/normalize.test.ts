@@ -163,4 +163,36 @@ describe('restoreIds', () => {
 
 		expect(JSON.stringify(original)).toBe(before);
 	});
+
+	it('maps the Detail ids in the plan, and leaves the zoom block ids and the rest alone', () => {
+		const withPlan: ZoomResponse = {
+			...result(),
+			plan: {
+				purpose: 'p',
+				concepts: [{ id: 'c1', name: 'n', stacks: ['b1', 'b9'], operations: ['s1'] }],
+				covers: { s1: ['b4', 'b7'] }
+			}
+		};
+
+		const restored = restoreIds(
+			withPlan,
+			new Map([
+				['b1', 'r'],
+				['b4', 'times']
+			])
+		);
+
+		expect(restored.plan).toEqual({
+			purpose: 'p',
+			concepts: [{ id: 'c1', name: 'n', stacks: ['r', 'b9'], operations: ['s1'] }],
+			covers: { s1: ['times', 'b7'] }
+		});
+		// A copy: the stored result keeps its canonical ids.
+		expect(withPlan.plan?.concepts[0].stacks).toEqual(['b1', 'b9']);
+		expect(withPlan.plan?.covers).toEqual({ s1: ['b4', 'b7'] });
+	});
+
+	it('returns a result with no plan without one', () => {
+		expect('plan' in restoreIds(result(), new Map())).toBe(false);
+	});
 });

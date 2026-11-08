@@ -2,22 +2,11 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
+import type { ZoomPlan, ZoomPlanConcept as PlanConcept } from '@szrs/llm-proxy-contracts';
+
 import { isRecord } from './saved-blocks.js';
 
-/** One feature or responsibility in the model's plan. */
-export interface PlanConcept {
-	id?: string;
-	name?: string;
-	/** Ids of the top-level Detail blocks the concept covers. */
-	stacks: string[];
-	/** Ids of the Semantic blocks that describe it. */
-	operations: string[];
-}
-
-export interface ZoomPlan {
-	purpose?: string;
-	concepts: PlanConcept[];
-}
+export type { ZoomPlan, ZoomPlanConcept as PlanConcept } from '@szrs/llm-proxy-contracts';
 
 /**
  * The model's `plan`, as far as it can be read. Never throws and never fails a
@@ -35,7 +24,21 @@ export function readPlan(raw: unknown): ZoomPlan | undefined {
 				operations: strings(concept.operations)
 			}))
 		: [];
-	return { ...(typeof plan.purpose === 'string' && { purpose: plan.purpose }), concepts };
+	const covers = readCovers(plan.covers);
+	return {
+		...(typeof plan.purpose === 'string' && { purpose: plan.purpose }),
+		concepts,
+		...(covers && { covers })
+	};
+}
+
+/** `covers` as far as it can be read: Semantic block id to a non-empty list of ids. Undefined when nothing is left. */
+function readCovers(raw: unknown): Record<string, string[]> | undefined {
+	if (!isRecord(raw)) return undefined;
+	const entries = Object.entries(raw)
+		.map(([id, value]): [string, string[]] => [id, strings(value)])
+		.filter(([, ids]) => ids.length > 0);
+	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function strings(value: unknown): string[] {

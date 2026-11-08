@@ -22,6 +22,8 @@ export {
 	ZoomFieldRefSchema,
 	ZoomBindingSchema,
 	ZoomLevelSchema,
+	ZoomPlanConceptSchema,
+	ZoomPlanSchema,
 	ZoomResponseSchema,
 	ZoomStreamEventSchema,
 	type ZoomRequest,
@@ -30,6 +32,8 @@ export {
 	type ZoomFieldRef,
 	type ZoomBinding,
 	type ZoomLevel,
+	type ZoomPlanConcept,
+	type ZoomPlan,
 	type ZoomResponse,
 	type ZoomStreamEvent
 } from './zoom.js';
