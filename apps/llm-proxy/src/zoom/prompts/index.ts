@@ -6,11 +6,12 @@ import type { ZoomPrompt } from './types.js';
 import { v0 } from './v0.js';
 import { v1 } from './v1.js';
 import { v2 } from './v2.js';
+import { v3 } from './v3.js';
 
 export type { ZoomPrompt, ZoomPromptParams } from './types.js';
 export { toSnakeSlug } from './slug.js';
 
-const PROMPTS: readonly ZoomPrompt[] = [v0, v1, v2];
+const PROMPTS: readonly ZoomPrompt[] = [v0, v1, v2, v3];
 
 /**
  * The prompt used when a request does not name one. v2 (like v1 before it)

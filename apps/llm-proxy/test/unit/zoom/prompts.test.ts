@@ -105,7 +105,7 @@ describe('v1', () => {
 	};
 
 	it('is registered', () => {
-		expect(zoomPromptIds()).toEqual(['v0', 'v1', 'v2']);
+		expect(zoomPromptIds()).toEqual(['v0', 'v1', 'v2', 'v3']);
 	});
 
 	it('keeps the block definition, binding and encoding rules word for word', () => {
@@ -250,5 +250,44 @@ describe('v2', () => {
 
 	it('runs under the shared sampling parameters', () => {
 		expect(v2.params).toEqual(SHARED_ZOOM_PARAMS);
+	});
+});
+
+// v3 is v2 plus `covers` in the plan. It is not frozen: it is not the default and
+// has no baseline yet. Pin its hashes (as for v2 above) when it becomes the default.
+describe('v3', () => {
+	const v2 = getZoomPrompt('v2');
+	const v3 = getZoomPrompt('v3');
+	const probe = {
+		slug: 'probe-slug',
+		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
+	};
+
+	it('is registered, and the default is still v2', () => {
+		expect(zoomPromptIds()).toContain('v3');
+		expect(DEFAULT_PROMPT_ID).toBe('v2');
+	});
+
+	it('is v2 plus the covers, and nothing else', () => {
+		const without = v3.system
+			.replace(
+				',\n    "covers": {\n      "s1": ["<id of a Detail block>", ...],\n      ...\n    }\n',
+				'\n'
+			)
+			.replace(/^3\. "covers": .*\n/m, '');
+
+		expect(without).toBe(v2.system);
+		expect(v3.buildUser(probe)).toBe(v2.buildUser(probe));
+		expect(v3.buildUser(probe, 'x')).toBe(v2.buildUser(probe, 'x'));
+		expect(v3.params).toEqual(v2.params);
+		expect(v3.output).toBe(v2.output);
+		expect(v3.workspace).toBe(v2.workspace);
+	});
+
+	it('asks for covers, the most telling block first, and still says nothing about colour', () => {
+		expect(v3.system).toContain('"covers": {');
+		expect(v3.system).toContain('Put first the block that best says what kind of operation it is');
+		expect(v3.system).not.toMatch(/"colour"/);
+		expect(v3.system).not.toMatch(/colour\s*[0-9#]/);
 	});
 });
