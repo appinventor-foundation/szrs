@@ -111,7 +111,7 @@ curl -X POST http://localhost:3000/v1/zoom \
      -d '{"model":"local-ollama","slug":"fizz-buzz-n","workspaceJson":{ ...a Blockly workspace export... }}'
 ```
 
-The request and response shapes are `ZoomRequestSchema` and `ZoomResponseSchema` in `@szrs/llm-proxy-contracts`. If the model returns output that doesn't parse or validate, the proxy retries up to 3 times, sending the error back to the model each time. If all attempts fail it returns `502` with `code: "invalid_model_output"`.
+The request and response shapes are `ZoomRequestSchema` and `ZoomResponseSchema` in `@szrs/llm-proxy-contracts`. If the model returns output that doesn't parse or validate, the proxy retries up to 3 times, sending the error back to the model each time. If all attempts fail it returns `502` with `code: "invalid_model_output"`. A zoom that is valid but breaks one of two rules the prompts state (`src/zoom/plan-check.ts`) is also sent back, with a message saying which: the plan must list every top-level Detail block in exactly one concept, and the Concept level must have at least one block and no more than the program has top-level stacks. That zoom is kept, and it is the answer (logged as a warning, and not stored in the cache) if asking again does not help, or the next attempt is invalid, cut off or fails upstream. So a rule can cost a retry, never a zoom.
 
 ### Prompts
 

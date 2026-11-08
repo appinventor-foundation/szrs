@@ -85,6 +85,12 @@ export interface Metrics {
 	/** What stopped the run, when it did not succeed: the last attempt's outcome. */
 	failure?: AttemptOutcome;
 	failureMessage?: string;
+	/**
+	 * What the proxy's plan checks (plan-check.ts) found wrong with the zoom the run ended on, when
+	 * it ended on one that broke a rule: asking again did not help, so it was kept. Absent for a
+	 * run that ended on a zoom that follows the rules, or on none.
+	 */
+	warnings?: string[];
 	/** D26 */
 	truncated: boolean;
 	/** D6: bindings with no problem, over all bindings (undefined when the output had none or never parsed as a zoom). */

@@ -54,7 +54,7 @@ const theirs = program({ repeat: 'their-repeat', times: 'their-times' }, 300, 40
 
 const level = (type: string) => ({
 	blockDefs: [{ type, message0: 'do it' }],
-	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } },
+	workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type, id: 'l1' }] } },
 	bindings: []
 });
 

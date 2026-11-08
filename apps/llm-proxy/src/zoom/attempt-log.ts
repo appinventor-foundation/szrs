@@ -9,8 +9,13 @@ import type { Outline } from './outline.js';
 import type { ZoomPlan } from './plan.js';
 import { ZoomOutputError } from './zoom.js';
 
-/** How an attempt ended. `ok` includes outputs that needed repair (see `repairs`). */
-export type AttemptOutcome = 'ok' | 'parse' | 'schema' | 'validation' | 'truncated' | 'other';
+/**
+ * How an attempt ended. `ok` includes outputs that needed repair (see `repairs`).
+ * `flagged` is a valid zoom that broke a rule worth asking again for (see
+ * plan-check.ts and `warnings`); it is the answer only if asking again fails.
+ */
+export type AttemptOutcome =
+	'ok' | 'flagged' | 'parse' | 'schema' | 'validation' | 'truncated' | 'other';
 
 /** One call to the model, as logged. */
 export interface AttemptRecord {
@@ -28,11 +33,13 @@ export interface AttemptRecord {
 	outline?: Pick<Outline, 'blocks'> & { stacks: number };
 	/** The model's plan, for attempts that made a valid zoom. */
 	plan?: ZoomPlan;
+	/** What plan-check.ts found wrong with a valid zoom, when anything. */
+	warnings?: string[];
 	latencyMs: number;
 }
 
 /** The outcome for text that did not make a valid zoom. */
-export function classifyError(error: unknown): AttemptOutcome {
+export function classifyError(error: unknown): 'parse' | 'schema' | 'validation' | 'other' {
 	if (error instanceof SyntaxError) return 'parse';
 	if (error instanceof ZoomOutputError) return error.kind;
 	return 'other';

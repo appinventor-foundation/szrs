@@ -104,6 +104,67 @@ describe('runOne', () => {
 		expect(record.metrics).toMatchObject({ valid: false, failure: 'timeout' });
 	});
 
+	describe('a valid zoom that breaks a plan rule (plan-check.ts)', () => {
+		// countdown is one Detail stack, so a Concept level of two blocks splits it.
+		const flagged = validZoom({ conceptBlocks: 2 });
+
+		it('asks again with what is wrong, and stops at the zoom that follows the rules', async () => {
+			const { complete, requests } = script(ok(flagged), ok(validZoom()));
+			const record = await run(complete);
+
+			expect(requests).toHaveLength(2);
+			expect(requests[1][1]).toContain('Your previous attempt was invalid');
+			expect(requests[1][1]).toContain(
+				'concept: 2 concept blocks for a program with 1 top-level stack'
+			);
+			expect(record.metrics).toMatchObject({
+				valid: true,
+				validFirstAttempt: false,
+				attempts: 2,
+				attemptsToSuccess: 2
+			});
+			expect(record.metrics?.warnings).toBeUndefined();
+		});
+
+		it('keeps the last such zoom when asking again does not help', async () => {
+			const { complete, requests } = script(ok(flagged));
+			const record = await run(complete);
+
+			expect(requests).toHaveLength(3);
+			expect(record.metrics).toMatchObject({
+				valid: true,
+				validFirstAttempt: false,
+				attempts: 3,
+				attemptsToSuccess: 3
+			});
+			expect(record.metrics?.warnings).toHaveLength(1);
+			expect(record.metrics?.warnings?.[0]).toContain('concept: 2 concept blocks');
+			expect(record.result).toBeDefined();
+		});
+
+		it('keeps it when the attempts after it are invalid', async () => {
+			const { complete } = script(ok(flagged), ok('nope'), ok('nope'));
+			const record = await run(complete);
+
+			expect(record.metrics).toMatchObject({ valid: true, attempts: 3, attemptsToSuccess: 1 });
+			expect(record.metrics?.warnings).toHaveLength(1);
+		});
+
+		it('keeps it when the next call fails or is cut off', async () => {
+			const cutOff = ok('{ "semantic', { finishReason: 'length' });
+			const record = await run(script(ok(flagged), cutOff).complete);
+
+			expect(record.metrics).toMatchObject({ valid: true, attempts: 2, attemptsToSuccess: 1 });
+			expect(record.metrics?.warnings).toHaveLength(1);
+		});
+
+		it('is a failure when nothing valid was ever made', async () => {
+			const record = await run(script(ok('nope')).complete);
+			expect(record.metrics).toMatchObject({ valid: false, validFirstAttempt: false });
+			expect(record.metrics?.warnings).toBeUndefined();
+		});
+	});
+
 	it('uses the prompt asked for', async () => {
 		const v0 = script(ok(validZoom()));
 		const v1 = script(ok(validZoom()));
@@ -226,6 +287,13 @@ describe('metrics', () => {
 		expect(metrics.coverage).toMatchObject({ stacksCovered: 0, stacksDuplicated: 1 });
 		json.plan.concepts = [];
 		expect(score(JSON.stringify(json)).metrics.coverage?.stacksCovered).toBe(0);
+	});
+
+	it('scores a zoom that breaks a plan rule as valid, but not as valid on the first attempt', () => {
+		const metrics = score(validZoom({ conceptBlocks: 3 })).metrics;
+		expect(metrics).toMatchObject({ valid: true, validFirstAttempt: false });
+		expect(metrics.warnings).toHaveLength(1);
+		expect(score(validZoom()).metrics.warnings).toBeUndefined();
 	});
 
 	it('flags a Semantic level that leaves the blocks of one stack apart (D28)', () => {

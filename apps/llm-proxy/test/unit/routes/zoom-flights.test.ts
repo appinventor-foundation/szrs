@@ -33,7 +33,7 @@ const program = (repeat: string, times: string, x: number) => ({
 
 const level = (type: string) => ({
 	blockDefs: [{ type, message0: 'do it' }],
-	workspaceJson: { blocks: { languageVersion: 0, blocks: [] } },
+	workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type, id: 'l1' }] } },
 	bindings: []
 });
 

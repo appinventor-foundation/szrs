@@ -40,6 +40,16 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 
 		const size = outlineSize(workspaceJson);
 		let lastError: string | undefined;
+		// A valid zoom that broke a rule worth asking again for (plan-check.ts). It is the
+		// answer if asking again does not help, or cannot be done.
+		let flagged: ReturnType<typeof parseZoomResponse> | undefined;
+		const answerFlagged = (found: ReturnType<typeof parseZoomResponse>) => {
+			request.log.warn(
+				{ warnings: found.warnings },
+				'answering with a zoom that broke a rule, as asking again did not help'
+			);
+			return restoreIds(found.result, originalIds);
+		};
 
 		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			const started = performance.now();
@@ -57,6 +67,7 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 					{ attempt, status: result.status, body: result.body },
 					'LiteLLM request failed'
 				);
+				if (flagged) return answerFlagged(flagged);
 				return reply.code(result.status).send(result.body);
 			}
 
@@ -74,6 +85,7 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			// Cut off by the output limit: a retry would be cut off in the same place.
 			if (finishReason === 'length') {
 				logAttempt(request.log, { ...record, outcome: 'truncated', repairs: [] });
+				if (flagged) return answerFlagged(flagged);
 				return reply.code(502).send({
 					error: {
 						message: truncationMessage(usage.completionTokens),
@@ -83,11 +95,20 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			}
 
 			try {
-				const {
-					result: zoom,
-					repairs,
-					plan
-				} = parseZoomResponse(result.response.content, canonical.workspaceJson, prompt.id);
+				const parsed = parseZoomResponse(
+					result.response.content,
+					canonical.workspaceJson,
+					prompt.id
+				);
+				const { result: zoom, repairs, plan, warnings } = parsed;
+				if (warnings.length > 0) {
+					// Valid, but ask again; this one is kept in case that does not help.
+					flagged = parsed;
+					lastError = warnings.join('\n');
+					logAttempt(request.log, { ...record, outcome: 'flagged', repairs, plan, warnings });
+					request.log.warn({ attempt, warnings }, 'zoom broke a rule, asking again');
+					continue;
+				}
 				logAttempt(request.log, { ...record, outcome: 'ok', repairs, plan });
 				// Stored in canonical ids, so anyone with the same program can use it.
 				void fastify.zoomCache?.set(key, zoom);
@@ -99,6 +120,8 @@ export default async function zoomRoutes(fastify: FastifyInstance): Promise<void
 			}
 		}
 
+		// Never stored: a later request may get a better zoom than this one.
+		if (flagged) return answerFlagged(flagged);
 		return reply
 			.code(502)
 			.send({ error: { message: lastError ?? '', code: 'invalid_model_output' } });
@@ -144,6 +167,9 @@ async function* runZoom(
 ): AsyncGenerator<ZoomStreamEvent> {
 	const size = outlineSize(canonical.workspaceJson);
 	let lastError: string | undefined;
+	// A valid zoom that broke a rule worth asking again for (plan-check.ts): the answer if
+	// asking again does not help, or cannot be done. It is not stored.
+	let flagged: ReturnType<typeof parseZoomResponse> | undefined;
 
 	for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 		yield { type: 'attempt', attempt, maxAttempts: MAX_ATTEMPTS, previousError: lastError };
@@ -160,6 +186,11 @@ async function* runZoom(
 		);
 		if (!result.ok) {
 			log.warn({ attempt, status: result.status, body: result.body }, 'LiteLLM request failed');
+			if (flagged) {
+				log.warn({ warnings: flagged.warnings }, 'answering with a zoom that broke a rule');
+				yield { type: 'done', result: flagged.result };
+				return;
+			}
 			yield {
 				type: 'error',
 				code: 'upstream_error',
@@ -189,6 +220,11 @@ async function* runZoom(
 		// Cut off by the output limit: a retry would be cut off in the same place.
 		if (finishReason === 'length') {
 			logAttempt(log, { ...record, outcome: 'truncated', repairs: [] });
+			if (flagged) {
+				log.warn({ warnings: flagged.warnings }, 'answering with a zoom that broke a rule');
+				yield { type: 'done', result: flagged.result };
+				return;
+			}
 			yield {
 				type: 'error',
 				code: 'invalid_model_output',
@@ -198,11 +234,16 @@ async function* runZoom(
 		}
 
 		try {
-			const {
-				result: zoom,
-				repairs,
-				plan
-			} = parseZoomResponse(text, canonical.workspaceJson, prompt.id);
+			const parsed = parseZoomResponse(text, canonical.workspaceJson, prompt.id);
+			const { result: zoom, repairs, plan, warnings } = parsed;
+			if (warnings.length > 0) {
+				// Valid, but ask again; this one is kept in case that does not help.
+				flagged = parsed;
+				lastError = warnings.join('\n');
+				logAttempt(log, { ...record, outcome: 'flagged', repairs, plan, warnings });
+				log.warn({ attempt, warnings }, 'zoom broke a rule, asking again');
+				continue;
+			}
 			logAttempt(log, { ...record, outcome: 'ok', repairs, plan });
 			yield { type: 'done', result: zoom };
 			// Everyone listening has the result by now. Keeping the run open until it
@@ -217,6 +258,11 @@ async function* runZoom(
 		}
 	}
 
+	if (flagged) {
+		log.warn({ warnings: flagged.warnings }, 'answering with a zoom that broke a rule');
+		yield { type: 'done', result: flagged.result };
+		return;
+	}
 	yield { type: 'error', code: 'invalid_model_output', message: lastError ?? '' };
 }
 

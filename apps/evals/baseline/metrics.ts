@@ -267,7 +267,11 @@ export function scoreRecord(
 	const detail = prepared.workspaceJson;
 	const headless = options.headless ?? true;
 	const judged = record.attempts.map((attempt) => judgeAttempt(attempt, detail, options.promptId));
-	const winner = judged.findIndex((attempt) => attempt.outcome === 'ok');
+	// What the proxy does: stop at the first valid zoom that follows the plan rules; if none does,
+	// answer with the last valid one that broke them (plan-check.ts), asking again did not help.
+	const valid = judged.flatMap((attempt, i) => (attempt.outcome === 'ok' ? [i] : []));
+	const clean = valid.find((i) => judged[i].parsed!.warnings.length === 0);
+	const winner = clean ?? valid.at(-1) ?? -1;
 	const last = judged[judged.length - 1];
 
 	const completionTokens = record.attempts.reduce(
@@ -278,7 +282,7 @@ export function scoreRecord(
 	const first = record.attempts[0];
 	const base: Metrics = {
 		valid: winner >= 0,
-		validFirstAttempt: judged[0]?.outcome === 'ok',
+		validFirstAttempt: judged[0]?.outcome === 'ok' && judged[0].parsed!.warnings.length === 0,
 		attempts: record.attempts.length,
 		repairs: {},
 		truncated: record.attempts.some((attempt) => attempt.finishReason === 'length'),
@@ -308,7 +312,7 @@ export function scoreRecord(
 		};
 	}
 
-	const { result, repairs, plan } = judged[winner].parsed!;
+	const { result, repairs, plan, warnings } = judged[winner].parsed!;
 	const repairCounts: Record<string, number> = {};
 	for (const message of repairs) {
 		const kind = repairKind(message);
@@ -327,6 +331,7 @@ export function scoreRecord(
 		repairs,
 		metrics: {
 			...base,
+			...(warnings.length > 0 && { warnings }),
 			attemptsToSuccess: winner + 1,
 			repairs: repairCounts,
 			...bindingMetricsOf(result, detail),

@@ -7,6 +7,7 @@ import {
 import { z } from 'zod';
 
 import { getZoomPrompt } from './prompts/index.js';
+import { checkPlan } from './plan-check.js';
 import { readPlan, type ZoomPlan } from './plan.js';
 import { expandPlaceholders } from './placeholders.js';
 import { buildStacks } from './stacks.js';
@@ -109,7 +110,7 @@ export function parseZoomResponse(
 	text: string,
 	detailWorkspace: Record<string, unknown>,
 	promptId?: string
-): { result: ZoomResponse; repairs: string[]; plan?: ZoomPlan } {
+): { result: ZoomResponse; repairs: string[]; plan?: ZoomPlan; warnings: string[] } {
 	let cleaned = text.trim();
 	const fenceMatch = /```(?:json)?\s*\n([\s\S]*)\n\s*```/.exec(cleaned);
 	if (fenceMatch) cleaned = fenceMatch[1].trim();
@@ -130,5 +131,9 @@ export function parseZoomResponse(
 	if (problems.length > 0) {
 		throw new ZoomOutputError('validation', inPromptWords(problems.join('\n'), promptId));
 	}
-	return { result: result.data, repairs, ...(plan && { plan }) };
+	// Not errors: the zoom is valid. The caller may ask again and keep this one if that does not help.
+	const warnings = checkPlan(plan, result.data, detailWorkspace).map((message) =>
+		inPromptWords(message, promptId)
+	);
+	return { result: result.data, repairs, ...(plan && { plan }), warnings };
 }

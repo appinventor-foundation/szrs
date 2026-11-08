@@ -114,8 +114,17 @@ export async function runOne(options: RunOneOptions): Promise<EvalRecord> {
 		attempts.push(attempt);
 
 		const judged = judgeAttempt(attempt, prepared.workspaceJson, promptId);
-		// Done, or cut off by the output limit (a retry would be cut off in the same place).
-		if (judged.outcome === 'ok' || judged.outcome === 'truncated') break;
+		// Cut off by the output limit (a retry would be cut off in the same place).
+		if (judged.outcome === 'truncated') break;
+		if (judged.outcome === 'ok') {
+			// Valid. If it also follows the plan rules, or this was the last attempt, that is the
+			// run; otherwise ask again with what is wrong, as the proxy does (scoreRecord keeps
+			// the last valid zoom if asking again does not help).
+			const warnings = judged.parsed?.warnings ?? [];
+			if (warnings.length === 0 || n === MAX_ATTEMPTS) break;
+			lastError = warnings.join('\n');
+			continue;
+		}
 		lastError = judged.message;
 	}
 

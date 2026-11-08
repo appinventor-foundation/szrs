@@ -21,13 +21,19 @@ export interface ZoomJson {
 
 export const usage = { promptTokens: 1000, completionTokens: 500, totalTokens: 1500 };
 
-/** A valid zoom of `countdown`: one Semantic block and one Concept block, a plan, and one binding. */
-export function validZoom(options: { semanticLabel?: string; withBinding?: boolean } = {}): string {
+/**
+ * A valid zoom of `countdown`: one Semantic block and one Concept block (`conceptBlocks` of
+ * them: more than one breaks the plan rule that a one-stack program has one concept), a plan,
+ * and one binding.
+ */
+export function validZoom(
+	options: { semanticLabel?: string; withBinding?: boolean; conceptBlocks?: number } = {}
+): string {
 	const prepared = prepareProgram(findProgram('countdown'));
 	const blocks = allBlocks(prepared.workspaceJson);
 	const stack = blocks[0].id!;
 	const number = blocks.find((block) => block.type === 'math_number' && block.fields?.NUM === 10)!;
-	const level = (type: string, label: string, id: string, bound: boolean) => ({
+	const level = (type: string, label: string, id: string, bound: boolean, count = 1) => ({
 		blockDefs: [
 			{
 				type,
@@ -37,7 +43,16 @@ export function validZoom(options: { semanticLabel?: string; withBinding?: boole
 				nextStatement: null
 			}
 		],
-		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type, id }] } },
+		workspaceJson: {
+			blocks: {
+				languageVersion: 0,
+				// More than one only for the Concept level, to break the plan rule (plan-check.ts).
+				blocks: Array.from({ length: count }, (_, i) => ({
+					type,
+					id: i === 0 ? id : `${id[0]}${i + 1}`
+				}))
+			}
+		},
 		bindings:
 			bound && options.withBinding
 				? [{ block: id, field: 'START', detail: [{ block: number.id, field: 'NUM' }] }]
@@ -51,7 +66,13 @@ export function validZoom(options: { semanticLabel?: string; withBinding?: boole
 			's1',
 			true
 		),
-		concept: level('zoom_countdown_countdown_concept', 'run a countdown', 'c1', false)
+		concept: level(
+			'zoom_countdown_countdown_concept',
+			'run a countdown',
+			'c1',
+			false,
+			options.conceptBlocks ?? 1
+		)
 	});
 }
 
