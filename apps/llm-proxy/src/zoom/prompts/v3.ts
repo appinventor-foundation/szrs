@@ -19,9 +19,13 @@ import type { ZoomPrompt } from './types.js';
 // (`output` and `workspace`). The plan keeps v2's shape; `covers` is extra, and
 // the proxy returns the plan with the zoom.
 //
-// NOT FROZEN YET: it is not the default and has no baseline. Freeze it (a test
-// pinning its hashes, as for v0 to v2) when it becomes the default; until then it
-// may be edited, because no results we rely on come from it.
+// FROZEN 2026-11-09, when it became the default (baselines:
+// apps/evals/results/2026-11-08-v3-baseline.md, with the gpt-oss-20b rerun
+// 2026-11-08-gptoss-v2-v3.md; pictures: 2026-11-08-v2-v3-colour.md). Never edit
+// the text or how the user message is built: a test pins their hashes. Change
+// the wording by adding v4.ts and registering it beside this one. The user
+// message and the retry message are built exactly as v2's, so those two hashes
+// are v2's.
 export const V3_SYSTEM = `You are the Semantic Zoom AI. You take a Blockly workspace JSON (the Detail level) and a slug, and describe the same program at two higher levels of abstraction. Your output is only ever displayed: the program always runs from the Detail blocks, so you never write code.
 
 ## Output format

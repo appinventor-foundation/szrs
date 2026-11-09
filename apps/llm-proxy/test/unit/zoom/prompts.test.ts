@@ -194,10 +194,10 @@ describe('v2', () => {
 	const v1 = getZoomPrompt('v1');
 	const v2 = getZoomPrompt('v2');
 
-	it('is registered and is the default, so a request that names no prompt uses it', () => {
+	it('is registered, and is no longer the default (v3 became it on 2026-11-09)', () => {
 		expect(zoomPromptIds()).toContain('v2');
-		expect(DEFAULT_PROMPT_ID).toBe('v2');
-		expect(getZoomPrompt().id).toBe('v2');
+		expect(DEFAULT_PROMPT_ID).not.toBe('v2');
+		expect(getZoomPrompt('v2').id).toBe('v2');
 	});
 
 	it('asks for placeholders, which the proxy expands; v0 and v1 ask for bindings', () => {
@@ -253,8 +253,36 @@ describe('v2', () => {
 	});
 });
 
-// v3 is v2 plus `covers` in the plan. It is not frozen: it is not the default and
-// has no baseline yet. Pin its hashes (as for v2 above) when it becomes the default.
+// v3 became the default on 2026-11-09 and its results are what later prompts are
+// measured against. If one of these fails, someone edited it: put the change in a
+// new prompt id (v4) instead. Its user message and retry message are built exactly
+// as v2's, so those two hashes are v2's. Its sampling parameters are not pinned here.
+describe('v3 is frozen', () => {
+	const v3 = getZoomPrompt('v3');
+	const probe = {
+		slug: 'probe-slug',
+		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
+	};
+
+	it('has the system text it was frozen with', () => {
+		expect(sha256(v3.system)).toBe(
+			'96c670267cfee552b6d8e0c179b1012b0715a7d30a39b62cd1ee678f59be44b7'
+		);
+	});
+
+	it('builds the user message it was frozen with', () => {
+		expect(sha256(v3.buildUser(probe))).toBe(
+			'a6c7277661a7d5a1c88fdf008fa1bee0e16999fb330581c6d318b379dfa66289'
+		);
+	});
+
+	it('builds the retry message it was frozen with', () => {
+		expect(sha256(v3.buildUser(probe, 'concept: missing'))).toBe(
+			'43a4068cf0ad3c388b11f4c0440aede784b99c6142cdcf6d5f28ce0c89ca1df4'
+		);
+	});
+});
+
 describe('v3', () => {
 	const v2 = getZoomPrompt('v2');
 	const v3 = getZoomPrompt('v3');
@@ -263,9 +291,10 @@ describe('v3', () => {
 		workspaceJson: { blocks: { languageVersion: 0, blocks: [{ type: 'a', id: 'b1' }] } }
 	};
 
-	it('is registered, and the default is still v2', () => {
+	it('is registered and is the default, so a request that names no prompt uses it', () => {
 		expect(zoomPromptIds()).toContain('v3');
-		expect(DEFAULT_PROMPT_ID).toBe('v2');
+		expect(DEFAULT_PROMPT_ID).toBe('v3');
+		expect(getZoomPrompt().id).toBe('v3');
 	});
 
 	it('is v2 plus the covers, and nothing else', () => {
