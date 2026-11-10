@@ -4,13 +4,11 @@
   http://www.apache.org/licenses/LICENSE-2.0
 -->
 <script lang="ts">
-	import { CounterView } from '@szrs/ui';
+	import ProjectSummary from '#lib/components/ProjectSummary.svelte';
+	import YouTubeEmbed from '#lib/components/YouTubeEmbed.svelte';
 </script>
 
-<h1 class="h1">Dashboard</h1>
-<div class="mt-4 flex items-center gap-2">
-	<CounterView />
+<div class="mt-4 space-y-4">
+	<ProjectSummary />
+	<YouTubeEmbed videoId="0neGKVIlDJs" title="SZRS: the main ideas of the project" />
 </div>
-<p class="mt-4">
-	Visit <a class="anchor" href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation
-</p>

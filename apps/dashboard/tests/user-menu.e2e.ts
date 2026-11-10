@@ -61,7 +61,7 @@ test.describe('the account menu', () => {
 		await signIn(page, adminCredentials);
 		await openAccountMenu(page);
 
-		await page.getByRole('heading', { name: 'Dashboard' }).click();
+		await page.getByTestId('project-summary').click();
 		await expect(signOutButton(page)).toBeHidden();
 
 		await accountMenuTrigger(page).click();

@@ -119,7 +119,7 @@ test.describe('protected pages', () => {
 test.describe('public pages', () => {
 	test('stay open without signing in', async ({ page, request }) => {
 		await visit(page, '/');
-		await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+		await expect(page.getByTestId('project-summary')).toBeVisible();
 
 		await visit(page, '/login');
 		await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();

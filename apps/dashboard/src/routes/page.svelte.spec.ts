@@ -8,17 +8,17 @@ import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 
 describe('+page.svelte', () => {
-	it('renders the page title', async () => {
+	it('renders the project summary', async () => {
 		await render(Page);
 
-		await expect.element(page.getByText('Dashboard')).toBeInTheDocument();
+		await expect.element(page.getByTestId('project-summary')).toBeInTheDocument();
 	});
 
-	it('renders CounterView from @szrs/ui', async () => {
+	it('embeds the project video', async () => {
 		await render(Page);
 
-		await expect.element(page.getByText('Current count: 0')).toBeInTheDocument();
-		await expect.element(page.getByRole('button', { name: '+' })).toBeInTheDocument();
-		await expect.element(page.getByRole('button', { name: '-' })).toBeInTheDocument();
+		await expect
+			.element(page.getByTestId('youtube-embed'))
+			.toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/0neGKVIlDJs');
 	});
 });
