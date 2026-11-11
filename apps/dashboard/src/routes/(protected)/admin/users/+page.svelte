@@ -5,9 +5,41 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import DataTable from '#lib/components/DataTable.svelte';
+	import { ROLES, type UserRecord } from '#lib/schemas/user.js';
 	import type { PageProps } from './$types';
 
 	const { data }: PageProps = $props();
+
+	const dateFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' });
+	const statusOf = (user: UserRecord) => (user.banned ? 'Banned' : 'Active');
+
+	const columns = [
+		{ key: 'name', header: 'Name', sortValue: (user: UserRecord) => user.name },
+		{ key: 'email', header: 'Email', sortValue: (user: UserRecord) => user.email },
+		{ key: 'role', header: 'Role', sortValue: (user: UserRecord) => user.role },
+		{ key: 'status', header: 'Status', sortValue: (user: UserRecord) => statusOf(user) },
+		{ key: 'created', header: 'Created', sortValue: (user: UserRecord) => user.createdAt }
+	];
+	const filters = [
+		{
+			key: 'role',
+			label: 'Filter by role',
+			allLabel: 'All roles',
+			get: (user: UserRecord) => user.role,
+			options: ROLES.map((role) => ({ value: role, label: role }))
+		},
+		{
+			key: 'status',
+			label: 'Filter by status',
+			allLabel: 'All statuses',
+			get: statusOf,
+			options: [
+				{ value: 'Active', label: 'Active' },
+				{ value: 'Banned', label: 'Banned' }
+			]
+		}
+	];
 </script>
 
 <div class="flex items-center justify-between gap-4">
@@ -34,35 +66,30 @@
 {/if}
 
 <section class="mt-6">
-	<div class="table-wrap">
-		<table class="table" aria-label="Users">
-			<thead>
-				<tr>
-					<th scope="col">Name</th>
-					<th scope="col">Email</th>
-					<th scope="col">Role</th>
-					<th scope="col">Status</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each data.users as user (user.id)}
-					<tr class="hover:preset-tonal relative">
-						<td class="font-bold">
-							<a
-								class="anchor after:absolute after:inset-0"
-								href={resolve('/(protected)/admin/users/[id]', { id: user.id })}>{user.name}</a
-							>
-						</td>
-						<td>{user.email}</td>
-						<td><span class="badge preset-tonal">{user.role}</span></td>
-						<td>
-							<span class="badge {user.banned ? 'preset-tonal-error' : 'preset-tonal-success'}"
-								>{user.banned ? 'Banned' : 'Active'}</span
-							>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<DataTable
+		rows={data.users}
+		label="Users"
+		{columns}
+		rowKey={(user) => user.id}
+		haystack={(user) => `${user.name} ${user.email}`}
+		searchLabel="Search users"
+		{filters}
+	>
+		{#snippet row(user)}
+			<td class="font-bold">
+				<a
+					class="anchor after:absolute after:inset-0"
+					href={resolve('/(protected)/admin/users/[id]', { id: user.id })}>{user.name}</a
+				>
+			</td>
+			<td>{user.email}</td>
+			<td><span class="badge preset-tonal">{user.role}</span></td>
+			<td>
+				<span class="badge {user.banned ? 'preset-tonal-error' : 'preset-tonal-success'}"
+					>{statusOf(user)}</span
+				>
+			</td>
+			<td class="whitespace-nowrap">{dateFormat.format(user.createdAt)}</td>
+		{/snippet}
+	</DataTable>
 </section>

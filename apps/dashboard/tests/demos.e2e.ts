@@ -48,7 +48,10 @@ test.describe('the list', () => {
 		await visit(page, '/demos');
 
 		const table = page.getByRole('table', { name: 'Demos' });
-		await expect(table.getByRole('columnheader')).toHaveText(['Title', 'Description', 'Created']);
+		await expect(table.getByRole('columnheader')).toHaveCount(4);
+		for (const name of ['Title', 'Description', 'Demo', 'Created']) {
+			await expect(table.getByRole('columnheader', { name })).toBeVisible();
+		}
 		const rows = table.getByRole('row');
 		await expect(rows).toHaveCount(3); // header + two demos
 		await expect(rows.nth(1)).toContainText('Newer');

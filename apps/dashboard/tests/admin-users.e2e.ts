@@ -45,7 +45,10 @@ test.describe('the list', () => {
 		await visit(page, '/admin/users');
 
 		const table = page.getByRole('table', { name: 'Users' });
-		await expect(table.getByRole('columnheader')).toHaveText(['Name', 'Email', 'Role', 'Status']);
+		await expect(table.getByRole('columnheader')).toHaveCount(5);
+		for (const name of ['Name', 'Email', 'Role', 'Status', 'Created']) {
+			await expect(table.getByRole('columnheader', { name })).toBeVisible();
+		}
 		await expect(rowFor(page, adminCredentials.email)).toContainText('admin');
 		await expect(rowFor(page, member.email)).toContainText('Listed Member');
 		await expect(rowFor(page, member.email)).toContainText('user');
