@@ -37,7 +37,9 @@ export default defineConfig({
 				...testAuthEnv,
 				PORT: String(port),
 				PROTOCOL_HEADER: 'x-forwarded-proto',
-				DATABASE_URL: testDatabaseUrl
+				DATABASE_URL: testDatabaseUrl,
+				// A small stand-in for apps/evals/results.
+				EVALS_DIR: 'tests/support/evals-fixture'
 			}
 		}
 	]

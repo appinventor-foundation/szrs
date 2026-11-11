@@ -11,7 +11,10 @@
  *                                    two or more baseline files as one report,
  *                                    results/<label>.html (the files are not changed)
  *
- * The HTML is generated, so it is not committed (see .gitignore).
+ * Every run also rewrites results/index.html, the list of all the reports.
+ *
+ * A file with no adapter is skipped when the whole folder is scanned and is an
+ * error when named. The HTML is generated, so it is not committed (see .gitignore).
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -19,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 
 import { isBaselineFile } from '../baseline/summary.js';
 import { baselineReport, combineBaselines } from './baseline.js';
+import { INDEX_FILE, listReports, renderIndex } from './index-page.js';
 import { renderReport } from './render.js';
 import type { Report } from './rows.js';
 import { screenshotsReport } from './screenshots.js';
@@ -35,6 +39,11 @@ const ADAPTERS: ((json: unknown) => Report | undefined)[] = [
 ];
 
 const resultsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'results');
+const writeIndex = (): void => {
+	const out = resolve(resultsDir, INDEX_FILE);
+	writeFileSync(out, renderIndex(listReports(resultsDir)));
+	console.log(`written ${out}`);
+};
 const option = (name: string): string | undefined => {
 	const at = process.argv.indexOf(`--${name}`);
 	return at >= 0 ? process.argv[at + 1] : undefined;
@@ -61,6 +70,7 @@ if (option('compare') !== undefined) {
 	const out = resolve(resultsDir, `${name}.html`);
 	writeFileSync(out, renderReport(combined!));
 	console.log(`written ${out}`);
+	writeIndex();
 	process.exit(0);
 }
 
@@ -77,12 +87,21 @@ for (const file of files) {
 	const json: unknown = JSON.parse(readFileSync(file, 'utf8'));
 	const report = ADAPTERS.map((adapt) => adapt(json)).find((found) => found !== undefined);
 	if (!report) {
-		console.error(`${file}: not a results file this viewer knows (add an adapter in report)`);
-		failed = true;
+		const message = `${file}: not a results file this viewer knows (add an adapter in report)`;
+		if (requested.length > 0) {
+			// Asked for by name: say it did not work.
+			console.error(message);
+			failed = true;
+		} else {
+			// Found while scanning the folder: some results (a probe's notes) have no
+			// report, and the Docker build runs this, so it must not fail for them.
+			console.log(`skipped ${message}`);
+		}
 		continue;
 	}
 	const out = file.replace(/\.json$/, '.html');
 	writeFileSync(out, renderReport(report));
 	console.log(`written ${out}`);
 }
+writeIndex();
 process.exit(failed ? 1 : 0);

@@ -2,7 +2,7 @@
 // Released under the Apache License, Version 2.0
 // http://www.apache.org/licenses/LICENSE-2.0
 
-import { PROXY_API_KEY, PROXY_URL } from '$app/env/private';
+import { EVALS_DIR, PROXY_API_KEY, PROXY_URL } from '$app/env/private';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { getAuth } from '#lib/server/auth/index.js';
 import { getDatabase } from '#lib/server/db/client.js';
@@ -12,6 +12,7 @@ import { createUserRepository } from '#lib/server/repositories/users.js';
 import { createWorkspaceRepository } from '#lib/server/repositories/workspaces.js';
 import { createAuthService, type AuthService } from '#lib/server/services/auth.js';
 import { createDemoService, type DemoService } from '#lib/server/services/demos.js';
+import { createEvalsFiles, type EvalsFiles } from '#lib/server/services/evals-files.js';
 import { createUserService, type UserService } from '#lib/server/services/users.js';
 import { createZoomProxy, type ZoomProxy } from '#lib/server/services/zoom-proxy.js';
 import { createWorkspaceService, type WorkspaceService } from '#lib/server/services/workspaces.js';
@@ -22,6 +23,7 @@ let demoService: DemoService | undefined;
 let authService: AuthService | undefined;
 let workspaceService: WorkspaceService | undefined;
 let zoomProxy: ZoomProxy | undefined;
+let evalsFiles: EvalsFiles | undefined;
 
 export function getDemoService(): DemoService {
 	demoService ??= createDemoService(createDemoRepository(getDatabase()));
@@ -40,6 +42,11 @@ export function getWorkspaceService(): WorkspaceService {
 export function getZoomProxy(): ZoomProxy {
 	zoomProxy ??= createZoomProxy({ baseUrl: PROXY_URL, apiKey: PROXY_API_KEY });
 	return zoomProxy;
+}
+
+export function getEvalsFiles(): EvalsFiles {
+	evalsFiles ??= createEvalsFiles(EVALS_DIR);
+	return evalsFiles;
 }
 
 export function getAuthService(): AuthService {

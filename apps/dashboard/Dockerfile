@@ -9,6 +9,9 @@ WORKDIR /app
 RUN npm install -g turbo@2.10.12
 COPY . .
 RUN turbo prune @szrs/dashboard --docker
+# The evaluation reports are built from apps/evals, which the dashboard does not
+# depend on, so it is pruned on its own.
+RUN turbo prune @szrs/evals --docker --out-dir out-evals
 
 FROM base AS installer
 WORKDIR /app
@@ -30,6 +33,25 @@ ARG BETTER_AUTH_SECRET=build-only-placeholder-not-a-secret-0000
 ARG DASHBOARD_URL=http://localhost:3000
 ARG PROXY_URL=http://localhost:3000
 RUN pnpm turbo run build --filter=@szrs/dashboard
+
+# The evaluation reports the dashboard serves at /evals. The results' JSON,
+# write-ups and pictures are committed; the HTML reports and their index are
+# generated (and gitignored), so they are built here with `pnpm report`. Only the
+# files the dashboard serves (HTML, Markdown, PNG) go on to the runner: the raw
+# results JSON stays behind.
+FROM base AS reports
+WORKDIR /app
+COPY --from=pruner /app/out-evals/json/ .
+COPY --from=pruner /app/out-evals/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=pruner /app/out-evals/pnpm-workspace.yaml ./pnpm-workspace.yaml
+RUN pnpm install --frozen-lockfile
+COPY --from=pruner /app/out-evals/full/ .
+# The proxy reads the contracts package from its build output.
+RUN pnpm turbo run build --filter=@szrs/llm-proxy-contracts
+RUN pnpm --filter @szrs/evals report
+RUN mkdir /evals-out \
+	&& cd apps/evals/results \
+	&& find . -type f \( -name '*.html' -o -name '*.md' -o -name '*.png' \) -exec cp --parents {} /evals-out \;
 
 # adapter-node leaves the runtime dependencies (postgres, drizzle-orm, zod, ...)
 # out of build/, so the runner needs production node_modules.
@@ -63,6 +85,9 @@ WORKDIR /app/apps/dashboard
 COPY --from=prod-deps --chown=svelte:nodejs /app/apps/dashboard/node_modules ./node_modules
 COPY --from=builder --chown=svelte:nodejs /app/apps/dashboard/build ./build
 COPY --from=builder --chown=svelte:nodejs /app/apps/dashboard/package.json ./package.json
+# Served, behind sign-in, at /evals (see EVALS_DIR in src/env.ts).
+COPY --from=reports --chown=svelte:nodejs /evals-out /app/apps/evals/results
+ENV EVALS_DIR=/app/apps/evals/results
 USER svelte
 EXPOSE 3000
 CMD ["node", "build"]
