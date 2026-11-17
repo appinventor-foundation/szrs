@@ -4,43 +4,59 @@
 # it set on every alias, so other callers get an explicit limit and not
 # whatever default the provider applies.
 model_list:
-  - model_name: local-ollama
-    litellm_params:
-      model: os.environ/OLLAMA_MODEL
-      api_base: os.environ/OLLAMA_API_BASE
-      max_tokens: 8192
+  # Narrowed to two models for the first demo. The others are kept commented out
+  # so they are easy to bring back. Aliases are named after the model behind
+  # them, so the plugin's dropdown shows it; keep the alias and the env var in
+  # step. The zoom cache is keyed by alias, so a new model needs a new alias.
 
-  - model_name: local-lmstudio
-    litellm_params:
-      model: openai/local-model
-      api_base: os.environ/LMSTUDIO_API_BASE
-      api_key: os.environ/LMSTUDIO_API_KEY
-      max_tokens: 8192
+  # - model_name: local-ollama
+  #   litellm_params:
+  #     model: os.environ/OLLAMA_MODEL
+  #     api_base: os.environ/OLLAMA_API_BASE
+  #     max_tokens: 8192
 
-  - model_name: openrouter
+  # - model_name: local-lmstudio
+  #   litellm_params:
+  #     model: openai/local-model
+  #     api_base: os.environ/LMSTUDIO_API_BASE
+  #     api_key: os.environ/LMSTUDIO_API_KEY
+  #     max_tokens: 8192
+
+  # The provider pins (extra_body.provider) are the ones the baseline used, so
+  # the demo runs on the hosts that were measured. OPENROUTER_MODEL must be
+  # openrouter/deepseek/deepseek-v4.1-flash-1017.
+  - model_name: deepseek-v4.1-flash
     litellm_params:
       model: os.environ/OPENROUTER_MODEL
       api_key: os.environ/OPENROUTER_API_KEY
       max_tokens: 8192
+      extra_body:
+        provider:
+          order: [deepinfra]
+          allow_fallbacks: false
 
-  # A second OpenRouter model on the same key, to compare two models side by side.
-  - model_name: openrouter-2
+  # OPENROUTER_MODEL_2 must be openrouter/google/gemini-3.5-flash-lite.
+  - model_name: gemini-3.5-flash-lite
     litellm_params:
       model: os.environ/OPENROUTER_MODEL_2
       api_key: os.environ/OPENROUTER_API_KEY
       max_tokens: 8192
+      extra_body:
+        provider:
+          order: [google-ai-studio]
+          allow_fallbacks: false
 
-  - model_name: gpt-4o-mini
-    litellm_params:
-      model: gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-      max_tokens: 8192
+  # - model_name: gpt-4o-mini
+  #   litellm_params:
+  #     model: gpt-4o-mini
+  #     api_key: os.environ/OPENAI_API_KEY
+  #     max_tokens: 8192
 
-  - model_name: claude-3-5-sonnet
-    litellm_params:
-      model: claude-3-5-sonnet-20241022
-      api_key: os.environ/ANTHROPIC_API_KEY
-      max_tokens: 8192
+  # - model_name: claude-3-5-sonnet
+  #   litellm_params:
+  #     model: claude-3-5-sonnet-20241022
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+  #     max_tokens: 8192
 
   # Uncomment once AWS Bedrock credentials are available:
   # - model_name: bedrock-claude
@@ -55,9 +71,10 @@ litellm_settings:
   success_callback: ['langfuse']
   failure_callback: ['langfuse']
 
-router_settings:
-  fallbacks:
-    - gpt-4o-mini: ['local-lmstudio', 'local-ollama']
+# Off with the aliases it names.
+# router_settings:
+#   fallbacks:
+#     - gpt-4o-mini: ['local-lmstudio', 'local-ollama']
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

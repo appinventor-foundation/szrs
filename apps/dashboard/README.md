@@ -68,7 +68,7 @@ Environment variables are declared and validated in `src/env.ts`. The app refuse
 | `BETTER_AUTH_SECRET`                            | Signs sessions; at least 32 characters (`openssl rand -hex 32`)                                   |
 | `DASHBOARD_URL`                                 | The address people open the dashboard at; sign-in only works from this origin                     |
 | `PROXY_URL`, `PROXY_API_KEY`                    | The LLM proxy's internal address, and its `INTERNAL_API_KEY` if it sets one (see the demo runner) |
-| `ZOOM_DEFAULT_MODEL`                            | Optional. LiteLLM alias the demo runner starts with (default `openrouter`)                        |
+| `ZOOM_DEFAULT_MODEL`                            | Optional. LiteLLM alias the demo runner starts with (default `deepseek-v4.1-flash`)               |
 | `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` | Read only by `pnpm auth:seed` and the deploy's migrate step, to create the first admin            |
 | `TEST_DATABASE_URL`                             | Optional override for the e2e database; defaults to `dashboard_test` on port 5433                 |
 

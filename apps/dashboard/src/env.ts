@@ -26,7 +26,7 @@ export const variables = defineEnvVars({
 			"Base URL of the LLM proxy, reachable from the dashboard's server (never from browsers)"
 	},
 	ZOOM_DEFAULT_MODEL: {
-		schema: z.string().min(1).default('openrouter'),
+		schema: z.string().min(1).default('deepseek-v4.1-flash'),
 		description: 'LiteLLM model alias the demo runner starts with, until the proxy lists its models'
 	},
 	EVALS_DIR: {

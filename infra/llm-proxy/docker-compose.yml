@@ -46,8 +46,8 @@ services:
       LMSTUDIO_API_BASE: ${LMSTUDIO_API_BASE:-http://host.docker.internal:1234/v1}
       LMSTUDIO_API_KEY: ${LMSTUDIO_API_KEY:-not-needed}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/z-ai/glm-5.3-flash}
-      OPENROUTER_MODEL_2: ${OPENROUTER_MODEL_2:-openrouter/z-ai/glm-5.3-flash}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/deepseek/deepseek-v4.1-flash-1017}
+      OPENROUTER_MODEL_2: ${OPENROUTER_MODEL_2:-openrouter/google/gemini-3.5-flash-lite}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_HOST: http://langfuse-web:3000 # internal compose-network address

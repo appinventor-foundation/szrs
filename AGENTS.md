@@ -82,7 +82,7 @@ Dev ports: dashboard 5174 (pinned with `strictPort`), docs 5173 (Vite's default)
 - First deploy is two steps: LiteLLM must be running before it can mint the proxy's virtual key (steps in the compose file header and `apps/llm-proxy/README.md`). The dashboard also needs an initial admin on its first deploy (see its README).
 - `infra/llm-proxy/docker-compose.benchmark.yml` and `docker/litellm/config.benchmark.yaml` are **local only**: they layer a wildcard `openrouter/*` route onto LiteLLM so `apps/evals` can benchmark any OpenRouter model by its full name. Never add that wildcard to `config.yaml` (Dokploy bakes it into the image, and the production key could then call any model) and do not mirror them into `infra/dokploy/`.
 - Postgres 18 images mount their volume at `/var/lib/postgresql`, not `.../data`.
-- The `openrouter-2` alias (a second OpenRouter model on the same key, set by `OPENROUTER_MODEL_2`) exists in the local stack only. It has **not** been mirrored into `infra/dokploy/`; do that, and check how LiteLLM treats the variable when unset, before a second model is wanted in production.
+- LiteLLM's aliases (`config.yaml`) are named after the model behind them and are narrowed to `deepseek-v4.1-flash` (`OPENROUTER_MODEL`, pinned to DeepInfra) and `gemini-3.5-flash-lite` (`OPENROUTER_MODEL_2`, pinned to Google AI Studio) for the first demo (2026-11-17); the rest are commented out, and so is the `gpt-4o-mini` fallback. Both are mirrored in `infra/dokploy/`. The zoom cache key has the alias, not the model behind it, so give a new model a new alias. `ZOOM_DEFAULT_MODEL` defaults to `deepseek-v4.1-flash` in `apps/dashboard/src/env.ts` and the Dokploy compose.
 
 ## Working agreements
 
@@ -106,6 +106,6 @@ These are stale, not instructions. Fix them when you work in those areas.
 From the project notes of 2026-10-30; check they are still open before relying on them.
 
 - Decided 2026-11-04: the Blockly plugin is hosted inside the dashboard (demo runner) and the proxy stays internal. The proxy is still **not** safe to expose publicly: before any public exposure, set `INTERNAL_API_KEY` (unset in the deployed compose today) and give the LiteLLM virtual key a budget, rate limit and model list.
-- Server housekeeping: the broken `claude-3-5-sonnet` alias in `infra/llm-proxy/docker/litellm/config.yaml`, and real `OPENAI_API_KEY` / `OPENROUTER_API_KEY` values in Dokploy.
+- Server housekeeping: real `OPENAI_API_KEY` / `OPENROUTER_API_KEY` values in Dokploy.
 - A self-service change-password page for the dashboard (admins set passwords for now).
 - Left as they are for now (2026-11-06): glm-5.3-flash's output varies five-fold between runs, one run reaching 93% of the 32768 cap; and the Dokploy mirror above.
