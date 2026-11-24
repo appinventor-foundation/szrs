@@ -103,6 +103,9 @@ services:
       # Default config listens on the IPv6 wildcard ([::]), which fails to
       # bind in Docker environments without IPv6 support. Force IPv4-only.
       - ./docker/clickhouse/listen-ipv4.xml:/etc/clickhouse-server/config.d/listen-ipv4.xml:ro
+      # Drops ClickHouse's own diagnostic logs (trace_log grew to 75 GiB and
+      # pinned the CPU on the Dokploy host).
+      - ./docker/clickhouse/system-logs.xml:/etc/clickhouse-server/config.d/system-logs.xml:ro
     healthcheck:
       # 127.0.0.1, not localhost: this container's resolver prefers IPv6
       # (::1) for "localhost", but listen-ipv4.xml above means nothing

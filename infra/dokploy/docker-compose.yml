@@ -234,6 +234,8 @@ services:
     build: ../llm-proxy/docker/clickhouse
     image: llm-proxy-clickhouse:dokploy
     restart: unless-stopped
+    # Backstop so background merges can never take the whole host.
+    cpus: '2'
     environment:
       CLICKHOUSE_USER: clickhouse
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD}

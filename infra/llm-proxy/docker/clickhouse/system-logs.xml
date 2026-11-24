@@ -1,0 +1,21 @@
+<clickhouse>
+	<!--
+		ClickHouse's own diagnostic tables. Nothing here reads them, and on a small shared host they
+		cost far more than they are worth: trace_log alone reached 75 GiB and its merges held several
+		cores at 100%. Removed outright; query_log and error_log stay, with a short TTL.
+	-->
+	<trace_log remove="1" />
+	<text_log remove="1" />
+	<metric_log remove="1" />
+	<asynchronous_metric_log remove="1" />
+	<part_log remove="1" />
+	<processors_profile_log remove="1" />
+	<opentelemetry_span_log remove="1" />
+	<background_schedule_pool_log remove="1" />
+	<query_log>
+		<ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+	</query_log>
+	<error_log>
+		<ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+	</error_log>
+</clickhouse>
